@@ -1,0 +1,182 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* =============================================
+   DESIGN TOKENS — 复古体育报纸风格
+   ============================================= */
+@theme inline {
+  /* Brand colors */
+  --color-primary: #D36E52;
+  --color-secondary: #9CB48A;
+  --color-accent-bg: #F5F1E8;
+  --color-ink: #241A14;
+
+  /* Text */
+  --color-text-primary: #241A14;
+  --color-text-secondary: #5C524C;
+  --color-text-muted: #9E948C;
+
+  /* States */
+  --color-success: #9CB48A;
+  --color-warning: #E4A853;
+  --color-error: #D36E52;
+
+  /* Typography */
+  --font-heading: "Noto Serif SC", Georgia, serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+  /* Radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-pill: 9999px;
+
+  /* Motion */
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+
+  /* shadcn compat aliases */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+}
+
+/* shadcn light mode */
+:root {
+  --background: #F5F1E8;
+  --foreground: #241A14;
+  --card: #FAF7F0;
+  --card-foreground: #241A14;
+  --popover: #FAF7F0;
+  --popover-foreground: #241A14;
+  --primary: #D36E52;
+  --primary-foreground: #FFFFFF;
+  --secondary: #9CB48A;
+  --secondary-foreground: #FFFFFF;
+  --muted: #EDE9E0;
+  --muted-foreground: #9E948C;
+  --accent: #EDE9E0;
+  --accent-foreground: #241A14;
+  --destructive: #D36E52;
+  --destructive-foreground: #FFFFFF;
+  --border: #241A14;
+  --input: #241A14;
+  --ring: #D36E52;
+  --radius: 0.5rem;
+  --chart-1: #D36E52;
+  --chart-2: #9CB48A;
+  --chart-3: #E4A853;
+  --chart-4: #7A9BAD;
+  --chart-5: #B8864E;
+  --sidebar: #FAF7F0;
+  --sidebar-foreground: #241A14;
+  --sidebar-primary: #D36E52;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #EDE9E0;
+  --sidebar-accent-foreground: #241A14;
+  --sidebar-border: #241A14;
+  --sidebar-ring: #D36E52;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  body {
+    min-height: 100svh;
+    background-color: #F5F1E8;
+    color: #241A14;
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+}
+
+/* =============================================
+   NEWSPAPER TEXTURE
+   ============================================= */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(36, 26, 20, 0.012) 2px,
+    rgba(36, 26, 20, 0.012) 3px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* =============================================
+   SKELETON SHIMMER
+   ============================================= */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(36, 26, 20, 0.06) 25%,
+    rgba(36, 26, 20, 0.12) 50%,
+    rgba(36, 26, 20, 0.06) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 2px;
+}
+
+/* =============================================
+   NEWSPAPER UTILITIES
+   ============================================= */
+.newspaper-double-border {
+  border: 2px solid #241A14;
+  outline: 1px solid #241A14;
+  outline-offset: 3px;
+}
+
+.badge-value   { background: #D36E52; color: #fff; }
+.badge-warn    { background: #E4A853; color: #241A14; }
+.badge-success { background: #9CB48A; color: #fff; }
+.badge-neutral { background: #9E948C; color: #fff; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #9E948C; border-radius: 2px; }

@@ -1,0 +1,73 @@
+{
+  "metadata": {
+    "title": "World Cup Bluff Guide",
+    "description": "A 2026 World Cup mobile H5 guide for casual viewers."
+  },
+  "common": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "loading": "Loading…",
+    "on": "On",
+    "off": "Off",
+    "close": "Close",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "userId": "User ID"
+  },
+  "language": {
+    "label": "Language",
+    "triggerLabel": "Language: {{language}}",
+    "followSystem": "System",
+    "followSystemWithLanguage": "System ({{language}})",
+    "enUS": "English",
+    "zhCN": "中文"
+  },
+  "errors": {
+    "notFound": {
+      "code": "404",
+      "title": "Page not found",
+      "description": "The page you're looking for doesn't exist or may have been moved.",
+      "backHome": "Back to home"
+    },
+    "generic": {
+      "title": "Something went wrong",
+      "description": "An unexpected error occurred. You can try again or return to the home page.",
+      "tryAgain": "Try again",
+      "backHome": "Back to home"
+    }
+  },
+  "starter": {
+    "badge": "2026 World Cup",
+    "title": "World Cup Bluff Guide",
+    "subtitle": "Schedules, morning recaps, team cards, probability radar, and viewing tools for casual World Cup conversations.",
+    "steps": {
+      "readDocs": {
+        "title": "Today",
+        "desc": "Check Beijing-time fixtures, scores, and market probability signals.",
+        "code": "/"
+      },
+      "replacePage": {
+        "title": "Morning Brief",
+        "desc": "Catch up on last night's results, moments, and shareable talking points.",
+        "code": "/morning"
+      },
+      "firstFeature": {
+        "title": "Team Cards",
+        "desc": "Learn teams quickly through coaches, formations, key players, and chat notes.",
+        "code": "/teams"
+      },
+      "translations": {
+        "title": "Tools",
+        "desc": "Translate odds, implied probability, and market gaps into plain language.",
+        "code": "/tools"
+      }
+    },
+    "nextCommand": {
+      "title": "Dev command",
+      "desc": "Start the development server and iterate on the guide.",
+      "command": "bun dev"
+    }
+  }
+}

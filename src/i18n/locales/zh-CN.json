@@ -1,0 +1,73 @@
+{
+  "metadata": {
+    "title": "世界杯装杯指南",
+    "description": "面向普通观众的 2026 世界杯 H5 工具。"
+  },
+  "common": {
+    "signIn": "登录",
+    "signOut": "退出登录",
+    "loading": "加载中…",
+    "on": "开",
+    "off": "关",
+    "close": "关闭",
+    "save": "保存",
+    "cancel": "取消",
+    "edit": "编辑",
+    "delete": "删除",
+    "userId": "用户 ID"
+  },
+  "language": {
+    "label": "语言",
+    "triggerLabel": "语言：{{language}}",
+    "followSystem": "跟随系统",
+    "followSystemWithLanguage": "跟随系统（{{language}}）",
+    "enUS": "English",
+    "zhCN": "中文"
+  },
+  "errors": {
+    "notFound": {
+      "code": "404",
+      "title": "页面未找到",
+      "description": "你访问的页面不存在，或已被移动。",
+      "backHome": "返回首页"
+    },
+    "generic": {
+      "title": "出了点问题",
+      "description": "发生了意外错误。你可以重试，或返回首页继续。",
+      "tryAgain": "重试",
+      "backHome": "返回首页"
+    }
+  },
+  "starter": {
+    "badge": "2026 World Cup",
+    "title": "世界杯装杯指南",
+    "subtitle": "赛程、早报、球队速成、概率雷达和观赛工具箱，给想参与世界杯聊天的普通观众。",
+    "steps": {
+      "readDocs": {
+        "title": "今日赛程",
+        "desc": "按北京时间查看比赛状态、比分和市场概率风向。",
+        "code": "/"
+      },
+      "replacePage": {
+        "title": "赛果早报",
+        "desc": "睡醒后快速补完昨晚赛果、名场面和聊天金句。",
+        "code": "/morning"
+      },
+      "firstFeature": {
+        "title": "球队速成",
+        "desc": "用主帅、阵型、核心球员和饭局话术快速认识球队。",
+        "code": "/teams"
+      },
+      "translations": {
+        "title": "概率工具",
+        "desc": "把赔率、隐含概率和信息差翻译成大白话。",
+        "code": "/tools"
+      }
+    },
+    "nextCommand": {
+      "title": "开发命令",
+      "desc": "启动开发服务器，实时迭代世界杯装杯指南。",
+      "command": "bun dev"
+    }
+  }
+}
