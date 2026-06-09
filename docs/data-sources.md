@@ -21,7 +21,7 @@ For each feature:
 - Extracted JSON: `src/data/fifa-schedule.json`
 - Runtime mapping: `src/lib/wc-data.ts`
 
-The JSON contains all 104 matches from the FIFA PDF, including match number, stage, group, official date, local venue time, host city, venue label, team codes/placeholders, and converted Beijing kickoff time. This replaces the old hand-written schedule mock.
+The JSON contains all 104 matches from the FIFA PDF, including match number, stage, group, PDF date, PDF Eastern Time, derived local venue date/time, host city, venue label, team codes/placeholders, and converted Beijing kickoff time. The PDF states all times are Eastern Time, so Beijing time must be derived from ET rather than each venue's local time. This replaces the old hand-written schedule mock.
 
 ## Built-In Sources
 

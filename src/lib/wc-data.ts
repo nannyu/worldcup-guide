@@ -46,6 +46,9 @@ interface FifaScheduleRecord {
   stage: string;
   group?: string;
   date: string;
+  easternDate: string;
+  easternTime: string;
+  localDate: string;
   localTime: string;
   localUtcOffset: string;
   kickoffBeijing: string;
@@ -173,7 +176,7 @@ function fifaRecordToMatch(record: FifaScheduleRecord): Match {
     oddsImpliedHome: 0,
     oddsImpliedAway: 0,
     venue: `${record.venue}，${record.city}`,
-    previewText: `FIFA 官方赛程第 ${record.matchNo} 场。当地时间 ${record.date} ${record.localTime}（${record.localUtcOffset}），北京时间 ${formatBeijingKickoff(record.kickoffBeijing)}。`,
+    previewText: `FIFA 官方赛程第 ${record.matchNo} 场。PDF 标注 ${record.easternDate} ${record.easternTime}（ET），举办地当地时间 ${record.localDate} ${record.localTime}（${record.localUtcOffset}），北京时间 ${formatBeijingKickoff(record.kickoffBeijing)}。`,
     updatedAt: "FIFA 官方赛程 · 本地兜底",
     events: [],
   };
