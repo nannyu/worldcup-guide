@@ -35,6 +35,22 @@ bun run lint
 bun run build
 ```
 
+## 管理员控制面板
+
+访问 [http://localhost:3000/admin](http://localhost:3000/admin) 配置：
+
+- 赛事数据源：赛程、比分、预测市场、赔率、集锦、球队内容。
+- AI 大模型：OpenAI、Gemini、DeepSeek、Kimi Coding、BigModel/智谱、自定义 Provider。
+
+本地开发环境如果未设置 `ADMIN_PASSWORD`，默认密码为 `admin123`。生产环境必须设置：
+
+```bash
+ADMIN_PASSWORD=replace_with_a_strong_admin_password
+ADMIN_SESSION_SECRET=replace_with_a_long_random_session_secret
+```
+
+管理员保存的配置写入 `data/admin-config.json`。该文件可能包含 API Key，已被 `.gitignore` 忽略，不会进入版本库。
+
 ## 项目结构
 
 ```text
@@ -42,6 +58,7 @@ src/app/                 路由入口
 src/components/layout/   底部导航和桌面侧栏
 src/components/screens/  主要页面屏幕
 src/lib/wc-data.ts       当前 mock 数据层
+src/lib/admin/           管理员认证和配置存储
 ```
 
 ## 数据说明

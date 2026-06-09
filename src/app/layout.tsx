@@ -6,7 +6,7 @@ import { cn } from "@/utils/utils";
 import { Toaster } from "@/components/ui/sonner";
 import { I18nProvider } from "@/components/i18n/i18n-provider";
 import { getServerLocale } from "@/lib/i18n/server-preference";
-import { BottomNav, SidebarNav } from "@/components/layout/nav";
+import { AppShell } from "@/components/layout/app-shell";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 const notoSerifSC = Noto_Serif_SC({
@@ -67,14 +67,7 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-[#F5F1E8]">
         <I18nProvider>
-          {/* Desktop: sidebar + content. Mobile: stacked + bottom nav */}
-          <div className="flex min-h-svh">
-            <SidebarNav />
-            <main className="flex-1 flex flex-col min-w-0 pb-[72px] md:pb-0">
-              {children}
-            </main>
-          </div>
-          <BottomNav />
+          <AppShell>{children}</AppShell>
           <Toaster />
         </I18nProvider>
       </body>
