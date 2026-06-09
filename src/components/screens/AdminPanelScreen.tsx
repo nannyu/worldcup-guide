@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import type {
   AdminConfig,
+  ApiKeyPlacement,
   AiProviderConfig,
   AiProviderType,
+  DataSourceAdapter,
   DataSourceConfig,
   DataSourceType,
 } from "@/lib/admin/config";
@@ -26,6 +28,20 @@ const dataSourceTypes: DataSourceType[] = [
   "custom",
 ];
 
+const dataSourceAdapters: DataSourceAdapter[] = [
+  "openfootball-worldcup-json",
+  "polymarket-gamma",
+  "worldcup26-api",
+  "worldcupapi-com",
+  "football-data-org",
+  "openligadb",
+  "zafronix",
+  "balldontlie-fifa",
+  "generic-json",
+];
+
+const apiKeyPlacements: ApiKeyPlacement[] = ["none", "query", "header", "bearer"];
+
 const aiProviderTypes: AiProviderType[] = [
   "openai",
   "gemini",
@@ -41,10 +57,18 @@ function createDataSource(): DataSourceConfig {
     id,
     name: "自定义数据源",
     type: "custom",
+    adapter: "generic-json",
     baseUrl: "",
+    endpointPath: "",
     apiKey: "",
+    apiKeyPlacement: "none",
+    apiKeyParamName: "",
+    apiKeyHeaderName: "",
     enabled: false,
+    priority: 100,
     refreshSeconds: 300,
+    cacheTtlSeconds: 300,
+    timeoutMs: 6000,
     notes: "",
   };
 }
@@ -245,8 +269,22 @@ function DataSourceCard({
         <Field label="类型">
           <SelectInput value={source.type} options={dataSourceTypes} onChange={(type) => onChange({ ...source, type })} />
         </Field>
+        <Field label="Adapter">
+          <SelectInput value={source.adapter} options={dataSourceAdapters} onChange={(adapter) => onChange({ ...source, adapter })} />
+        </Field>
         <Field label="Base URL">
           <TextInput value={source.baseUrl} onChange={(event) => onChange({ ...source, baseUrl: event.target.value })} placeholder="https://api.example.com" />
+        </Field>
+        <Field label="Endpoint Path">
+          <TextInput value={source.endpointPath} onChange={(event) => onChange({ ...source, endpointPath: event.target.value })} placeholder="/fixtures" />
+        </Field>
+        <Field label="优先级（越小越先用）">
+          <TextInput
+            type="number"
+            min={1}
+            value={source.priority}
+            onChange={(event) => onChange({ ...source, priority: Number(event.target.value) })}
+          />
         </Field>
         <Field label="刷新间隔（秒）">
           <TextInput
@@ -256,8 +294,33 @@ function DataSourceCard({
             onChange={(event) => onChange({ ...source, refreshSeconds: Number(event.target.value) })}
           />
         </Field>
+        <Field label="缓存 TTL（秒）">
+          <TextInput
+            type="number"
+            min={10}
+            value={source.cacheTtlSeconds}
+            onChange={(event) => onChange({ ...source, cacheTtlSeconds: Number(event.target.value) })}
+          />
+        </Field>
+        <Field label="超时（毫秒）">
+          <TextInput
+            type="number"
+            min={1000}
+            value={source.timeoutMs}
+            onChange={(event) => onChange({ ...source, timeoutMs: Number(event.target.value) })}
+          />
+        </Field>
+        <Field label="认证方式">
+          <SelectInput value={source.apiKeyPlacement} options={apiKeyPlacements} onChange={(apiKeyPlacement) => onChange({ ...source, apiKeyPlacement })} />
+        </Field>
         <Field label="API Key / Token">
           <TextInput type="password" value={source.apiKey} onChange={(event) => onChange({ ...source, apiKey: event.target.value })} placeholder="可为空" />
+        </Field>
+        <Field label="Key 参数名">
+          <TextInput value={source.apiKeyParamName} onChange={(event) => onChange({ ...source, apiKeyParamName: event.target.value })} placeholder="key / api_key" />
+        </Field>
+        <Field label="Key Header 名">
+          <TextInput value={source.apiKeyHeaderName} onChange={(event) => onChange({ ...source, apiKeyHeaderName: event.target.value })} placeholder="X-Auth-Token / Authorization" />
         </Field>
         <Field label="备注">
           <TextInput value={source.notes} onChange={(event) => onChange({ ...source, notes: event.target.value })} />

@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
@@ -322,8 +322,34 @@ function PageHeader({
 // ===== Main Screen =====
 export function TodayScheduleScreen() {
   const [activeTab, setActiveTab] = useState<ScheduleDateKey>("today");
-  const matches = matchesByDate[activeTab];
+  const [remoteMatches, setRemoteMatches] = useState<Partial<Record<ScheduleDateKey, Match[]>>>({});
+  const [dataSourceLabel, setDataSourceLabel] = useState("Mock · 本地演示数据");
+  const matches = remoteMatches[activeTab] || matchesByDate[activeTab];
   const activeMeta = scheduleDateMeta[activeTab];
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadMatches() {
+      const res = await fetch(`/api/data/matches?dateKey=${activeTab}`, { cache: "no-store" });
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        matches?: Match[];
+        source?: "remote" | "mock";
+        diagnostics?: Array<{ name: string; ok: boolean }>;
+      };
+      if (cancelled || !data.matches?.length) return;
+      setRemoteMatches((current) => ({ ...current, [activeTab]: data.matches }));
+      const firstOk = data.diagnostics?.find((item) => item.ok);
+      setDataSourceLabel(
+        data.source === "remote" && firstOk ? `${firstOk.name} · 远端数据` : "Mock · 本地回退数据",
+      );
+    }
+
+    void loadMatches();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab]);
 
   const headlineMatch = matches[0];
   const restMatches = matches.slice(1);
@@ -344,7 +370,7 @@ export function TodayScheduleScreen() {
         >
           今日赛程
         </h1>
-        <p className="text-xs text-[#9E948C] mt-0.5">所有时间均为北京时间 · 概率来自 Polymarket</p>
+        <p className="text-xs text-[#9E948C] mt-0.5">所有时间均为北京时间 · {dataSourceLabel}</p>
       </div>
 
       {/* Date tabs */}

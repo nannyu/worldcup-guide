@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { radarMatches, type RadarMatch } from "@/lib/wc-data";
 
@@ -326,6 +326,33 @@ function DiffLegend() {
 // 主页面
 // ============================================================
 export function RadarEyeScreen() {
+  const [items, setItems] = useState<RadarMatch[]>(radarMatches);
+  const [dataSourceLabel, setDataSourceLabel] = useState("Mock · 本地演示数据");
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadRadar() {
+      const res = await fetch("/api/data/radar", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        radarMatches?: RadarMatch[];
+        source?: "remote" | "mock";
+        diagnostics?: Array<{ name: string; ok: boolean }>;
+      };
+      if (cancelled || !data.radarMatches?.length) return;
+      setItems(data.radarMatches);
+      const firstOk = data.diagnostics?.find((item) => item.ok);
+      setDataSourceLabel(
+        data.source === "remote" && firstOk ? `${firstOk.name} · 远端数据` : "Mock · 本地回退数据",
+      );
+    }
+
+    void loadRadar();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div className="flex flex-col min-h-svh bg-[#F5F1E8]">
       {/* Masthead */}
@@ -343,14 +370,14 @@ export function RadarEyeScreen() {
         </div>
         <p className="text-xs text-[#5C524C] mt-1.5 leading-relaxed">
           对比 <strong>Polymarket 链上真实资金池</strong> 与 <strong>传统赔率隐含概率</strong> 的差距。
-          点击每张卡片可展开 24h 概率变化曲线。
+          点击每张卡片可展开 24h 概率变化曲线。当前：{dataSourceLabel}。
         </p>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         <DiffLegend />
-        {radarMatches.map((m) => (
+        {items.map((m) => (
           <RadarCard key={m.id} match={m} />
         ))}
         <div className="border border-[#241A14] p-3 text-xs text-[#5C524C]">

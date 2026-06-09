@@ -51,6 +51,8 @@ ADMIN_SESSION_SECRET=replace_with_a_long_random_session_secret
 
 管理员保存的配置写入 `data/admin-config.json`。该文件可能包含 API Key，已被 `.gitignore` 忽略，不会进入版本库。
 
+数据源冗余策略和字段说明见 [docs/data-sources.md](docs/data-sources.md)。
+
 ## 项目结构
 
 ```text
