@@ -323,7 +323,7 @@ function PageHeader({
 export function TodayScheduleScreen() {
   const [activeTab, setActiveTab] = useState<ScheduleDateKey>("today");
   const [remoteMatches, setRemoteMatches] = useState<Partial<Record<ScheduleDateKey, Match[]>>>({});
-  const [dataSourceLabel, setDataSourceLabel] = useState("Mock · 本地演示数据");
+  const [dataSourceLabel, setDataSourceLabel] = useState("FIFA 官方赛程 · 本地兜底");
   const matches = remoteMatches[activeTab] || matchesByDate[activeTab];
   const activeMeta = scheduleDateMeta[activeTab];
 
@@ -334,14 +334,14 @@ export function TodayScheduleScreen() {
       if (!res.ok) return;
       const data = (await res.json()) as {
         matches?: Match[];
-        source?: "remote" | "mock";
+        source?: "remote" | "fallback";
         diagnostics?: Array<{ name: string; ok: boolean }>;
       };
       if (cancelled || !data.matches?.length) return;
       setRemoteMatches((current) => ({ ...current, [activeTab]: data.matches }));
       const firstOk = data.diagnostics?.find((item) => item.ok);
       setDataSourceLabel(
-        data.source === "remote" && firstOk ? `${firstOk.name} · 远端数据` : "Mock · 本地回退数据",
+        data.source === "remote" && firstOk ? `${firstOk.name} · 远端数据` : "FIFA 官方赛程 · 本地兜底",
       );
     }
 

@@ -3,6 +3,7 @@ import { fetchJsonFromSource, sortEnabledSources, type SourceDiagnostic } from "
 import {
   matchesByDate,
   radarMatches,
+  scheduleDateMeta,
   type Match,
   type MatchStatus,
   type RadarMatch,
@@ -54,9 +55,9 @@ const teamZh: Record<string, { name: string; flag: string }> = {
 };
 
 const dateKeyToSourceDate: Record<ScheduleDateKey, string> = {
-  yesterday: "2026-06-10",
-  today: "2026-06-11",
-  tomorrow: "2026-06-12",
+  yesterday: scheduleDateMeta.yesterday.date,
+  today: scheduleDateMeta.today.date,
+  tomorrow: scheduleDateMeta.tomorrow.date,
 };
 
 function getTeam(input: string | undefined) {
@@ -179,7 +180,7 @@ function transformPolymarketEvents(data: PolymarketEvent[]): RadarMatch[] {
 
 export async function getAggregatedMatches(dateKey: ScheduleDateKey): Promise<{
   matches: Match[];
-  source: "remote" | "mock";
+  source: "remote" | "fallback";
   diagnostics: SourceDiagnostic[];
 }> {
   const { dataSources } = await readAdminConfig();
@@ -199,7 +200,7 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey): Promise<{
 
   return {
     matches: matchesByDate[dateKey],
-    source: "mock",
+    source: "fallback",
     diagnostics,
   };
 }

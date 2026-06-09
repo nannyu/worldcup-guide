@@ -11,8 +11,17 @@ For each feature:
 1. Read enabled sources for the required `type`.
 2. Try each source adapter in priority order.
 3. Use the first source that returns normalized data.
-4. If every remote source fails, fall back to local mock data from `src/lib/wc-data.ts`.
+4. If every remote schedule source fails, fall back to the local FIFA official schedule snapshot in `src/data/fifa-schedule.json`.
 5. Return diagnostics so the UI/admin can show whether data came from remote or fallback.
+
+## Local FIFA Fallback
+
+- Source PDF: [FWC26-Match-Schedule_English.pdf](https://digitalhub.fifa.com/asset/4b5d4417-3343-4732-9cdf-14b6662af407/FWC26-Match-Schedule_English.pdf)
+- Downloaded copy: `data/fifa/FWC26-Match-Schedule_English.pdf`
+- Extracted JSON: `src/data/fifa-schedule.json`
+- Runtime mapping: `src/lib/wc-data.ts`
+
+The JSON contains all 104 matches from the FIFA PDF, including match number, stage, group, official date, local venue time, host city, venue label, team codes/placeholders, and converted Beijing kickoff time. This replaces the old hand-written schedule mock.
 
 ## Built-In Sources
 
