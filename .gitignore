@@ -192,3 +192,4 @@ dist
 
 # Local admin runtime config. May contain API keys.
 /data/admin-config.json
+/data/runtime-cache.json

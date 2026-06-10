@@ -163,7 +163,7 @@ export function SidebarNav() {
 
       {/* Footer */}
       <div className="p-4 border-t border-[#241A14]/20 text-[10px] text-[#9E948C] text-center">
-        数据来源：Polymarket · FIFA
+        数据来源：football-data.org · The Odds API · FIFA
         <br />
         仅供参考，非投注建议
       </div>

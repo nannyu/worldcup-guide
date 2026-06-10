@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { teams, type Team } from "@/lib/wc-data";
+import type { Team } from "@/lib/wc-data";
 
 type Filter = "all" | "hot" | "dark" | "classic";
 
@@ -56,27 +56,35 @@ function TeamCard({ team, onClick }: { team: Team; onClick: () => void }) {
             <span className="text-2xl">{team.flag}</span>
             {team.name}
           </h3>
-          <p className="text-[10px] text-[#9E948C] mt-0.5">
-            主帅：{team.coach} · {team.formation} · {team.group}
-          </p>
+          {(team.coach || team.formation || team.group) && (
+            <p className="text-[10px] text-[#9E948C] mt-0.5">
+              {[team.coach && `主帅：${team.coach}`, team.formation, team.group]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          )}
         </div>
-        <HotStars count={team.hotLevel} />
+        {team.hotLevel > 0 && <HotStars count={team.hotLevel} />}
       </div>
 
       {/* Divider */}
       <div className="border-t border-dashed border-[#241A14]/30 pt-2 mt-1 space-y-1.5">
-        <p className="text-xs text-[#5C524C]">
-          <strong className="text-[#241A14]">一句话风格：</strong> {team.style}
-        </p>
+        {team.style && (
+          <p className="text-xs text-[#5C524C]">
+            <strong className="text-[#241A14]">球队资料：</strong> {team.style}
+          </p>
+        )}
 
         {/* Core players */}
-        <p className="text-xs text-[#5C524C]">
-          <strong className="text-[#241A14]">核心球员：</strong>
-          {team.stars.join("、")}
-        </p>
+        {team.stars.length > 0 && (
+          <p className="text-xs text-[#5C524C]">
+            <strong className="text-[#241A14]">核心球员：</strong>
+            {team.stars.join("、")}
+          </p>
+        )}
 
         {/* Tags */}
-        <div className="flex flex-wrap gap-1 pt-0.5">
+        {team.tags.length > 0 && <div className="flex flex-wrap gap-1 pt-0.5">
           {team.tags.map((tag) => (
             <span
               key={tag}
@@ -85,7 +93,7 @@ function TeamCard({ team, onClick }: { team: Team; onClick: () => void }) {
               #{tag}
             </span>
           ))}
-        </div>
+        </div>}
       </div>
 
       <div className="mt-2.5 text-right">
@@ -96,6 +104,13 @@ function TeamCard({ team, onClick }: { team: Team; onClick: () => void }) {
 }
 
 function TeamDetailModal({ team, onClose }: { team: Team; onClose: () => void }) {
+  const stats = [
+    team.rank > 0 ? { label: "FIFA 排名", value: `#${team.rank}` } : null,
+    team.formation ? { label: "阵型", value: team.formation } : null,
+    team.group ? { label: "小组", value: team.group } : null,
+  ].filter((item): item is { label: string; value: string } => Boolean(item));
+  const hasProfile = Boolean(team.coach || team.stars.length || team.style);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -145,37 +160,37 @@ function TeamDetailModal({ team, onClose }: { team: Team; onClose: () => void })
 
         <div className="px-4 py-4 space-y-4">
           {/* Quick stats */}
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: "FIFA 排名", value: `#${team.rank}` },
-              { label: "阵型", value: team.formation },
-              { label: "小组", value: team.group },
-            ].map((s) => (
+          {stats.length > 0 && (
+            <div className="grid grid-cols-3 gap-2">
+            {stats.map((s) => (
               <div key={s.label} className="border border-[#241A14] p-2 text-center">
                 <div className="text-lg font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>{s.value}</div>
                 <div className="text-[10px] text-[#9E948C]">{s.label}</div>
               </div>
             ))}
-          </div>
+            </div>
+          )}
 
           {/* Coach & stars */}
-          <div className="border border-[#241A14] p-3 space-y-2">
-            <div className="text-xs">
+          {hasProfile && (
+            <div className="border border-[#241A14] p-3 space-y-2">
+            {team.coach && <div className="text-xs">
               <strong className="text-[#241A14]">主帅：</strong>
               <span className="text-[#5C524C]">{team.coach}</span>
-            </div>
-            <div className="text-xs">
+            </div>}
+            {team.stars.length > 0 && <div className="text-xs">
               <strong className="text-[#241A14]">核心球员：</strong>
               <span className="text-[#5C524C]">{team.stars.join("、")}</span>
-            </div>
-            <div className="text-xs">
+            </div>}
+            {team.style && <div className="text-xs">
               <strong className="text-[#241A14]">战术大白话：</strong>
               <span className="text-[#5C524C]">{team.style}</span>
+            </div>}
             </div>
-          </div>
+          )}
 
           {/* Talking points */}
-          <div>
+          {team.talkingPoints.length > 0 && <div>
             <h4
               className="font-bold text-xs tracking-wider text-[#241A14] mb-2 uppercase"
               style={{ fontFamily: "var(--font-heading)" }}
@@ -190,10 +205,10 @@ function TeamDetailModal({ team, onClose }: { team: Team; onClose: () => void })
                 <p className="text-xs text-[#5C524C] leading-relaxed">{point}</p>
               </div>
             ))}
-          </div>
+          </div>}
 
           {/* Tags */}
-          <div>
+          {team.tags.length > 0 && <div>
             <h4
               className="font-bold text-xs tracking-wider text-[#241A14] mb-2 uppercase"
               style={{ fontFamily: "var(--font-heading)" }}
@@ -207,11 +222,11 @@ function TeamDetailModal({ team, onClose }: { team: Team; onClose: () => void })
                 </span>
               ))}
             </div>
-          </div>
+          </div>}
 
           {/* Disclaimer */}
           <p className="text-[10px] text-[#9E948C] text-center pt-2 border-t border-dashed border-[#241A14]/20">
-            数据来源：FIFA · Transfermarkt · 2026 赛季统计
+            数据来源：{team.source || "已配置球队数据源"}
           </p>
         </div>
       </motion.div>
@@ -220,19 +235,21 @@ function TeamDetailModal({ team, onClose }: { team: Team; onClose: () => void })
 }
 
 export function TeamCardsScreen() {
+  const [items, setItems] = useState<Team[]>([]);
+  const [sourceLabel, setSourceLabel] = useState("等待数据源");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [selected, setSelected] = useState<Team | null>(null);
 
   const filters: { key: Filter; label: string }[] = [
-    { key: "all", label: `已录入 ${teams.length} 队` },
+    { key: "all", label: `已录入 ${items.length} 队` },
     { key: "hot", label: "夺冠热门" },
     { key: "dark", label: "话题黑马" },
     { key: "classic", label: "老牌流量" },
   ];
 
   const filtered = useMemo(() => {
-    let list = teams;
+    let list = items;
     if (filter === "hot") list = list.filter((t) => t.hotLevel >= 4);
     if (filter === "dark") list = list.filter((t) => t.hotLevel === 3);
     if (filter === "classic") list = list.filter((t) => t.rank <= 10);
@@ -247,7 +264,35 @@ export function TeamCardsScreen() {
       );
     }
     return list;
-  }, [query, filter]);
+  }, [items, query, filter]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadTeams() {
+      const response = await fetch("/api/data/teams", { cache: "no-store" });
+      if (!response.ok) return;
+      const data = (await response.json()) as {
+        teams?: Team[];
+        source?: "remote" | "fallback" | "cache";
+        diagnostics?: Array<{ name: string; ok: boolean }>;
+      };
+      if (cancelled) return;
+      setItems(data.teams || []);
+      const firstOk = data.diagnostics?.find((item) => item.ok);
+      setSourceLabel(
+        data.source === "remote" && firstOk
+          ? `${firstOk.name} · 远端数据`
+          : data.source === "cache"
+            ? "PostgreSQL · 持久化快照"
+            : "暂无可用球队数据",
+      );
+    }
+
+    void loadTeams();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="flex flex-col min-h-svh bg-[#F5F1E8]">
@@ -265,7 +310,9 @@ export function TeamCardsScreen() {
         >
           48 队速成卡
         </h1>
-        <p className="text-xs text-[#9E948C] mt-0.5">10 秒认识任意球队 · 当前已录入 {teams.length}/48 支样例档案</p>
+        <p className="text-xs text-[#9E948C] mt-0.5">
+          球队档案 · 当前数据源返回 {items.length} 支球队 · {sourceLabel}
+        </p>
       </div>
 
       {/* Search & filters */}
@@ -307,17 +354,23 @@ export function TeamCardsScreen() {
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {filtered.length === 0 ? (
           <div className="border-2 border-dashed border-[#241A14] p-8 text-center">
-            <p className="text-[#9E948C] text-sm">没找到匹配的球队</p>
-            <p className="text-[10px] text-[#9E948C] mt-1">换个关键词试试</p>
+            <p className="text-[#241A14] text-sm font-bold">
+              {items.length === 0 ? "暂无球队数据" : "没找到匹配的球队"}
+            </p>
+            <p className="text-[10px] text-[#9E948C] mt-1">
+              {items.length === 0 ? "球队数据源接入并返回记录后会自动显示。" : "换个关键词试试"}
+            </p>
           </div>
         ) : (
           filtered.map((team) => (
             <TeamCard key={team.id} team={team} onClick={() => setSelected(team)} />
           ))
         )}
-        <div className="border border-dashed border-[#241A14] p-4 text-center text-xs text-[#9E948C]">
-          当前展示 {filtered.length} 支样例球队；完整 48 队档案可按小组继续补齐。
-        </div>
+        {filtered.length > 0 && (
+          <div className="border border-dashed border-[#241A14] p-4 text-center text-xs text-[#9E948C]">
+            当前展示 {filtered.length} 支球队。
+          </div>
+        )}
       </div>
 
       {/* Detail Modal */}

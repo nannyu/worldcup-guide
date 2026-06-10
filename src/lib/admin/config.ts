@@ -7,6 +7,7 @@ export type DataSourceType =
   | "prediction-market"
   | "odds"
   | "highlights"
+  | "news"
   | "team-content"
   | "custom";
 
@@ -17,16 +18,23 @@ export type DataSourceAdapter =
   | "worldcupapi-com"
   | "football-data-org"
   | "openligadb"
+  | "the-odds-api"
+  | "thesportsdb"
   | "zafronix"
   | "balldontlie-fifa"
+  | "rss-feed"
+  | "currents-api"
+  | "gdelt-doc"
+  | "newsapi-org"
   | "generic-json";
 
-export type ApiKeyPlacement = "none" | "query" | "header" | "bearer";
+export type ApiKeyPlacement = "none" | "query" | "header" | "bearer" | "path";
 
 export type AiProviderType =
   | "openai"
   | "gemini"
   | "deepseek"
+  | "xiaomi-mimo"
   | "kimi-coding"
   | "bigmodel"
   | "custom";
@@ -64,6 +72,7 @@ export interface AiProviderConfig {
 export interface AdminConfig {
   dataSources: DataSourceConfig[];
   aiProviders: AiProviderConfig[];
+  primaryAiProviderId: string;
   updatedAt: string;
 }
 
@@ -71,6 +80,7 @@ const configPath = path.join(process.cwd(), "data", "admin-config.json");
 
 export const defaultAdminConfig: AdminConfig = {
   updatedAt: new Date(0).toISOString(),
+  primaryAiProviderId: "deepseek",
   dataSources: [
     {
       id: "openfootball-worldcup-json",
@@ -131,14 +141,14 @@ export const defaultAdminConfig: AdminConfig = {
       name: "WorldCupAPI.com",
       type: "scores",
       adapter: "worldcupapi-com",
-      baseUrl: "https://worldcupapi.com",
+      baseUrl: "https://api.worldcupapi.com",
       endpointPath: "/fixtures",
       apiKey: "",
       apiKeyPlacement: "query",
       apiKeyParamName: "key",
       apiKeyHeaderName: "",
       enabled: false,
-      priority: 30,
+      priority: 20,
       refreshSeconds: 60,
       cacheTtlSeconds: 60,
       timeoutMs: 6000,
@@ -156,11 +166,83 @@ export const defaultAdminConfig: AdminConfig = {
       apiKeyParamName: "",
       apiKeyHeaderName: "X-Auth-Token",
       enabled: false,
-      priority: 40,
+      priority: 10,
       refreshSeconds: 300,
       cacheTtlSeconds: 300,
       timeoutMs: 6000,
       notes: "通用足球 API 兜底。免费额度适合低频缓存，不建议前端高频直连。",
+    },
+    {
+      id: "football-data-org-teams",
+      name: "football-data.org · World Cup Teams",
+      type: "team-content",
+      adapter: "football-data-org",
+      baseUrl: "https://api.football-data.org/v4",
+      endpointPath: "/competitions/WC/teams",
+      apiKey: "",
+      apiKeyPlacement: "header",
+      apiKeyParamName: "",
+      apiKeyHeaderName: "X-Auth-Token",
+      enabled: false,
+      priority: 10,
+      refreshSeconds: 86400,
+      cacheTtlSeconds: 86400,
+      timeoutMs: 8000,
+      notes: "2026 世界杯 48 队基础资料、队徽和主教练信息。",
+    },
+    {
+      id: "the-odds-api-worldcup",
+      name: "The Odds API · FIFA World Cup",
+      type: "odds",
+      adapter: "the-odds-api",
+      baseUrl: "https://api.the-odds-api.com",
+      endpointPath: "/v4/sports/soccer_fifa_world_cup/odds",
+      apiKey: "",
+      apiKeyPlacement: "query",
+      apiKeyParamName: "apiKey",
+      apiKeyHeaderName: "",
+      enabled: false,
+      priority: 10,
+      refreshSeconds: 300,
+      cacheTtlSeconds: 300,
+      timeoutMs: 8000,
+      notes: "真实欧赔源。读取欧洲区 h2h 市场，聚合多家 bookmaker 后计算去水隐含概率。",
+    },
+    {
+      id: "thesportsdb-worldcup",
+      name: "TheSportsDB · FIFA World Cup",
+      type: "scores",
+      adapter: "thesportsdb",
+      baseUrl: "https://www.thesportsdb.com/api/v1/json",
+      endpointPath: "/{apiKey}/eventsseason.php",
+      apiKey: "",
+      apiKeyPlacement: "path",
+      apiKeyParamName: "",
+      apiKeyHeaderName: "",
+      enabled: false,
+      priority: 30,
+      refreshSeconds: 900,
+      cacheTtlSeconds: 900,
+      timeoutMs: 8000,
+      notes: "世界杯 league id 4429，赛季 2026。免费 key 有条数和频率限制，仅作低优先级备份。",
+    },
+    {
+      id: "thesportsdb-worldcup-teams",
+      name: "TheSportsDB · World Cup Teams",
+      type: "team-content",
+      adapter: "thesportsdb",
+      baseUrl: "https://www.thesportsdb.com/api/v1/json",
+      endpointPath: "/{apiKey}/search_all_teams.php",
+      apiKey: "",
+      apiKeyPlacement: "path",
+      apiKeyParamName: "",
+      apiKeyHeaderName: "",
+      enabled: false,
+      priority: 20,
+      refreshSeconds: 86400,
+      cacheTtlSeconds: 86400,
+      timeoutMs: 8000,
+      notes: "世界杯球队图片和简介备份。免费 key 单次最多返回 10 队。",
     },
     {
       id: "openligadb-wm2026",
@@ -234,6 +316,96 @@ export const defaultAdminConfig: AdminConfig = {
       timeoutMs: 5000,
       notes: "央视频、FIFA+、B站等合法集锦入口。",
     },
+    {
+      id: "espn-soccer-rss",
+      name: "ESPN Soccer RSS",
+      type: "news",
+      adapter: "rss-feed",
+      baseUrl: "https://www.espn.com",
+      endpointPath: "/espn/rss/soccer/news",
+      apiKey: "",
+      apiKeyPlacement: "none",
+      apiKeyParamName: "",
+      apiKeyHeaderName: "",
+      enabled: true,
+      priority: 5,
+      refreshSeconds: 900,
+      cacheTtlSeconds: 900,
+      timeoutMs: 8000,
+      notes: "ESPN 官方 Soccer Headlines RSS，作为足球新闻第一优先级；空响应时自动切换 BBC。",
+    },
+    {
+      id: "bbc-sport-football-rss",
+      name: "BBC Sport Football RSS",
+      type: "news",
+      adapter: "rss-feed",
+      baseUrl: "https://feeds.bbci.co.uk",
+      endpointPath: "/sport/football/rss.xml",
+      apiKey: "",
+      apiKeyPlacement: "none",
+      apiKeyParamName: "",
+      apiKeyHeaderName: "",
+      enabled: true,
+      priority: 10,
+      refreshSeconds: 900,
+      cacheTtlSeconds: 900,
+      timeoutMs: 8000,
+      notes: "免 key RSS 新闻源。作为 ESPN Soccer RSS 的第一替补。",
+    },
+    {
+      id: "currents-worldcup-news",
+      name: "Currents API · World Cup",
+      type: "news",
+      adapter: "currents-api",
+      baseUrl: "https://api.currentsapi.services",
+      endpointPath: "/v2/search",
+      apiKey: "",
+      apiKeyPlacement: "bearer",
+      apiKeyParamName: "",
+      apiKeyHeaderName: "Authorization",
+      enabled: false,
+      priority: 20,
+      refreshSeconds: 900,
+      cacheTtlSeconds: 900,
+      timeoutMs: 20000,
+      notes: "世界杯关键词体育新闻搜索。免费账户每日 1000 次请求，使用 V2 sport 分类。",
+    },
+    {
+      id: "gdelt-worldcup-news",
+      name: "GDELT World Cup News",
+      type: "news",
+      adapter: "gdelt-doc",
+      baseUrl: "https://api.gdeltproject.org",
+      endpointPath: "/api/v2/doc/doc",
+      apiKey: "",
+      apiKeyPlacement: "none",
+      apiKeyParamName: "",
+      apiKeyHeaderName: "",
+      enabled: true,
+      priority: 30,
+      refreshSeconds: 900,
+      cacheTtlSeconds: 900,
+      timeoutMs: 12000,
+      notes: "免 key 新闻搜索源。使用 GDELT DOC 2.x ArticleList JSON 拉取世界杯相关新闻原始条目。",
+    },
+    {
+      id: "newsapi-worldcup",
+      name: "NewsAPI World Cup",
+      type: "news",
+      adapter: "newsapi-org",
+      baseUrl: "https://newsapi.org",
+      endpointPath: "/v2/everything",
+      apiKey: "",
+      apiKeyPlacement: "query",
+      apiKeyParamName: "apiKey",
+      apiKeyHeaderName: "",
+      enabled: false,
+      priority: 40,
+      refreshSeconds: 900,
+      cacheTtlSeconds: 900,
+      timeoutMs: 8000,
+      notes: "可选新闻源，需要 NewsAPI key。适合补充英文媒体文章发现。",
+    },
   ],
   aiProviders: [
     {
@@ -262,19 +434,29 @@ export const defaultAdminConfig: AdminConfig = {
       provider: "deepseek",
       baseUrl: "https://api.deepseek.com",
       apiKey: "",
-      defaultModel: "deepseek-chat",
+      defaultModel: "deepseek-v4-flash",
       enabled: false,
-      notes: "可用于低成本中文内容生成。",
+      notes: "用于多源新闻去重、中文摘要和早报整理。V4 Flash 使用非思考模式降低后台延迟。",
+    },
+    {
+      id: "xiaomi-mimo",
+      name: "Xiaomi MiMo",
+      provider: "xiaomi-mimo",
+      baseUrl: "https://token-plan-cn.xiaomimimo.com/v1",
+      apiKey: "",
+      defaultModel: "mimo-v2.5-pro",
+      enabled: false,
+      notes: "小米 MiMo Token Plan 最新旗舰 Pro 模型，作为新闻整理备用 Provider。",
     },
     {
       id: "kimi-coding",
       name: "Kimi Coding",
       provider: "kimi-coding",
-      baseUrl: "https://api.moonshot.cn/v1",
+      baseUrl: "https://api.kimi.com/coding/v1",
       apiKey: "",
-      defaultModel: "kimi-k2-0711-preview",
+      defaultModel: "kimi-for-coding",
       enabled: false,
-      notes: "可用于代码辅助、内容结构化和长文本处理。",
+      notes: "Kimi Code 官方 OpenAI-compatible 地址。该服务仅允许已认证 Coding Agent，不适合网站后台内容生成。",
     },
     {
       id: "bigmodel",
@@ -308,6 +490,29 @@ function inferAdapter(source: Partial<DataSourceConfig>): DataSourceAdapter {
   }
   if (source.id === "openligadb-wm2026" || source.baseUrl?.includes("openligadb")) {
     return "openligadb";
+  }
+  if (source.id === "the-odds-api-worldcup" || source.baseUrl?.includes("the-odds-api.com")) {
+    return "the-odds-api";
+  }
+  if (source.id === "thesportsdb-worldcup" || source.baseUrl?.includes("thesportsdb.com")) {
+    return "thesportsdb";
+  }
+  if (
+    source.id === "espn-soccer-rss"
+    || source.id === "bbc-sport-football-rss"
+    || source.baseUrl?.includes("espn.com")
+    || source.baseUrl?.includes("feeds.bbci.co.uk")
+  ) {
+    return "rss-feed";
+  }
+  if (source.id === "currents-worldcup-news" || source.baseUrl?.includes("currentsapi.services")) {
+    return "currents-api";
+  }
+  if (source.id === "gdelt-worldcup-news" || source.baseUrl?.includes("gdeltproject")) {
+    return "gdelt-doc";
+  }
+  if (source.id === "newsapi-worldcup" || source.baseUrl?.includes("newsapi.org")) {
+    return "newsapi-org";
   }
   return "generic-json";
 }
@@ -351,22 +556,32 @@ function mergeMissingDefaultSources(sources: DataSourceConfig[]): DataSourceConf
   return [...sources, ...missingDefaults];
 }
 
+function mergeMissingDefaultProviders(providers: AiProviderConfig[]): AiProviderConfig[] {
+  const seen = new Set(providers.map((provider) => provider.id));
+  const missingDefaults = defaultAdminConfig.aiProviders.filter((provider) => !seen.has(provider.id));
+  return [...providers, ...missingDefaults];
+}
+
 function normalizeConfig(input: Partial<AdminConfig>): AdminConfig {
   const dataSources = (input.dataSources || []).map(normalizeDataSource);
+  const aiProviders = (input.aiProviders || []).map((provider, index) => ({
+    id: String(provider.id || `ai-provider-${index + 1}`),
+    name: String(provider.name || "未命名模型服务"),
+    provider: (provider.provider || "custom") as AiProviderType,
+    baseUrl: String(provider.baseUrl || ""),
+    apiKey: String(provider.apiKey || ""),
+    defaultModel: String(provider.defaultModel || ""),
+    enabled: Boolean(provider.enabled),
+    notes: String(provider.notes || ""),
+  }));
 
   return {
     updatedAt: input.updatedAt || new Date().toISOString(),
+    primaryAiProviderId: String(
+      input.primaryAiProviderId || defaultAdminConfig.primaryAiProviderId,
+    ),
     dataSources: mergeMissingDefaultSources(dataSources),
-    aiProviders: (input.aiProviders || []).map((provider, index) => ({
-      id: String(provider.id || `ai-provider-${index + 1}`),
-      name: String(provider.name || "未命名模型服务"),
-      provider: (provider.provider || "custom") as AiProviderType,
-      baseUrl: String(provider.baseUrl || ""),
-      apiKey: String(provider.apiKey || ""),
-      defaultModel: String(provider.defaultModel || ""),
-      enabled: Boolean(provider.enabled),
-      notes: String(provider.notes || ""),
-    })),
+    aiProviders: mergeMissingDefaultProviders(aiProviders),
   };
 }
 

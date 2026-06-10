@@ -43,5 +43,26 @@ export const dataSnapshots = pgTable(
   }),
 );
 
+export const dataSourceUsageEvents = pgTable(
+  "data_source_usage_events",
+  {
+    eventId: varchar("event_id", { length: 512 }).primaryKey(),
+    sourceId: varchar("source_id", { length: 128 }).notNull(),
+    sourceType: varchar("source_type", { length: 64 }).notNull(),
+    adapter: varchar("adapter", { length: 128 }).notNull(),
+    quotaCost: integer("quota_cost").notNull().default(1),
+    statusCode: integer("status_code"),
+    fetchedAt: timestamp("fetched_at").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    sourceFetchedIdx: index("data_source_usage_events_source_fetched_idx").on(
+      table.sourceId,
+      table.fetchedAt,
+    ),
+  }),
+);
+
 export type DataSourceFetch = InferSelectModel<typeof dataSourceFetches>;
 export type DataSnapshot = InferSelectModel<typeof dataSnapshots>;
+export type DataSourceUsageEvent = InferSelectModel<typeof dataSourceUsageEvents>;

@@ -24,6 +24,7 @@ const dataSourceTypes: DataSourceType[] = [
   "prediction-market",
   "odds",
   "highlights",
+  "news",
   "team-content",
   "custom",
 ];
@@ -35,17 +36,24 @@ const dataSourceAdapters: DataSourceAdapter[] = [
   "worldcupapi-com",
   "football-data-org",
   "openligadb",
+  "the-odds-api",
+  "thesportsdb",
   "zafronix",
   "balldontlie-fifa",
+  "rss-feed",
+  "currents-api",
+  "gdelt-doc",
+  "newsapi-org",
   "generic-json",
 ];
 
-const apiKeyPlacements: ApiKeyPlacement[] = ["none", "query", "header", "bearer"];
+const apiKeyPlacements: ApiKeyPlacement[] = ["none", "query", "header", "bearer", "path"];
 
 const aiProviderTypes: AiProviderType[] = [
   "openai",
   "gemini",
   "deepseek",
+  "xiaomi-mimo",
   "kimi-coding",
   "bigmodel",
   "custom",
@@ -529,13 +537,32 @@ export function AdminPanelScreen() {
         <section className="space-y-4 border-2 border-[#241A14] bg-[#FAF7F0] p-4" style={{ boxShadow: "4px 4px 0 0 #241A14" }}>
           <SectionHeader
             title="AI 大模型接入"
-            desc="支持 OpenAI、Gemini、DeepSeek、Kimi Coding、BigModel/智谱，以及 OpenAI-compatible 自定义 Provider。"
+            desc="支持 OpenAI、Gemini、DeepSeek、小米 MiMo、Kimi Coding、BigModel/智谱，以及 OpenAI-compatible 自定义 Provider。"
             action={
               <button type="button" onClick={() => setConfig({ ...config, aiProviders: [...config.aiProviders, createAiProvider()] })} className="shrink-0 border border-[#241A14] bg-[#241A14] px-3 py-1 text-xs font-bold text-white hover:bg-[#D36E52]">
                 添加 Provider
               </button>
             }
           />
+          <div className="max-w-sm">
+            <Field label="主 AI Provider">
+              <select
+                id="primary-ai-provider"
+                className={inputClass}
+                value={config.primaryAiProviderId}
+                onChange={(event) => setConfig({ ...config, primaryAiProviderId: event.target.value })}
+              >
+                {config.aiProviders.map((provider) => (
+                  <option key={provider.id} value={provider.id}>
+                    {provider.name}{provider.enabled ? "" : "（未启用）"}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <p className="mt-1 text-[10px] text-[#9E948C]">
+              优先调用主 Provider，失败时按列表顺序尝试其他已启用 Provider。
+            </p>
+          </div>
           <div className="grid gap-3">
             {config.aiProviders.map((provider, index) => (
               <AiProviderCard

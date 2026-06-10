@@ -2,107 +2,59 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { allMatches, type Match } from "@/lib/wc-data";
 
 function getMatch(id: string): Match | undefined {
   return allMatches.find((m) => m.id === id);
 }
 
-interface TalkingPoint {
-  label: string;
-  title: string;
-  desc: string;
-  isQuote?: boolean;
-}
-
-function getTalkingPoints(match: Match): TalkingPoint[] {
-  if (match.homeTeam === "墨西哥") {
-    return [
-      {
-        label: "必聊玄学 01",
-        title: "主场优势与适应性",
-        desc: `墨西哥在揭幕战迎战南非，主场阿兹特克球场能容纳 8 万球迷。${match.signalText}`,
-      },
-      {
-        label: "必聊玄学 02",
-        title: "Polymarket 信号解读",
-        desc: "真金白银市场有 62% 资金押注墨西哥赢球，比传统赔率高出 9 个百分点，说明有信息在赔率里没被充分定价。",
-      },
-      {
-        label: "金句卡片 03",
-        title: "",
-        desc: `「市场比赔率更看好墨西哥，差距 9 个百分点。这种分歧要么是赔率滞后，要么是市场过热——不管哪种，值得关注。」`,
-        isQuote: true,
-      },
-    ];
-  }
-  if (match.homeTeam === "阿根廷") {
-    return [
-      {
-        label: "必聊玄学 01",
-        title: "梅西卫冕首战",
-        desc: "梅西本届 38 岁，极可能是最后一届。阿根廷上届靠点球夺冠，本届正选阵容更成熟稳定。",
-      },
-      {
-        label: "必聊玄学 02",
-        title: "Polymarket 热度最高",
-        desc: `本日交易量最高。${match.signalText}`,
-      },
-      {
-        label: "金句卡片 03",
-        title: "",
-        desc: "「梅西卫冕、历史上卫冕从未成功——这场无论谁赢，都是话题。」",
-        isQuote: true,
-      },
-    ];
-  }
-  if (match.homeTeam === "法国") {
-    return [
-      {
-        label: "赛事回顾 01",
-        title: "法国 4-0 大胜，开门红",
-        desc: "姆巴佩梅开二度，格列兹曼组织无懈可击。澳大利亚防线集体失位。",
-      },
-      {
-        label: "数据解读 02",
-        title: "控球 + 反击双线并行",
-        desc: "法国场均控球 61%，本场却更多依靠反击而非拿球慢推，体现德尚的务实哲学。",
-      },
-      {
-        label: "金句卡片 03",
-        title: "",
-        desc: "「法国这届防线居然是最大亮点——整场只让澳大利亚射门 2 次。进攻随时能开，但守住才是夺冠基本盘。」",
-        isQuote: true,
-      },
-    ];
-  }
-  // Japan vs Germany
-  return [
-    {
-      label: "名场面回顾 01",
-      title: "89 分钟绝杀，全网轰动",
-      desc: "浅野拓磨 89 分钟单刀突破，低射入网。德国全场控球 70% 却被反击击倒，是 2026 届目前最大爆冷。",
-    },
-    {
-      label: "数据解读 02",
-      title: "反击效率压倒控球优势",
-      desc: "日本全场只有 4 次射门，3 次射正，2 球入网。控球率与进球数的矛盾是饭局最好的聊天话题。",
-    },
-    {
-      label: "金句卡片 03",
-      title: "",
-      desc: "「足球不是PPT，控球率 70% 不等于赢。德国昨晚就是一份精美的落败报告。」",
-      isQuote: true,
-    },
-  ];
-}
-
 export function MatchDetailScreen() {
   const params = useParams();
   const router = useRouter();
-  const match = getMatch(params.id as string);
+  const matchId = params.id as string;
+  const [match, setMatch] = useState<Match | undefined>(() => getMatch(matchId));
+  const [loading, setLoading] = useState(!match);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadMatch() {
+      const localMatch = getMatch(matchId);
+      if (localMatch) {
+        setMatch(localMatch);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      const dateKeys = ["yesterday", "today", "tomorrow"] as const;
+      const responses = await Promise.all(
+        dateKeys.map(async (dateKey) => {
+          const response = await fetch(`/api/data/matches?dateKey=${dateKey}`, { cache: "no-store" });
+          if (!response.ok) return [];
+          const data = (await response.json()) as { matches?: Match[] };
+          return data.matches || [];
+        }),
+      );
+      if (cancelled) return;
+      setMatch(responses.flat().find((item) => item.id === matchId));
+      setLoading(false);
+    }
+
+    void loadMatch();
+    return () => {
+      cancelled = true;
+    };
+  }, [matchId]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-svh items-center justify-center bg-[#F5F1E8] p-8">
+        <p className="text-sm text-[#9E948C]">正在读取比赛数据...</p>
+      </div>
+    );
+  }
 
   if (!match) {
     return (
@@ -119,7 +71,7 @@ export function MatchDetailScreen() {
     );
   }
 
-  const points = getTalkingPoints(match);
+  const points: Array<{ label: string; title: string; desc: string; isQuote?: boolean }> = [];
 
   function copyText(text: string, idx: number) {
     navigator.clipboard.writeText(text).then(() => {
@@ -181,10 +133,23 @@ export function MatchDetailScreen() {
             <div className="text-center">
               {match.status === "upcoming" ? (
                 <>
-                  <div className="font-serif text-xs text-[#9E948C] font-bold">胜率概率对冲</div>
-                  <div className="font-mono text-lg font-black text-[#D36E52] mt-1">
-                    {match.homeWinProb}% - {match.awayWinProb}%
-                  </div>
+                  {match.homeWinProb > 0 || match.awayWinProb > 0 ? (
+                    <>
+                      <div className="font-serif text-xs text-[#9E948C] font-bold">市场概率</div>
+                      <div className="font-mono text-lg font-black text-[#D36E52] mt-1">
+                        {match.homeWinProb}% - {match.awayWinProb}%
+                      </div>
+                    </>
+                  ) : match.oddsImpliedHome > 0 ? (
+                    <>
+                      <div className="font-serif text-xs text-[#9E948C] font-bold">赔率隐含概率</div>
+                      <div className="font-mono text-sm font-black text-[#D36E52] mt-1">
+                        {match.oddsImpliedHome}% / {match.oddsImpliedDraw}% / {match.oddsImpliedAway}%
+                      </div>
+                    </>
+                  ) : (
+                    <div className="font-serif text-xs text-[#9E948C] font-bold">暂无概率数据</div>
+                  )}
                 </>
               ) : (
                 <div className="px-3 py-1 bg-[#241A14] text-white font-mono font-black text-xl tracking-widest">
@@ -228,45 +193,43 @@ export function MatchDetailScreen() {
             className="font-bold text-sm tracking-wider text-[#241A14]"
             style={{ fontFamily: "var(--font-heading)" }}
           >
-            该场比赛装杯指南（核心 3 点）
+            比赛分析
           </h4>
         </div>
 
         {/* Points */}
-        {points.map((pt, idx) => (
-          <motion.div
-            key={idx}
-            className="border border-dashed border-[#241A14] p-3 bg-[#FAF7F0] space-y-1"
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.08 }}
-          >
-            <span
-              className={`text-[10px] font-bold px-1.5 py-0.5 ${
-                pt.isQuote ? "bg-[#E4A853] text-[#241A14]" : "bg-[#D36E52] text-white"
-              }`}
+        {points.length > 0 ? (
+          points.map((pt, idx) => (
+            <motion.div
+              key={idx}
+              className="border border-dashed border-[#241A14] p-3 bg-[#FAF7F0] space-y-1"
             >
-              {pt.label}
-            </span>
-            {pt.title && (
-              <h5 className="text-xs font-black text-[#241A14] pt-1">{pt.title}</h5>
-            )}
-            <p className="text-xs text-[#5C524C] leading-relaxed pt-0.5">{pt.desc}</p>
-            {pt.isQuote && (
-              <div className="mt-2 text-right">
-                <motion.button
-                  whileTap={{ scale: 0.93 }}
-                  onClick={() => copyText(pt.desc, idx)}
-                  className={`px-2.5 py-0.5 text-[10px] font-bold border border-[#241A14] transition-colors ${
-                    copiedIdx === idx ? "bg-[#9CB48A] text-white" : "bg-[#241A14] text-white hover:bg-[#D36E52]"
-                  }`}
-                >
-                  {copiedIdx === idx ? "✓ 已复制" : "复制金句"}
-                </motion.button>
-              </div>
-            )}
-          </motion.div>
-        ))}
+              <span className="text-[10px] font-bold px-1.5 py-0.5 bg-[#D36E52] text-white">
+                {pt.label}
+              </span>
+              {pt.title && <h5 className="text-xs font-black text-[#241A14] pt-1">{pt.title}</h5>}
+              <p className="text-xs text-[#5C524C] leading-relaxed pt-0.5">{pt.desc}</p>
+              {pt.isQuote && (
+                <div className="mt-2 text-right">
+                  <motion.button
+                    whileTap={{ scale: 0.93 }}
+                    onClick={() => copyText(pt.desc, idx)}
+                    className={`px-2.5 py-0.5 text-[10px] font-bold border border-[#241A14] ${
+                      copiedIdx === idx ? "bg-[#9CB48A] text-white" : "bg-[#241A14] text-white"
+                    }`}
+                  >
+                    {copiedIdx === idx ? "✓ 已复制" : "复制"}
+                  </motion.button>
+                </div>
+              )}
+            </motion.div>
+          ))
+        ) : (
+          <div className="border-2 border-dashed border-[#241A14] p-8 text-center">
+            <p className="text-sm font-bold text-[#241A14]">暂无比赛分析</p>
+            <p className="mt-1 text-[11px] text-[#9E948C]">统计、新闻或分析数据源返回内容后会自动显示。</p>
+          </div>
+        )}
 
         {/* Highlights link */}
         {match.highlights && (
@@ -278,15 +241,14 @@ export function MatchDetailScreen() {
               rel="noopener noreferrer"
               className="px-3 py-1 bg-[#9CB48A] text-white text-xs font-bold border border-[#241A14] hover:bg-[#241A14] transition-colors"
             >
-              → 看集锦（B站）
+              → 看集锦
             </a>
           </div>
         )}
 
         {/* Disclaimer */}
         <p className="text-[10px] text-[#9E948C] text-center py-2">
-          * 本情报纯属观赛娱乐，不含任何诱导性投注建议。
-          数据来自 Polymarket 真实资金池，仅供参考。
+          * 页面只展示已接入数据源返回的内容，不构成投注建议。
         </p>
       </div>
     </div>

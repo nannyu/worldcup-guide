@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { radarMatches, type RadarMatch } from "@/lib/wc-data";
+import type { RadarMatch } from "@/lib/wc-data";
 
 // ============================================================
 // 折线图组件（纯 SVG，无第三方依赖）
@@ -326,8 +326,8 @@ function DiffLegend() {
 // 主页面
 // ============================================================
 export function RadarEyeScreen() {
-  const [items, setItems] = useState<RadarMatch[]>(radarMatches);
-  const [dataSourceLabel, setDataSourceLabel] = useState("Mock · 本地演示数据");
+  const [items, setItems] = useState<RadarMatch[]>([]);
+  const [dataSourceLabel, setDataSourceLabel] = useState("等待数据源");
 
   useEffect(() => {
     let cancelled = false;
@@ -336,18 +336,18 @@ export function RadarEyeScreen() {
       if (!res.ok) return;
       const data = (await res.json()) as {
         radarMatches?: RadarMatch[];
-        source?: "remote" | "mock" | "cache";
+        source?: "remote" | "fallback" | "cache";
         diagnostics?: Array<{ name: string; ok: boolean }>;
       };
-      if (cancelled || !data.radarMatches?.length) return;
-      setItems(data.radarMatches);
+      if (cancelled) return;
+      setItems(data.radarMatches || []);
       const firstOk = data.diagnostics?.find((item) => item.ok);
       if (data.source === "cache") {
         setDataSourceLabel("PostgreSQL · 持久化快照");
       } else if (data.source === "remote" && firstOk) {
         setDataSourceLabel(`${firstOk.name} · 远端数据`);
       } else {
-        setDataSourceLabel("Mock · 本地回退数据");
+        setDataSourceLabel("暂无可用市场数据");
       }
     }
 
@@ -380,10 +380,19 @@ export function RadarEyeScreen() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        <DiffLegend />
-        {items.map((m) => (
-          <RadarCard key={m.id} match={m} />
-        ))}
+        {items.length > 0 ? (
+          <>
+            <DiffLegend />
+            {items.map((m) => (
+              <RadarCard key={m.id} match={m} />
+            ))}
+          </>
+        ) : (
+          <div className="border-2 border-dashed border-[#241A14] p-8 text-center">
+            <p className="text-sm font-bold text-[#241A14]">暂无雷达数据</p>
+            <p className="mt-1 text-[11px] text-[#9E948C]">预测市场或赔率源返回数据后会自动显示。</p>
+          </div>
+        )}
         <div className="border border-[#241A14] p-3 text-xs text-[#5C524C]">
           <strong className="text-[#241A14]">数据来源说明：</strong>
           「Polymarket 概率」来自链上真实资金池，反映真金白银的市场判断。

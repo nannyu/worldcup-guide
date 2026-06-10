@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>世界杯装杯指南：内容框架与数据链路</title>
+  <style>
+    :root {
+      --ink: #241a14;
+      --muted: #6f655d;
+      --paper: #faf7f0;
+      --bg: #f5f1e8;
+      --line: #d9d0c4;
+      --red: #d36e52;
+      --gold: #e4a853;
+      --green: #78996d;
+      --blue: #4d7c9a;
+      --gray: #9e948c;
+      --shadow: 4px 4px 0 var(--ink);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+    main { max-width: 1200px; margin: 0 auto; padding: 28px 18px 56px; }
+    header {
+      border: 2px solid var(--ink);
+      background: var(--paper);
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+    h1, h2, h3 { margin: 0; line-height: 1.15; }
+    h1 { font-size: clamp(28px, 5vw, 52px); letter-spacing: 0; }
+    h2 { font-size: 22px; margin-bottom: 14px; }
+    h3 { font-size: 16px; }
+    p { margin: 0; }
+    .kicker {
+      color: var(--red);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .subtitle { max-width: 820px; color: var(--muted); margin-top: 12px; font-size: 15px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--ink);
+      background: #fff;
+      padding: 5px 9px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    section { margin-top: 28px; }
+    .grid { display: grid; gap: 14px; }
+    .grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .card {
+      border: 2px solid var(--ink);
+      background: var(--paper);
+      padding: 16px;
+      box-shadow: 3px 3px 0 var(--ink);
+    }
+    .soft { border: 1px solid var(--ink); box-shadow: none; }
+    .small { font-size: 12px; color: var(--muted); }
+    .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .tag {
+      border: 1px solid var(--ink);
+      padding: 2px 7px;
+      font-size: 11px;
+      font-weight: 800;
+      background: #fff;
+    }
+    .source-network { background: rgba(77, 124, 154, .14); }
+    .source-api { background: rgba(120, 153, 109, .18); }
+    .source-local { background: rgba(228, 168, 83, .22); }
+    .source-ai { background: rgba(211, 110, 82, .16); }
+    .source-compute { background: rgba(158, 148, 140, .18); }
+    .matrix {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--paper);
+      border: 2px solid var(--ink);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      padding: 10px;
+      vertical-align: top;
+      text-align: left;
+      font-size: 13px;
+    }
+    th { background: var(--ink); color: #fff; font-size: 12px; letter-spacing: .08em; }
+    tr:last-child td { border-bottom: 0; }
+    td:last-child, th:last-child { border-right: 0; }
+    .page-name { font-weight: 900; color: var(--ink); }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(120px, 1fr));
+      gap: 10px;
+      align-items: stretch;
+    }
+    .step {
+      position: relative;
+      min-height: 116px;
+      border: 2px solid var(--ink);
+      background: #fff;
+      padding: 12px;
+    }
+    .step::after {
+      content: "→";
+      position: absolute;
+      right: -17px;
+      top: 42%;
+      font-weight: 900;
+      color: var(--red);
+      z-index: 1;
+    }
+    .step:last-child::after { content: ""; }
+    .step b { display: block; margin-bottom: 6px; }
+    .badge {
+      display: inline-block;
+      min-width: 22px;
+      height: 22px;
+      line-height: 20px;
+      text-align: center;
+      border: 1px solid var(--ink);
+      background: var(--gold);
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+    .swimlane {
+      display: grid;
+      grid-template-columns: 170px 1fr;
+      border: 2px solid var(--ink);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+    .lane-title {
+      border-right: 2px solid var(--ink);
+      padding: 14px;
+      font-weight: 900;
+      background: #fff;
+    }
+    .lane-body { padding: 14px; }
+    .bar {
+      display: grid;
+      grid-template-columns: 24% 20% 20% 18% 18%;
+      border: 1px solid var(--ink);
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .bar span {
+      padding: 8px 7px;
+      font-size: 11px;
+      font-weight: 800;
+      border-right: 1px solid var(--ink);
+      min-height: 46px;
+    }
+    .bar span:last-child { border-right: 0; }
+    .note {
+      border-left: 4px solid var(--red);
+      padding: 10px 12px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    code {
+      background: #fff;
+      border: 1px solid var(--line);
+      padding: 1px 4px;
+      font-size: 12px;
+    }
+    ul { margin: 8px 0 0; padding-left: 18px; }
+    li { margin: 4px 0; }
+    @media (max-width: 900px) {
+      .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr; }
+      .flow { grid-template-columns: 1fr; }
+      .step::after { content: "↓"; right: 12px; top: auto; bottom: -20px; }
+      .step:last-child::after { content: ""; }
+      .swimlane { grid-template-columns: 1fr; }
+      .lane-title { border-right: 0; border-bottom: 2px solid var(--ink); }
+      .bar { grid-template-columns: 1fr; }
+      .bar span { border-right: 0; border-bottom: 1px solid var(--ink); }
+      .bar span:last-child { border-bottom: 0; }
+      .matrix { display: block; overflow-x: auto; }
+      th, td { min-width: 160px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="kicker">Worldcup Guide · Content Architecture</div>
+    <h1>世界杯装杯指南：内容框架与数据链路</h1>
+    <p class="subtitle">
+      本页面基于当前代码仓库梳理：各页面展示什么内容、内容来自远端网络/API、本地种子、前端计算还是未来 AI 生成，以及进入页面前经过哪些缓存、规范化和兜底处理。
+    </p>
+    <div class="meta">
+      <span class="pill">项目：Next.js 16 App Router</span>
+      <span class="pill">核心目录：<code>src/app</code> / <code>src/components/screens</code></span>
+      <span class="pill">数据聚合：<code>src/lib/data-sources</code></span>
+      <span class="pill">本地数据：<code>src/lib/wc-data.ts</code></span>
+    </div>
+  </header>
+
+  <section>
+    <h2>一、页面内容矩阵</h2>
+    <table class="matrix">
+      <thead>
+        <tr>
+          <th>页面 / 路由</th>
+          <th>显示内容</th>
+          <th>主要来源</th>
+          <th>加工过程</th>
+          <th>当前状态</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="page-name">今日赛程</div><code>/</code></td>
+          <td>昨日/今日/明日 Tab、头条比赛、比赛卡片、北京时间、队名国旗、比分/VS、预测概率条、市场信号、比赛预览、数据来源标签。</td>
+          <td>
+            <span class="tag source-network">football-data.org</span>
+            <span class="tag source-network">The Odds API</span>
+            <span class="tag source-network">TheSportsDB 备份</span>
+            <span class="tag source-local">FIFA PDF 抽取 JSON</span>
+            <span class="tag source-api">PostgreSQL 快照/赛程表</span>
+          </td>
+          <td>调用 <code>/api/data/matches?dateKey=...</code>；聚合器先读规范化快照，再按优先级请求远端源，转换为统一 <code>Match[]</code>，失败后读过期快照、数据库官方赛程或本地 FIFA JSON。</td>
+          <td>日期按北京时间动态生成。赛程与比分优先使用 football-data.org，赔率由 The Odds API 多家机构去水后取均值；无比赛时返回空数组。</td>
+        </tr>
+        <tr>
+          <td><div class="page-name">早报复盘</div><code>/morning</code></td>
+          <td>每日复盘标题、头版摘要、可复制朋友圈金句、昨夜赛果卡、30 秒看懂、进球时间线、集锦链接、市场八卦/概率卡。</td>
+          <td>
+            <span class="tag source-network">新闻 / 比分原始源</span>
+            <span class="tag source-ai">AI 规划中</span>
+          </td>
+          <td>调用 <code>/api/data/morning</code>；ESPN Soccer RSS、BBC RSS、Currents API、GDELT 会并行抓取，先按 URL 和标题相似度规则去重，再交给后台 AI 合并事件、生成中文摘要和要点。</td>
+          <td>AI 只处理已抓取事实。无可用模型 Key 或模型调用失败时保留规则去重结果，AI 摘要字段为空。</td>
+        </tr>
+        <tr>
+          <td><div class="page-name">球队速成</div><code>/teams</code></td>
+          <td>球队卡片、主帅、阵型、核心球员、战术风格、热度星级、聊天标签、小组战绩、弹窗详情和饭局话术。</td>
+          <td>
+            <span class="tag source-network">football-data.org Teams</span>
+            <span class="tag source-network">TheSportsDB 备份</span>
+            <span class="tag source-ai">AI 改写规划中</span>
+          </td>
+          <td>前端调用 <code>/api/data/teams</code>，当前由 football-data.org 返回 48 队基础资料、队徽和主教练；TheSportsDB 为低优先级备份。</td>
+          <td>本地球队样例已清除。阵型、球星、话术等未获得可靠数据时不展示，不由页面补写。</td>
+        </tr>
+        <tr>
+          <td><div class="page-name">天眼雷达</div><code>/radar</code></td>
+          <td>市场概率 vs 赔率隐含概率、差值标签、异常热度、趋势历史、按信号筛选、市场说明。</td>
+          <td>
+            <span class="tag source-network">Polymarket Gamma API</span>
+            <span class="tag source-api">空数据兜底</span>
+            <span class="tag source-api">PostgreSQL 快照</span>
+          </td>
+          <td>调用 <code>/api/data/radar</code>；只有 Polymarket 事件和 The Odds API 赔率能确认是同一场比赛时才生成 <code>RadarMatch[]</code>。</td>
+          <td>赔率源已接入，不再用模拟差值。当前未完成可靠事件匹配时雷达保持为空。</td>
+        </tr>
+        <tr>
+          <td><div class="page-name">工具箱</div><code>/tools</code></td>
+          <td>赔率转概率、回报期望计算、术语大白话、风险提示。</td>
+          <td><span class="tag source-compute">纯前端计算</span></td>
+          <td>用户输入欧赔、命中率、金额；浏览器本地计算隐含概率、机构利润空间、打平命中率、单次期望。</td>
+          <td>无需网络和数据库。定位是解释工具，不提供下注入口。</td>
+        </tr>
+        <tr>
+          <td><div class="page-name">比赛详情</div><code>/match/[id]</code></td>
+          <td>比赛 Hero、胜率/比分、开赛时间、场馆、预览文本、装杯分析点、金句复制。</td>
+          <td>
+            <span class="tag source-network">比赛聚合 API</span>
+            <span class="tag source-local">FIFA 官方赛程兜底</span>
+            <span class="tag source-ai">AI 规划中</span>
+          </td>
+          <td>先查本地 FIFA 官方赛程，再并行读取昨天/今天/明天的 <code>/api/data/matches</code> 以解析远端比赛 id。</td>
+          <td>固定话术已移除。没有统计、新闻或分析数据时，比赛分析区域显示为空。</td>
+        </tr>
+        <tr>
+          <td><div class="page-name">管理员面板</div><code>/admin</code></td>
+          <td>管理员登录、赛事数据源配置、API Key 位置、优先级、刷新/缓存 TTL、AI Provider 配置。</td>
+          <td>
+            <span class="tag source-api">data/admin-config.json</span>
+            <span class="tag source-api">Admin API</span>
+          </td>
+          <td>通过 <code>/api/admin/session</code>、<code>/api/admin/config</code>、login/logout 接口读写配置；配置更新时间会进入聚合快照 key，使配置变更后重新计算。</td>
+          <td>配置文件被 gitignore。生产需设置 <code>ADMIN_PASSWORD</code> 和 <code>ADMIN_SESSION_SECRET</code>。</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>二、核心数据链路</h2>
+    <div class="flow">
+      <div class="step">
+        <span class="badge">1</span>
+        <b>管理员配置</b>
+        <p class="small"><code>data/admin-config.json</code> 定义数据源、adapter、优先级、TTL、API Key 放置方式。</p>
+      </div>
+      <div class="step">
+        <span class="badge">2</span>
+        <b>页面请求 API</b>
+        <p class="small">赛程、球队、赔率、新闻、早报和雷达分别请求对应的 <code>/api/data/*</code> 聚合接口。</p>
+      </div>
+      <div class="step">
+        <span class="badge">3</span>
+        <b>先读规范化快照</b>
+        <p class="small">PostgreSQL 中的页面级 payload 命中则直接返回，减少远端波动。</p>
+      </div>
+      <div class="step">
+        <span class="badge">4</span>
+        <b>请求远端源</b>
+        <p class="small">按 type 和 priority 过滤启用源；请求前检查内存缓存和原始响应数据库缓存。</p>
+      </div>
+      <div class="step">
+        <span class="badge">5</span>
+        <b>规范化转换</b>
+        <p class="small">OpenFootball 转 <code>Match[]</code>；Polymarket 转 <code>RadarMatch[]</code>；写入快照。</p>
+      </div>
+      <div class="step">
+        <span class="badge">6</span>
+        <b>兜底返回</b>
+        <p class="small">远端失败时使用过期快照或官方 FIFA 赛程；没有可靠来源的数据保持为空。</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>三、来源分层</h2>
+    <div class="grid cols-3">
+      <div class="card">
+        <h3>网络 / API 已启用</h3>
+        <div class="tag-row">
+          <span class="tag source-network">OpenFootball World Cup JSON</span>
+          <span class="tag source-network">Polymarket Gamma API</span>
+        </div>
+        <ul class="small">
+          <li>OpenFootball 提供赛程种子，转换为统一比赛卡字段。</li>
+          <li>Polymarket 提供公开预测市场事件，不包含交易能力。</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>数据库 / 缓存</h3>
+        <div class="tag-row">
+          <span class="tag source-api">raw fetch cache</span>
+          <span class="tag source-api">snapshot cache</span>
+          <span class="tag source-api">official matches table</span>
+        </div>
+        <ul class="small">
+          <li>原始响应缓存避免重复打供应商。</li>
+          <li>页面快照缓存保存规范化后的展示 payload。</li>
+          <li>seed 后可从 PostgreSQL 读取 FIFA 官方赛程表。</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>本地官方兜底</h3>
+        <div class="tag-row">
+          <span class="tag source-local">src/data/fifa-schedule.json</span>
+          <span class="tag source-local">wc-data.ts</span>
+        </div>
+        <ul class="small">
+          <li>FIFA PDF 抽取 JSON 覆盖 104 场赛程。</li>
+          <li>球队、详情分析和市场对比没有可靠来源时返回空集合。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>四、页面到数据的加工泳道</h2>
+    <div class="grid">
+      <div class="swimlane">
+        <div class="lane-title">今日赛程</div>
+        <div class="lane-body">
+          <p class="small">远端赛程或官方兜底经过统一 Match 模型后进入页面。</p>
+          <div class="bar">
+            <span class="source-network">OpenFootball / FIFA JSON</span>
+            <span class="source-api">缓存与快照</span>
+            <span class="source-compute">日期过滤、北京时间格式化、队名映射</span>
+            <span class="source-compute">MatchCard / HeroSpotlight</span>
+            <span class="source-local">失败则本地兜底</span>
+          </div>
+        </div>
+      </div>
+      <div class="swimlane">
+        <div class="lane-title">天眼雷达</div>
+        <div class="lane-body">
+          <p class="small">预测市场数据被筛选成世界杯相关事件，再解析 Yes/No 概率。</p>
+          <div class="bar">
+            <span class="source-network">Polymarket events</span>
+            <span class="source-api">原始响应缓存</span>
+            <span class="source-compute">筛选 World Cup/FIFA，解析 outcomePrices</span>
+            <span class="source-compute">差值、趋势、标签展示</span>
+            <span class="source-local">缺少真实赔率则为空</span>
+          </div>
+        </div>
+      </div>
+      <div class="swimlane">
+        <div class="lane-title">早报 / 详情 / 球队</div>
+        <div class="lane-body">
+          <p class="small">早报由多路真实新闻源并行抓取，经过规则去重后交给管理员选择的主 AI Provider 整理；失败时自动切换到其他已启用模型。</p>
+          <div class="bar">
+            <span class="source-network">ESPN / BBC / Currents / GDELT</span>
+            <span class="source-compute">URL 与标题相似度去重</span>
+            <span class="source-ai">DeepSeek 主模型</span>
+            <span class="source-ai">Xiaomi MiMo V2.5 Pro 备用</span>
+            <span class="source-local">无数据或全失败则为空</span>
+          </div>
+        </div>
+      </div>
+      <div class="swimlane">
+        <div class="lane-title">工具箱</div>
+        <div class="lane-body">
+          <p class="small">完全浏览器本地计算，没有网络请求。</p>
+          <div class="bar">
+            <span class="source-compute">用户输入</span>
+            <span class="source-compute">1 / 欧赔 × 100%</span>
+            <span class="source-compute">期望收益公式</span>
+            <span class="source-compute">打平命中率</span>
+            <span class="source-compute">风险解释文案</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>五、AI 生成的实际位置</h2>
+    <div class="grid cols-2">
+      <div class="card">
+        <h3>当前代码里：已接入可选后台 AI 整理链路</h3>
+        <p class="small">
+          新闻聚合完成规则去重后，会优先调用管理员选择且已启用的主 AI Provider，输出结构化事件摘要、要点、早报标题和总摘要；失败时按配置顺序自动尝试其他已启用 Provider。当前为 DeepSeek 主模型、Xiaomi MiMo V2.5 Pro 备用。
+        </p>
+      </div>
+      <div class="card">
+        <h3>安全边界：事实先行，生成层可降级</h3>
+        <p class="small">
+          AI 输入只包含规范化后的标题、摘要、来源和发布时间，并被要求不能补充未提供事实。模型失败不会阻断新闻接口，也不会用本地 mock 替代。
+        </p>
+      </div>
+    </div>
+    <p class="note" style="margin-top: 14px;">
+      结论：当前内容体系以真实数据源和 FIFA 官方赛程快照为基础。没有可靠来源的数据保持为空；AI 只适合作为事实数据之后的表达层。
+    </p>
+  </section>
+
+  <section>
+    <h2>六、当前架构风险点</h2>
+    <div class="grid cols-3">
+      <div class="card soft">
+        <h3>WorldCupAPI 权限未开通</h3>
+        <p class="small">密钥已保存在本地配置，但供应商返回账号无数据访问权限，因此保持禁用，避免进入失败重试链路。</p>
+      </div>
+      <div class="card soft">
+        <h3>雷达事件匹配待完善</h3>
+        <p class="small">赔率数据已接入；雷达仍需把 Polymarket 事件与赔率事件可靠对齐，匹配前不生成对照记录。</p>
+      </div>
+      <div class="card soft">
+        <h3>球队深层内容仍为空</h3>
+        <p class="small">48 队基础资料已接入；阵型、核心球员、战术和聊天话术仍需统计或内容源支持，当前不会由 mock 或 AI 自动补齐。</p>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

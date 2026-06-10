@@ -80,6 +80,33 @@ function ProbBar({ home, draw, away, homeTeam, awayTeam }: {
   );
 }
 
+function OddsBar({ home, draw, away, homeTeam, awayTeam }: {
+  home: number; draw: number; away: number;
+  homeTeam: string; awayTeam: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex gap-px h-4 overflow-hidden rounded-[2px] border border-[#241A14]">
+        <div className="bg-[#9CB48A] h-full flex items-center justify-center" style={{ width: `${home}%` }}>
+          <span className="text-[9px] text-white font-bold px-0.5">{home}%</span>
+        </div>
+        <div className="bg-[#9E948C] h-full flex items-center justify-center" style={{ width: `${draw}%` }}>
+          <span className="text-[9px] text-white font-bold px-0.5">{draw}%</span>
+        </div>
+        <div className="bg-[#5C524C] h-full flex items-center justify-center" style={{ width: `${away}%` }}>
+          <span className="text-[9px] text-white font-bold px-0.5">{away}%</span>
+        </div>
+      </div>
+      <div className="flex justify-between text-[10px] text-[#9E948C]">
+        <span>{homeTeam} 胜</span>
+        <span>平</span>
+        <span>{awayTeam} 胜</span>
+      </div>
+      <p className="text-[10px] text-[#9E948C]">来源：The Odds API 多家机构去水均值</p>
+    </div>
+  );
+}
+
 // ===== Match Card =====
 function MatchCard({ match }: { match: Match }) {
   const isLive = match.status === "live";
@@ -162,6 +189,18 @@ function MatchCard({ match }: { match: Match }) {
             home={match.homeWinProb}
             draw={match.drawProb}
             away={match.awayWinProb}
+            homeTeam={match.homeTeam}
+            awayTeam={match.awayTeam}
+          />
+        </div>
+      )}
+
+      {!isFinished && match.oddsImpliedHome > 0 && (
+        <div className="px-3 pb-3">
+          <OddsBar
+            home={match.oddsImpliedHome}
+            draw={match.oddsImpliedDraw}
+            away={match.oddsImpliedAway}
             homeTeam={match.homeTeam}
             awayTeam={match.awayTeam}
           />
@@ -323,7 +362,7 @@ function PageHeader({
 export function TodayScheduleScreen() {
   const [activeTab, setActiveTab] = useState<ScheduleDateKey>("today");
   const [remoteMatches, setRemoteMatches] = useState<Partial<Record<ScheduleDateKey, Match[]>>>({});
-  const [dataSourceLabel, setDataSourceLabel] = useState("FIFA 官方赛程 · 本地兜底");
+  const [dataSourceLabel, setDataSourceLabel] = useState("正在读取数据源");
   const matches = remoteMatches[activeTab] || matchesByDate[activeTab];
   const activeMeta = scheduleDateMeta[activeTab];
 
@@ -337,10 +376,13 @@ export function TodayScheduleScreen() {
         source?: "remote" | "fallback" | "cache";
         diagnostics?: Array<{ name: string; ok: boolean }>;
       };
-      if (cancelled || !data.matches?.length) return;
-      setRemoteMatches((current) => ({ ...current, [activeTab]: data.matches }));
+      if (cancelled) return;
+      const receivedMatches = data.matches || [];
+      setRemoteMatches((current) => ({ ...current, [activeTab]: receivedMatches }));
       const firstOk = data.diagnostics?.find((item) => item.ok);
-      if (data.source === "cache") {
+      if (receivedMatches.length === 0 && firstOk) {
+        setDataSourceLabel(`${firstOk.name} · 当前日期无比赛`);
+      } else if (data.source === "cache") {
         setDataSourceLabel("PostgreSQL · 持久化快照");
       } else if (data.source === "remote" && firstOk) {
         setDataSourceLabel(`${firstOk.name} · 远端数据`);
@@ -394,7 +436,9 @@ export function TodayScheduleScreen() {
             {matches.length === 0 ? (
               <div className="border-2 border-dashed border-[#241A14] p-8 text-center">
                 <p className="text-[#9E948C] text-sm">该日期暂无赛程数据</p>
-                <p className="text-[10px] text-[#9E948C] mt-1">{activeMeta.date} 数据更新中</p>
+              <p className="text-[10px] text-[#9E948C] mt-1">
+                {activeMeta.date} 数据源未返回比赛
+              </p>
               </div>
             ) : (
               <>
@@ -410,9 +454,8 @@ export function TodayScheduleScreen() {
 
                 {/* Tip box */}
                 <div className="border border-[#241A14] p-3 bg-[#EDE9E0] text-xs text-[#5C524C]">
-                  <strong className="text-[#241A14]">装杯提醒：</strong>
-                  跟朋友聊球时，提「市场概率」比说「我觉得」更有说服力。
-                  所有数据仅供参考，非投注建议。
+                  <strong className="text-[#241A14]">数据说明：</strong>
+                  页面只展示已接入来源返回的数据；缺失的比分、概率和事件不会使用演示值补齐。
                 </div>
               </>
             )}

@@ -1,9 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { yesterdayMatches, gossipItems, type Match } from "@/lib/wc-data";
+import {
+  type GossipItem,
+  type Match,
+  type MorningBrief,
+  type NewsArticle,
+} from "@/lib/wc-data";
 
 // Event tag labels
 const tagLabels: Record<string, { label: string; color: string }> = {
@@ -14,15 +19,33 @@ const tagLabels: Record<string, { label: string; color: string }> = {
   og: { label: "乌龙球", color: "bg-[#9E948C] text-white" },
 };
 
-// Scene tags per match
-const sceneTags: Record<string, string[]> = {
-  "m-y001": ["大胜", "梅开二度", "门将梦游"],
-  "m-y002": ["绝杀", "爆冷", "终场戏剧"],
+const fallbackMorningBrief: MorningBrief = {
+  issueDate: "",
+  edition: "",
+  title: "",
+  summary: "",
+  quote: "",
+  sourceLabel: "等待数据源",
+  updatedAt: "",
+  matches: [],
+  news: [],
+  gossipItems: [],
 };
+
+function matchDigest(match: Match): string {
+  if (match.status === "finished" && match.homeScore !== null && match.awayScore !== null) {
+    return `${match.homeTeam} ${match.homeScore}:${match.awayScore} ${match.awayTeam}。`;
+  }
+  return `${match.kickoffBj} 北京时间开赛，地点：${match.venue || "待确认"}。赛果和事件等待比分源更新。`;
+}
 
 function MatchResultCard({ match }: { match: Match }) {
   const [expanded, setExpanded] = useState(false);
-  const tags = sceneTags[match.id] || [];
+  const tags = [
+    match.status === "finished" ? "已完赛" : match.status === "live" ? "直播中" : "赛程",
+    match.group,
+  ];
+  const hasScore = match.homeScore !== null && match.awayScore !== null;
 
   return (
     <motion.div
@@ -56,7 +79,7 @@ function MatchResultCard({ match }: { match: Match }) {
           <span className="text-[10px] text-[#9E948C]">主场</span>
         </div>
         <div className="px-4 py-1 bg-[#241A14] text-white font-mono font-black text-xl tracking-widest">
-          {match.homeScore} : {match.awayScore}
+          {hasScore ? `${match.homeScore} : ${match.awayScore}` : "VS"}
         </div>
         <div className="flex flex-col items-center gap-1 flex-1">
           <span className="text-3xl">{match.awayFlag}</span>
@@ -73,9 +96,7 @@ function MatchResultCard({ match }: { match: Match }) {
       {/* 30s digest */}
       <div className="mx-3 mb-3 bg-[#EDE9E0] border-l-2 border-[#D36E52] p-2.5 text-xs text-[#5C524C]">
         <strong className="text-[#241A14]">30秒看懂：</strong>
-        {match.homeTeam === "法国"
-          ? "法国开门红！姆巴佩梅开二度，进球效率堪称完美。澳大利亚门将状态糟糕，防线全线崩溃。"
-          : "日本89分钟绝杀德国！全场领略了什么叫「置之死地而后生」。德国控球优势完全被反击打崩。"}
+        {matchDigest(match)}
       </div>
 
       {/* Timeline toggle */}
@@ -93,7 +114,7 @@ function MatchResultCard({ match }: { match: Match }) {
           </motion.span>
         </motion.button>
 
-        {expanded && match.events && (
+        {expanded && match.events && match.events.length > 0 && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -127,7 +148,7 @@ function MatchResultCard({ match }: { match: Match }) {
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polygon points="5 3 19 12 5 21 5 3"/>
           </svg>
-          看集锦（B站）
+          看集锦
         </Link>
         <Link
           href={`/match/${match.id}`}
@@ -140,7 +161,7 @@ function MatchResultCard({ match }: { match: Match }) {
   );
 }
 
-function GossipCard({ item }: { item: typeof gossipItems[0] }) {
+function GossipCard({ item }: { item: GossipItem }) {
   return (
     <motion.div
       className="border border-[#241A14] bg-[#FAF7F0] p-3"
@@ -164,9 +185,72 @@ function GossipCard({ item }: { item: typeof gossipItems[0] }) {
   );
 }
 
+function formatArticleTime(input: string): string {
+  const date = new Date(input);
+  if (Number.isNaN(date.getTime())) return "时间未知";
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function NewsCard({ item }: { item: NewsArticle }) {
+  const displayedSummary = item.aiSummary || item.summary;
+  return (
+    <motion.a
+      href={item.url}
+      target="_blank"
+      rel="noreferrer"
+      className="block border border-[#241A14] bg-[#FAF7F0] p-3 hover:bg-white transition-colors"
+      whileTap={{ scale: 0.98 }}
+    >
+      <div className="flex justify-between gap-3">
+        <h4 className="font-bold text-sm text-[#241A14] leading-snug" style={{ fontFamily: "var(--font-heading)" }}>
+          {item.title}
+        </h4>
+        <span className="shrink-0 text-[10px] font-bold text-[#9E948C]">{formatArticleTime(item.publishedAt)}</span>
+      </div>
+      <p className="mt-2 text-xs text-[#5C524C] leading-relaxed">{displayedSummary}</p>
+      {item.aiKeyPoints && item.aiKeyPoints.length > 0 && (
+        <ul className="mt-2 space-y-1 border-l-2 border-[#9CB48A] pl-2">
+          {item.aiKeyPoints.map((point) => (
+            <li key={point} className="text-[11px] text-[#5C524C]">· {point}</li>
+          ))}
+        </ul>
+      )}
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-dashed border-[#241A14]/20 pt-2 text-[10px] text-[#9E948C]">
+        <span className="font-bold text-[#241A14]">{item.source}</span>
+        {(item.sourceCount || 0) > 1 && <span>· {item.sourceCount} 个来源交叉报道</span>}
+        {item.domain && <span>· {item.domain}</span>}
+        {item.language && <span>· {item.language}</span>}
+        {item.country && <span>· {item.country}</span>}
+      </div>
+    </motion.a>
+  );
+}
+
 export function MorningBriefScreen() {
-  const quote = `「昨晚这两场打得有意思——法国4-0大胜在预料中，但日本89分钟绝杀德国才是真正的黑马炸弹。老球迷还在骂裁判，聪明人已经在看下一场赔率差值了。」`;
+  const [brief, setBrief] = useState<MorningBrief>(fallbackMorningBrief);
   const [copied, setCopied] = useState(false);
+  const quote = brief.quote;
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadBrief() {
+      const res = await fetch("/api/data/morning?dateKey=yesterday", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = (await res.json()) as { brief?: MorningBrief };
+      if (cancelled || !data.brief) return;
+      setBrief(data.brief);
+    }
+
+    void loadBrief();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function copyQuote() {
     navigator.clipboard.writeText(quote).then(() => {
@@ -186,50 +270,52 @@ export function MorningBriefScreen() {
           >
             每日复盘特刊
           </span>
-          <span className="text-[10px] font-bold text-[#9E948C]">2026-06-12（第 2 期）</span>
+          <span className="text-[10px] font-bold text-[#9E948C]">{brief.edition || "暂无期次"}</span>
         </div>
         <h2
           className="font-black text-xl leading-tight text-[#241A14]"
           style={{ fontFamily: "var(--font-heading)" }}
         >
-          昨夜战报：日本绝杀德国，法国4-0开门红
+          {brief.title || "世界杯早报"}
         </h2>
         <div className="border-t border-[#241A14] mt-2 pt-2 text-xs text-[#5C524C]">
-          <strong>头版摘要：</strong> 昨晚 2 场，1 场爆冷。日本 89 分钟绝杀德国，全网热议。法国 4-0 大胜表现完美。
+          <strong>头版摘要：</strong> {brief.summary || "暂无可用原始信息。"}
+          <span className="block mt-1 text-[10px] text-[#9E948C]">来源：{brief.sourceLabel}</span>
+          {brief.aggregation && (
+            <span className="block mt-1 text-[10px] text-[#9E948C]">
+              抓取 {brief.aggregation.fetchedSourceCount} 个源，成功 {brief.aggregation.successfulSourceCount} 个，
+              原始 {brief.aggregation.rawArticleCount} 条，去重后 {brief.aggregation.deduplicatedArticleCount} 条。
+              {brief.aggregation.aiUsed
+                ? ` AI：${brief.aggregation.aiProvider}`
+                : ` ${brief.aggregation.aiMessage}`}
+            </span>
+          )}
         </div>
       </div>
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
         {/* Quote card */}
-        <div
-          className="border border-[#241A14] bg-[#FAF7F0] p-3 relative"
-          style={{ boxShadow: "3px 3px 0 0 #241A14" }}
-        >
+        {quote && (
           <div
-            className="absolute -top-3 right-3 bg-[#D36E52] text-white text-[9px] font-bold px-2 py-0.5 border border-[#241A14]"
-            style={{ transform: "rotate(3deg)" }}
+            className="border border-[#241A14] bg-[#FAF7F0] p-3 relative"
+            style={{ boxShadow: "3px 3px 0 0 #241A14" }}
           >
-            微信/朋友圈无脑发
+            <p className="font-serif text-sm text-[#241A14] leading-relaxed">{quote}</p>
+            <div className="mt-3 border-t border-dashed border-[#241A14] pt-2 flex justify-between items-center">
+              <span className="text-[10px] font-bold text-[#9E948C]">复制摘要</span>
+              <motion.button
+                whileTap={{ scale: 0.93 }}
+                onClick={copyQuote}
+                className={`px-3 py-1 text-[10px] font-bold border border-[#241A14] transition-colors ${
+                  copied ? "bg-[#9CB48A] text-white" : "bg-[#241A14] text-white hover:bg-[#D36E52]"
+                }`}
+              >
+                {copied ? "✓ 已复制" : "复制"}
+              </motion.button>
+            </div>
           </div>
-          <p
-            className="font-serif text-sm text-[#241A14] leading-relaxed pt-1"
-          >
-            {quote}
-          </p>
-          <div className="mt-3 border-t border-dashed border-[#241A14] pt-2 flex justify-between items-center">
-            <span className="text-[10px] font-bold text-[#9E948C]">一键复制装杯金句</span>
-            <motion.button
-              whileTap={{ scale: 0.93 }}
-              onClick={copyQuote}
-              className={`px-3 py-1 text-[10px] font-bold border border-[#241A14] transition-colors ${
-                copied ? "bg-[#9CB48A] text-white" : "bg-[#241A14] text-white hover:bg-[#D36E52]"
-              }`}
-            >
-              {copied ? "✓ 已复制" : "一键复制金句"}
-            </motion.button>
-          </div>
-        </div>
+        )}
 
         {/* Section divider */}
         <div className="flex items-center gap-2">
@@ -244,30 +330,52 @@ export function MorningBriefScreen() {
         </div>
 
         {/* Match cards */}
-        {yesterdayMatches.map((m) => (
-          <MatchResultCard key={m.id} match={m} />
-        ))}
+        {brief.matches.length > 0 ? (
+          brief.matches.map((m) => <MatchResultCard key={m.id} match={m} />)
+        ) : (
+          <div className="border-2 border-dashed border-[#241A14] p-8 text-center">
+            <p className="text-sm font-bold text-[#241A14]">暂无比赛信息</p>
+            <p className="mt-1 text-[11px] text-[#9E948C]">比分或赛程源返回数据后会自动显示。</p>
+          </div>
+        )}
 
-        {/* Gossip section */}
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-[#E4A853] rounded-full flex-shrink-0" />
-          <span
-            className="font-bold text-xs tracking-wider uppercase text-[#241A14]"
-            style={{ fontFamily: "var(--font-heading)" }}
-          >
-            吃瓜前线
-          </span>
-          <div className="flex-grow border-b border-double border-[#241A14]/30" />
-        </div>
+        {/* News source section */}
+        {brief.news.length > 0 && (
+          <>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-[#9CB48A] rounded-full flex-shrink-0" />
+              <span
+                className="font-bold text-xs tracking-wider uppercase text-[#241A14]"
+                style={{ fontFamily: "var(--font-heading)" }}
+              >
+                多源新闻整理
+              </span>
+              <div className="flex-grow border-b border-double border-[#241A14]/30" />
+            </div>
 
-        {gossipItems.slice(0, 3).map((g) => (
-          <GossipCard key={g.id} item={g} />
-        ))}
+            {brief.news.slice(0, 5).map((article) => (
+              <NewsCard key={article.id} item={article} />
+            ))}
+          </>
+        )}
 
-        <div className="border border-[#241A14] p-3 text-xs text-[#5C524C]">
-          <strong className="text-[#241A14]">免责声明：</strong>
-          以上数据来自 Polymarket 预测市场，仅作观赛参考。本工具不提供投注建议，不跳转任何博彩平台。
-        </div>
+        {brief.gossipItems.length > 0 && (
+          <>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-[#E4A853] rounded-full flex-shrink-0" />
+              <span
+                className="font-bold text-xs tracking-wider uppercase text-[#241A14]"
+                style={{ fontFamily: "var(--font-heading)" }}
+              >
+                市场话题
+              </span>
+              <div className="flex-grow border-b border-double border-[#241A14]/30" />
+            </div>
+            {brief.gossipItems.slice(0, 3).map((g) => (
+              <GossipCard key={g.id} item={g} />
+            ))}
+          </>
+        )}
       </div>
     </div>
   );
