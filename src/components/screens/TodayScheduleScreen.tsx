@@ -334,15 +334,19 @@ export function TodayScheduleScreen() {
       if (!res.ok) return;
       const data = (await res.json()) as {
         matches?: Match[];
-        source?: "remote" | "fallback";
+        source?: "remote" | "fallback" | "cache";
         diagnostics?: Array<{ name: string; ok: boolean }>;
       };
       if (cancelled || !data.matches?.length) return;
       setRemoteMatches((current) => ({ ...current, [activeTab]: data.matches }));
       const firstOk = data.diagnostics?.find((item) => item.ok);
-      setDataSourceLabel(
-        data.source === "remote" && firstOk ? `${firstOk.name} · 远端数据` : "FIFA 官方赛程 · 本地兜底",
-      );
+      if (data.source === "cache") {
+        setDataSourceLabel("PostgreSQL · 持久化快照");
+      } else if (data.source === "remote" && firstOk) {
+        setDataSourceLabel(`${firstOk.name} · 远端数据`);
+      } else {
+        setDataSourceLabel("FIFA 官方赛程 · 本地兜底");
+      }
     }
 
     void loadMatches();

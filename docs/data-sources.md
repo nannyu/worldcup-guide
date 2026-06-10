@@ -2,17 +2,21 @@
 
 Runtime config is stored in `data/admin-config.json`. This file is ignored by Git because it may contain API keys.
 
+External responses and normalized view payloads are persisted in PostgreSQL when `DATABASE_URL` is configured. See `docs/database.md`.
+
 ## Redundancy Strategy
 
 Sources are grouped by `type` and ordered by `priority` ascending.
 
 For each feature:
 
-1. Read enabled sources for the required `type`.
-2. Try each source adapter in priority order.
-3. Use the first source that returns normalized data.
-4. If every remote schedule source fails, fall back to the local FIFA official schedule snapshot in `src/data/fifa-schedule.json`.
-5. Return diagnostics so the UI/admin can show whether data came from remote or fallback.
+1. Read a fresh normalized snapshot from PostgreSQL.
+2. Read enabled sources for the required `type`.
+3. Before calling a provider, check its persisted raw response cache.
+4. Try each source adapter in priority order.
+5. Persist successful raw responses and normalized snapshots.
+6. If providers fail, use a stale snapshot, seeded domain data, or the local FIFA JSON.
+7. Return diagnostics so the UI/admin can show whether data came from remote, database, or fallback.
 
 ## Local FIFA Fallback
 

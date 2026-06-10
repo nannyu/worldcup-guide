@@ -18,6 +18,7 @@
 - Tailwind CSS v4
 - Framer Motion
 - Bun
+- PostgreSQL + Drizzle ORM
 
 ## 开发
 
@@ -27,6 +28,19 @@ bun dev
 ```
 
 打开 [http://localhost:3000](http://localhost:3000)。
+
+## 数据库
+
+配置 `DATABASE_URL` 后执行：
+
+```bash
+bun run db:migrate
+bun run db:seed:fifa
+```
+
+外部 API 原始响应和页面规范化快照都会持久化到 PostgreSQL。缓存过期才会再次请求供应商；供应商异常时会读取过期快照、数据库官方赛程或仓库内 FIFA JSON。
+
+数据库表和读取策略见 [docs/database.md](docs/database.md)。
 
 ## 检查
 
@@ -59,18 +73,15 @@ ADMIN_SESSION_SECRET=replace_with_a_long_random_session_secret
 src/app/                 路由入口
 src/components/layout/   底部导航和桌面侧栏
 src/components/screens/  主要页面屏幕
-src/lib/wc-data.ts       当前 mock 数据层
+src/lib/wc-data.ts       FIFA 本地兜底和展示数据
+src/lib/db/              Drizzle schema、迁移、查询和 seed
+src/lib/data-sources/    数据源适配、缓存和聚合
 src/lib/admin/           管理员认证和配置存储
 ```
 
 ## 数据说明
 
-当前 `src/lib/wc-data.ts` 使用演示数据，后续可替换为：
-
-- FIFA 官方赛程或结构化赛程源
-- 实时比分数据源
-- Polymarket Gamma API
-- 本地球队/术语内容库
+赛程兜底来自 FIFA 官方 PDF 抽取的 104 场赛程。市场雷达和部分球队内容仍含演示数据，会在相应远端源返回有效数据后由数据库快照覆盖。
 
 ## 合规边界
 

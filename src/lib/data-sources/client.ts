@@ -1,4 +1,6 @@
+import { createHash } from "node:crypto";
 import type { DataSourceConfig, DataSourceType } from "@/lib/admin/config";
+import { readRawFetchCache, upsertRawFetchCache } from "@/lib/db/queries/data-cache";
 
 export interface SourceDiagnostic {
   id: string;
@@ -54,7 +56,10 @@ export async function fetchJsonFromSource<T>(
   const headers = new Headers({ accept: "application/json" });
   applyAuth(url, headers, source);
 
-  const cacheKey = `${source.id}:${url.toString()}`;
+  const requestParams = params || {};
+  const cacheKey = createHash("sha256")
+    .update(`${source.id}:${url.toString()}`)
+    .digest("hex");
   const now = Date.now();
   const cached = cache.get(cacheKey);
   if (cached && cached.expiresAt > now) {
@@ -70,6 +75,29 @@ export async function fetchJsonFromSource<T>(
         status: cached.status,
         message: "cache hit",
         updatedAt: new Date().toISOString(),
+      },
+    };
+  }
+
+  const persisted = await readRawFetchCache<T>(cacheKey);
+  if (persisted) {
+    cache.set(cacheKey, {
+      value: persisted.payload,
+      status: persisted.statusCode || 200,
+      expiresAt: persisted.expiresAt.getTime(),
+    });
+    return {
+      data: persisted.payload,
+      diagnostic: {
+        id: source.id,
+        name: source.name,
+        adapter: source.adapter,
+        type: source.type,
+        ok: true,
+        fromCache: true,
+        status: persisted.statusCode || 200,
+        message: "database cache hit",
+        updatedAt: persisted.fetchedAt?.toISOString() || new Date().toISOString(),
       },
     };
   }
@@ -92,6 +120,17 @@ export async function fetchJsonFromSource<T>(
       value: data,
       status: response.status,
       expiresAt: now + Math.max(10, source.cacheTtlSeconds || 60) * 1000,
+    });
+    await upsertRawFetchCache({
+      cacheKey,
+      sourceId: source.id,
+      sourceType: source.type,
+      adapter: source.adapter,
+      requestUrl: url.toString(),
+      requestParams,
+      payload: data,
+      statusCode: response.status,
+      ttlSeconds: source.cacheTtlSeconds || source.refreshSeconds || 60,
     });
     return {
       data,

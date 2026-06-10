@@ -1,9 +1,13 @@
 import { readAdminConfig } from "@/lib/admin/config";
 import { fetchJsonFromSource, sortEnabledSources, type SourceDiagnostic } from "@/lib/data-sources/client";
+import { readSnapshotCache, upsertSnapshotCache } from "@/lib/db/queries/data-cache";
+import { getStoredOfficialMatches } from "@/lib/db/queries/world-cup";
 import {
+  fifaRecordToMatch,
   matchesByDate,
   radarMatches,
   scheduleDateMeta,
+  type FifaScheduleRecord,
   type Match,
   type MatchStatus,
   type RadarMatch,
@@ -59,6 +63,24 @@ const dateKeyToSourceDate: Record<ScheduleDateKey, string> = {
   today: scheduleDateMeta.today.date,
   tomorrow: scheduleDateMeta.tomorrow.date,
 };
+
+function snapshotDiagnostic(
+  key: string,
+  type: SourceDiagnostic["type"],
+  computedAt: Date | undefined,
+  stale = false,
+): SourceDiagnostic {
+  return {
+    id: key,
+    name: "PostgreSQL 数据快照",
+    adapter: "database-snapshot",
+    type,
+    ok: true,
+    fromCache: true,
+    message: stale ? "stale database snapshot" : "database snapshot hit",
+    updatedAt: computedAt?.toISOString() || new Date().toISOString(),
+  };
+}
 
 function getTeam(input: string | undefined) {
   if (!input) return { name: "待定", flag: "🏳️" };
@@ -180,26 +202,100 @@ function transformPolymarketEvents(data: PolymarketEvent[]): RadarMatch[] {
 
 export async function getAggregatedMatches(dateKey: ScheduleDateKey): Promise<{
   matches: Match[];
-  source: "remote" | "fallback";
+  source: "remote" | "fallback" | "cache";
   diagnostics: SourceDiagnostic[];
 }> {
-  const { dataSources } = await readAdminConfig();
-  const diagnostics: SourceDiagnostic[] = [];
+  const { dataSources, updatedAt } = await readAdminConfig();
+  const snapshotKey = `matches:v2:${dateKey}:${updatedAt}`;
+  const persisted = await readSnapshotCache<Match[]>(snapshotKey);
+  if (persisted?.payload.length) {
+    return {
+      matches: persisted.payload,
+      source: "cache",
+      diagnostics: [snapshotDiagnostic(snapshotKey, "schedule", persisted.computedAt)],
+    };
+  }
 
-  for (const source of sortEnabledSources(dataSources, "schedule")) {
+  const diagnostics: SourceDiagnostic[] = [];
+  const scheduleSources = sortEnabledSources(dataSources, "schedule");
+
+  for (const source of scheduleSources) {
     try {
       if (source.adapter !== "openfootball-worldcup-json") continue;
       const { data, diagnostic } = await fetchJsonFromSource<OpenFootballWorldCup>(source);
       diagnostics.push(diagnostic);
       const matches = transformOpenFootballMatches(data, dateKey);
-      if (matches.length > 0) return { matches, source: "remote", diagnostics };
+      if (matches.length > 0) {
+        await upsertSnapshotCache({
+          snapshotKey,
+          feature: "matches",
+          sourceMode: "remote",
+          sourceId: source.id,
+          payload: matches,
+          diagnostics,
+          ttlSeconds: source.cacheTtlSeconds || source.refreshSeconds || 300,
+        });
+        return { matches, source: "remote", diagnostics };
+      }
     } catch (error) {
       diagnostics.push(error as SourceDiagnostic);
     }
   }
 
+  const stale = await readSnapshotCache<Match[]>(snapshotKey, { allowStale: true });
+  if (stale?.payload.length) {
+    return {
+      matches: stale.payload,
+      source: "cache",
+      diagnostics: [
+        ...diagnostics,
+        snapshotDiagnostic(snapshotKey, "schedule", stale.computedAt, true),
+      ],
+    };
+  }
+
+  const storedOfficialMatches = (
+    await getStoredOfficialMatches<FifaScheduleRecord>(scheduleDateMeta[dateKey].date)
+  ).map(fifaRecordToMatch);
+  if (storedOfficialMatches.length > 0) {
+    const databaseDiagnostic: SourceDiagnostic = {
+      id: "fifa-official-db",
+      name: "PostgreSQL FIFA 官方赛程",
+      adapter: "database-domain-table",
+      type: "schedule",
+      ok: true,
+      fromCache: true,
+      message: "loaded from matches table",
+      updatedAt: new Date().toISOString(),
+    };
+    await upsertSnapshotCache({
+      snapshotKey,
+      feature: "matches",
+      sourceMode: "fallback",
+      sourceId: "fifa-official-db",
+      payload: storedOfficialMatches,
+      diagnostics: [...diagnostics, databaseDiagnostic],
+      ttlSeconds: 86400,
+    });
+    return {
+      matches: storedOfficialMatches,
+      source: "cache",
+      diagnostics: [...diagnostics, databaseDiagnostic],
+    };
+  }
+
+  const fallbackMatches = matchesByDate[dateKey];
+  await upsertSnapshotCache({
+    snapshotKey,
+    feature: "matches",
+    sourceMode: "fallback",
+    sourceId: "fifa-official-pdf",
+    payload: fallbackMatches,
+    diagnostics,
+    ttlSeconds: 300,
+  });
   return {
-    matches: matchesByDate[dateKey],
+    matches: fallbackMatches,
     source: "fallback",
     diagnostics,
   };
@@ -207,13 +303,24 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey): Promise<{
 
 export async function getAggregatedRadar(): Promise<{
   radarMatches: RadarMatch[];
-  source: "remote" | "mock";
+  source: "remote" | "mock" | "cache";
   diagnostics: SourceDiagnostic[];
 }> {
-  const { dataSources } = await readAdminConfig();
-  const diagnostics: SourceDiagnostic[] = [];
+  const { dataSources, updatedAt } = await readAdminConfig();
+  const snapshotKey = `radar:v2:world-cup:${updatedAt}`;
+  const persisted = await readSnapshotCache<RadarMatch[]>(snapshotKey);
+  if (persisted?.payload.length) {
+    return {
+      radarMatches: persisted.payload,
+      source: "cache",
+      diagnostics: [snapshotDiagnostic(snapshotKey, "prediction-market", persisted.computedAt)],
+    };
+  }
 
-  for (const source of sortEnabledSources(dataSources, "prediction-market")) {
+  const diagnostics: SourceDiagnostic[] = [];
+  const marketSources = sortEnabledSources(dataSources, "prediction-market");
+
+  for (const source of marketSources) {
     try {
       if (source.adapter !== "polymarket-gamma") continue;
       const { data, diagnostic } = await fetchJsonFromSource<PolymarketEvent[]>(source, {
@@ -222,12 +329,44 @@ export async function getAggregatedRadar(): Promise<{
       });
       diagnostics.push(diagnostic);
       const transformed = transformPolymarketEvents(data);
-      if (transformed.length > 0) return { radarMatches: transformed, source: "remote", diagnostics };
+      if (transformed.length > 0) {
+        await upsertSnapshotCache({
+          snapshotKey,
+          feature: "radar",
+          sourceMode: "remote",
+          sourceId: source.id,
+          payload: transformed,
+          diagnostics,
+          ttlSeconds: source.cacheTtlSeconds || source.refreshSeconds || 60,
+        });
+        return { radarMatches: transformed, source: "remote", diagnostics };
+      }
     } catch (error) {
       diagnostics.push(error as SourceDiagnostic);
     }
   }
 
+  const stale = await readSnapshotCache<RadarMatch[]>(snapshotKey, { allowStale: true });
+  if (stale?.payload.length) {
+    return {
+      radarMatches: stale.payload,
+      source: "cache",
+      diagnostics: [
+        ...diagnostics,
+        snapshotDiagnostic(snapshotKey, "prediction-market", stale.computedAt, true),
+      ],
+    };
+  }
+
+  await upsertSnapshotCache({
+    snapshotKey,
+    feature: "radar",
+    sourceMode: "mock",
+    sourceId: "local-radar-seed",
+    payload: radarMatches,
+    diagnostics,
+    ttlSeconds: 60,
+  });
   return {
     radarMatches,
     source: "mock",

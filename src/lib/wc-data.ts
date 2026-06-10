@@ -41,7 +41,7 @@ export interface Match {
   updatedAt: string;
 }
 
-interface FifaScheduleRecord {
+export interface FifaScheduleRecord {
   matchNo: number;
   stage: string;
   group?: string;
@@ -152,7 +152,7 @@ function matchSideDisplay(side: FifaScheduleRecord["home"]) {
   return { name: side.name, flag: "🏳️" };
 }
 
-function fifaRecordToMatch(record: FifaScheduleRecord): Match {
+export function fifaRecordToMatch(record: FifaScheduleRecord): Match {
   const home = matchSideDisplay(record.home);
   const away = matchSideDisplay(record.away);
   const round = roundLabel(record.stage);

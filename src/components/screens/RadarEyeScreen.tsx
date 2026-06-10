@@ -336,15 +336,19 @@ export function RadarEyeScreen() {
       if (!res.ok) return;
       const data = (await res.json()) as {
         radarMatches?: RadarMatch[];
-        source?: "remote" | "mock";
+        source?: "remote" | "mock" | "cache";
         diagnostics?: Array<{ name: string; ok: boolean }>;
       };
       if (cancelled || !data.radarMatches?.length) return;
       setItems(data.radarMatches);
       const firstOk = data.diagnostics?.find((item) => item.ok);
-      setDataSourceLabel(
-        data.source === "remote" && firstOk ? `${firstOk.name} · 远端数据` : "Mock · 本地回退数据",
-      );
+      if (data.source === "cache") {
+        setDataSourceLabel("PostgreSQL · 持久化快照");
+      } else if (data.source === "remote" && firstOk) {
+        setDataSourceLabel(`${firstOk.name} · 远端数据`);
+      } else {
+        setDataSourceLabel("Mock · 本地回退数据");
+      }
     }
 
     void loadRadar();
