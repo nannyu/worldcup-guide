@@ -1,8 +1,11 @@
 import { config } from "dotenv";
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import dns from "node:dns";
 import postgres, { type Sql } from "postgres";
 
 config({ path: ".env" });
+
+dns.setDefaultResultOrder("ipv4first");
 
 type DbClient = {
   sql: Sql;
