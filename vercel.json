@@ -15,7 +15,7 @@
   "crons": [
     {
       "path": "/api/data/cron/refresh",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 16 * * *"
     },
     {
       "path": "/api/notifications/cron/daily-digest",
