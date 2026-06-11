@@ -62,6 +62,7 @@ export async function enqueueBackgroundJob(input: EnqueueBackgroundJobInput): Pr
   const nowIso = now.toISOString();
   const runAfterIso = runAfter.toISOString();
   const payload = input.payload || {};
+  const payloadJson = JSON.stringify(payload);
   const priority = input.priority ?? 100;
   const maxAttempts = input.maxAttempts ?? 3;
   const sql = getSql();
@@ -71,7 +72,7 @@ export async function enqueueBackgroundJob(input: EnqueueBackgroundJobInput): Pr
       locked_by, started_at, finished_at, error_message, updated_at
     )
     values (
-      ${id}, ${input.type}, 'queued', ${sql.json(payload as never)}, 0, ${maxAttempts}, ${priority}, ${runAfterIso}::timestamp,
+      ${id}, ${input.type}, 'queued', ${payloadJson}::jsonb, 0, ${maxAttempts}, ${priority}, ${runAfterIso}::timestamp,
       null, null, null, null, null, ${nowIso}::timestamp
     )
     on conflict (id) do update set
