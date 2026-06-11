@@ -1,7 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
+import type { OddsMatch } from "@/lib/wc-data";
+import { teamName, tr } from "@/lib/i18n/content";
 
 function toImpliedPercent(value: string): number | null {
   const odds = Number.parseFloat(value);
@@ -47,10 +50,13 @@ function NumberInput({
   );
 }
 
-function OddsConverter() {
+function OddsConverter({ locale }: { locale: string }) {
   const [homeOdds, setHomeOdds] = useState("");
   const [drawOdds, setDrawOdds] = useState("");
   const [awayOdds, setAwayOdds] = useState("");
+  const [matches, setMatches] = useState<OddsMatch[]>([]);
+  const [selectedMatchId, setSelectedMatchId] = useState("");
+  const selectedMatch = matches.find((match) => match.id === selectedMatchId);
 
   const home = toImpliedPercent(homeOdds);
   const draw = toImpliedPercent(drawOdds);
@@ -58,30 +64,77 @@ function OddsConverter() {
   const hasResult = home !== null && draw !== null && away !== null;
   const total = hasResult ? home + draw + away : null;
 
+  useEffect(() => {
+    let cancelled = false;
+    async function loadOdds() {
+      const response = await fetch("/api/data/odds");
+      if (!response.ok) return;
+      const data = (await response.json()) as { oddsMatches?: OddsMatch[] };
+      if (cancelled) return;
+      setMatches((data.oddsMatches || []).filter((match) => match.homeOdds && match.drawOdds && match.awayOdds));
+    }
+
+    void loadOdds();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function selectMatch(matchId: string) {
+    setSelectedMatchId(matchId);
+    const match = matches.find((item) => item.id === matchId);
+    if (!match) return;
+    setHomeOdds(match.homeOdds?.toFixed(2) || "");
+    setDrawOdds(match.drawOdds?.toFixed(2) || "");
+    setAwayOdds(match.awayOdds?.toFixed(2) || "");
+  }
+
   return (
     <section className="border border-[#241A14] bg-[#FAF7F0] p-3 space-y-3" style={{ boxShadow: "3px 3px 0 0 #241A14" }}>
       <div>
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-[#E4A853]" />
           <h2 className="text-xs font-black tracking-wider text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
-            赔率转概率
+            {tr(locale, "赔率转概率", "Odds to Probability")}
           </h2>
         </div>
         <p className="mt-1 text-[11px] leading-relaxed text-[#9E948C]">
-          输入欧赔，自动换成隐含概率。公式：1 ÷ 欧赔 × 100%。
+          {tr(locale, "选择赛事自动导入欧赔，也可以手工调整。公式：1 ÷ 欧赔 × 100%。", "Pick a match to import decimal odds, then adjust manually if needed. Formula: 1 / odds × 100%.")}
         </p>
       </div>
 
+      <FieldShell label={tr(locale, "赛事选择", "Match")}>
+        <select
+          value={selectedMatchId}
+          onChange={(event) => selectMatch(event.target.value)}
+          className="w-full border-2 border-[#241A14] bg-[#F5F1E8] px-2 py-1.5 text-xs text-[#241A14] focus:border-[#D36E52] focus:outline-none"
+        >
+          <option value="">
+            {matches.length ? tr(locale, "选择一场已接入欧赔的赛事", "Select a match with odds") : tr(locale, "暂无可导入欧赔的赛事", "No importable odds yet")}
+          </option>
+          {matches.map((match) => (
+            <option key={match.id} value={match.id}>
+              {match.kickoffBj} {teamName(match.homeTeam, locale)} vs {teamName(match.awayTeam, locale)}
+            </option>
+          ))}
+        </select>
+        {selectedMatch && (
+          <span className="block text-[10px] text-[#9E948C]">
+            {selectedMatch.source} · {selectedMatch.bookmakerCount} {tr(locale, "家机构均值 · 可继续手动微调", "bookmaker average · still editable")}
+          </span>
+        )}
+      </FieldShell>
+
       <div className="grid grid-cols-3 gap-2">
-        <FieldShell label="主胜">
+        <FieldShell label={tr(locale, "主胜", "Home")}>
           <NumberInput value={homeOdds} onChange={setHomeOdds} placeholder="1.85" />
           <span className="block h-4 text-[11px] font-bold text-[#D36E52]">{home !== null ? `${home}%` : "-"}</span>
         </FieldShell>
-        <FieldShell label="平局">
+        <FieldShell label={tr(locale, "平局", "Draw")}>
           <NumberInput value={drawOdds} onChange={setDrawOdds} placeholder="3.40" />
           <span className="block h-4 text-[11px] font-bold text-[#D36E52]">{draw !== null ? `${draw}%` : "-"}</span>
         </FieldShell>
-        <FieldShell label="客胜">
+        <FieldShell label={tr(locale, "客胜", "Away")}>
           <NumberInput value={awayOdds} onChange={setAwayOdds} placeholder="4.20" />
           <span className="block h-4 text-[11px] font-bold text-[#D36E52]">{away !== null ? `${away}%` : "-"}</span>
         </FieldShell>
@@ -110,8 +163,8 @@ function OddsConverter() {
               <p className="text-[11px] leading-relaxed text-[#5C524C]">
                 三项合计 <strong className="text-[#241A14]">{total}%</strong>
                 {total > 100
-                  ? `，高出 100% 的 ${total - 100}% 可以理解为机构利润空间。`
-                  : "，低于或接近 100%，说明这组输入更像用户自定义情景。"}
+                  ? tr(locale, `，高出 100% 的 ${total - 100}% 可以理解为机构利润空间。`, `, ${total - 100}% over 100%, which is roughly the bookmaker margin.`)
+                  : tr(locale, "，低于或接近 100%，说明这组输入更像用户自定义情景。", ", at or below 100%, so this looks more like a custom scenario.")}
               </p>
             </div>
           </motion.div>
@@ -121,10 +174,10 @@ function OddsConverter() {
   );
 }
 
-function ExpectationCalculator() {
-  const [odds, setOdds] = useState("2.00");
-  const [hitRate, setHitRate] = useState("50");
-  const [stake, setStake] = useState("100");
+function ExpectationCalculator({ locale }: { locale: string }) {
+  const [odds, setOdds] = useState("");
+  const [hitRate, setHitRate] = useState("");
+  const [stake, setStake] = useState("");
 
   const result = useMemo(() => {
     const oddsValue = Number.parseFloat(odds);
@@ -158,22 +211,22 @@ function ExpectationCalculator() {
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-[#D36E52]" />
           <h2 className="text-xs font-black tracking-wider text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
-            回报期望计算
+            {tr(locale, "回报期望计算", "Expected Value")}
           </h2>
         </div>
         <p className="mt-1 text-[11px] leading-relaxed text-[#9E948C]">
-          用数学口径看一眼：不是看能不能中，而是看长期是否划算。
+          {tr(locale, "用数学口径看一眼：不是看能不能中，而是看长期是否划算。", "A math check: not whether one pick hits, but whether the long-run price makes sense.")}
         </p>
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        <FieldShell label="欧赔">
+        <FieldShell label={tr(locale, "欧赔", "Decimal odds")}>
           <NumberInput value={odds} onChange={setOdds} placeholder="2.00" />
         </FieldShell>
-        <FieldShell label="估计命中率">
+        <FieldShell label={tr(locale, "估计命中率", "Hit rate")}>
           <NumberInput value={hitRate} onChange={setHitRate} placeholder="50" />
         </FieldShell>
-        <FieldShell label="投入金额">
+        <FieldShell label={tr(locale, "投入金额", "Stake")}>
           <NumberInput value={stake} onChange={setStake} placeholder="100" />
         </FieldShell>
       </div>
@@ -182,27 +235,27 @@ function ExpectationCalculator() {
         {result ? (
           <div className="space-y-1 text-[11px] text-[#5C524C]">
             <p>
-              打平所需命中率：<strong className="text-[#241A14]">{result.breakEven}%</strong>
+              {tr(locale, "打平所需命中率：", "Break-even hit rate:")}<strong className="text-[#241A14]">{result.breakEven}%</strong>
             </p>
             <p>
-              命中时净收益：<strong className="text-[#241A14]">{Math.round(result.winProfit)} 元</strong>
+              {tr(locale, "命中时净收益：", "Net profit if it hits:")}<strong className="text-[#241A14]">{Math.round(result.winProfit)}</strong>
             </p>
             <p>
-              单次期望：{" "}
+              {tr(locale, "单次期望：", "Expected value:")}{" "}
               <strong className={result.expected >= 0 ? "text-[#9CB48A]" : "text-[#D36E52]"}>
                 {result.expected >= 0 ? "+" : ""}
                 {Math.round(result.expected)} 元
               </strong>
             </p>
             <p className="pt-1 leading-relaxed">
-              大白话：
+              {tr(locale, "大白话：", "Plain read:")}
               {result.expected >= 0
-                ? " 你的自估命中率高于打平线，数学期望为正，但仍不代表单场一定赚。"
-                : " 你的自估命中率低于打平线，长期看大概率不划算。"}
+                ? tr(locale, " 你的自估命中率高于打平线，数学期望为正，但仍不代表单场一定赚。", " Your estimated hit rate is above break-even, so EV is positive, but one match can still lose.")
+                : tr(locale, " 你的自估命中率低于打平线，长期看大概率不划算。", " Your estimated hit rate is below break-even, so it is probably bad value long term.")}
             </p>
           </div>
         ) : (
-          <p className="text-[11px] text-[#9E948C]">请输入有效的赔率、命中率和金额。</p>
+          <p className="text-[11px] text-[#9E948C]">{tr(locale, "请输入有效的赔率、命中率和金额。", "Enter valid odds, hit rate, and stake.")}</p>
         )}
       </div>
     </section>
@@ -228,45 +281,66 @@ const glossary = [
   },
 ];
 
+const glossaryEn: Record<string, { title: string; desc: string }> = {
+  市场概率: {
+    title: "Market probability",
+    desc: "The probability implied by money in a prediction market. It is not an expert verdict; it is a crowd price backed by real stakes.",
+  },
+  赔率隐含概率: {
+    title: "Implied probability",
+    desc: "Probability derived from odds. Decimal odds of 2.00 imply 50%; 1.50 implies about 67%.",
+  },
+  信息差: {
+    title: "Market gap",
+    desc: "The difference between market probability and bookmaker implied probability. Bigger gaps mean the two views disagree more.",
+  },
+  水位: {
+    title: "Margin",
+    desc: "The three implied probabilities usually add up to more than 100%; the excess is roughly bookmaker margin.",
+  },
+};
+
 export function ToolsScreen() {
+  const { i18n } = useTranslation();
+  const locale = i18n.resolvedLanguage || i18n.language;
   return (
     <div className="flex min-h-svh flex-col bg-[#F5F1E8]">
       <div className="border-b-2 border-[#241A14] bg-[#FAF7F0] px-4 py-3">
         <div className="mb-0.5 text-[10px] font-black uppercase tracking-[0.25em] text-[#9E948C]" style={{ fontFamily: "var(--font-heading)" }}>
-          观赛概率工具箱
+          {tr(locale, "观赛概率工具箱", "Viewing Probability Toolkit")}
         </div>
         <h1 className="text-2xl font-black leading-tight text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
-          看懂盘面不被坑
+          {tr(locale, "看懂盘面不被坑", "Read the Market Clearly")}
         </h1>
         <p className="mt-0.5 text-xs text-[#9E948C]">
-          只做换算和解释，不提供下注入口，不跳转任何博彩平台。
+          {tr(locale, "只做换算和解释，不提供下注入口，不跳转任何博彩平台。", "Conversions and explanations only. No betting entry points and no gambling-site links.")}
         </p>
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-        <OddsConverter />
-        <ExpectationCalculator />
+        <OddsConverter locale={locale} />
+        <ExpectationCalculator locale={locale} />
 
         <section className="border border-[#241A14] bg-[#FAF7F0] p-3 space-y-3">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-[#9CB48A]" />
             <h2 className="text-xs font-black tracking-wider text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
-              黑话翻译
+              {tr(locale, "黑话翻译", "Glossary")}
             </h2>
           </div>
           <div className="space-y-2">
             {glossary.map((item) => (
               <article key={item.title} className="border-t border-dashed border-[#241A14]/30 pt-2">
-                <h3 className="text-xs font-bold text-[#241A14]">{item.title}</h3>
-                <p className="mt-0.5 text-[11px] leading-relaxed text-[#5C524C]">{item.desc}</p>
+                <h3 className="text-xs font-bold text-[#241A14]">{tr(locale, item.title, glossaryEn[item.title]?.title || item.title)}</h3>
+                <p className="mt-0.5 text-[11px] leading-relaxed text-[#5C524C]">{tr(locale, item.desc, glossaryEn[item.title]?.desc || item.desc)}</p>
               </article>
             ))}
           </div>
         </section>
 
         <div className="border border-[#241A14] bg-[#EDE9E0] p-3 text-xs leading-relaxed text-[#5C524C]">
-          <strong className="text-[#241A14]">使用边界：</strong>
-          本页用于理解概率和赔率，不构成任何投注建议。观赛快乐就够了，别把娱乐工具当成收益承诺。
+          <strong className="text-[#241A14]">{tr(locale, "使用边界：", "Boundary:")}</strong>
+          {tr(locale, "本页用于理解概率和赔率，不构成任何投注建议。观赛快乐就够了，别把娱乐工具当成收益承诺。", "This page explains probability and odds. It is not betting advice. Treat it as an entertainment tool, not an income promise.")}
         </div>
       </div>
     </div>

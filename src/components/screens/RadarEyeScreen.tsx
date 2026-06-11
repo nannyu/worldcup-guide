@@ -1,405 +1,1230 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import type { RadarMatch } from "@/lib/wc-data";
+import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { BarChart3, Brackets, CalendarDays, ChevronRight, Info, Table2, Trophy } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import {
+  allMatches,
+  createMatchSequenceLookup,
+  getGroupStandings,
+  getMatchSequenceNumber,
+  matchIdentityKey,
+  mergeMatchWithOfficialSource,
+  type GroupStanding,
+  type Match,
+  type RadarMatch,
+} from "@/lib/wc-data";
+import { groupLabel, roundLabel, teamName, tr } from "@/lib/i18n/content";
 
-// ============================================================
-// 折线图组件（纯 SVG，无第三方依赖）
-// ============================================================
-function ProbLineChart({
-  data,
-  homeTeam,
-}: {
-  data: { time: string; market: number; odds: number }[];
-  homeTeam: string;
-}) {
-  const W = 280;
-  const H = 100;
-  const PAD = { top: 8, right: 8, bottom: 22, left: 28 };
-  const chartW = W - PAD.left - PAD.right;
-  const chartH = H - PAD.top - PAD.bottom;
-
-  const allValues = data.flatMap((d) => [d.market, d.odds]);
-  const minV = Math.max(0, Math.min(...allValues) - 6);
-  const maxV = Math.min(100, Math.max(...allValues) + 6);
-
-  const toX = (i: number) => (i / (data.length - 1)) * chartW;
-  const toY = (v: number) => chartH - ((v - minV) / (maxV - minV)) * chartH;
-
-  const marketPath = data
-    .map((d, i) => `${i === 0 ? "M" : "L"} ${toX(i).toFixed(1)} ${toY(d.market).toFixed(1)}`)
-    .join(" ");
-  const oddsPath = data
-    .map((d, i) => `${i === 0 ? "M" : "L"} ${toX(i).toFixed(1)} ${toY(d.odds).toFixed(1)}`)
-    .join(" ");
-
-  // 填充面积（market 曲线下方）
-  const areaPath =
-    marketPath +
-    ` L ${toX(data.length - 1).toFixed(1)} ${chartH} L 0 ${chartH} Z`;
-
-  // Y 轴刻度线
-  const yTicks = [minV, Math.round((minV + maxV) / 2), maxV];
-
-  return (
-    <svg
-      width="100%"
-      viewBox={`0 0 ${W} ${H}`}
-      className="overflow-visible"
-      aria-label={`${homeTeam}胜率变化曲线`}
-    >
-      <g transform={`translate(${PAD.left}, ${PAD.top})`}>
-        {/* Grid lines */}
-        {yTicks.map((v) => (
-          <g key={v}>
-            <line
-              x1={0}
-              y1={toY(v)}
-              x2={chartW}
-              y2={toY(v)}
-              stroke="#241A14"
-              strokeWidth={0.5}
-              strokeDasharray="3 3"
-              opacity={0.2}
-            />
-            <text
-              x={-4}
-              y={toY(v)}
-              textAnchor="end"
-              dominantBaseline="middle"
-              fontSize={7}
-              fill="#9E948C"
-            >
-              {Math.round(v)}%
-            </text>
-          </g>
-        ))}
-
-        {/* Area fill under market line */}
-        <motion.path
-          d={areaPath}
-          fill="#D36E52"
-          opacity={0.06}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.06 }}
-          transition={{ duration: 0.8 }}
-        />
-
-        {/* Odds line (dashed, gray) */}
-        <motion.path
-          d={oddsPath}
-          fill="none"
-          stroke="#9E948C"
-          strokeWidth={1.5}
-          strokeDasharray="4 2"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 0.9, ease: "easeOut" }}
-        />
-
-        {/* Market line (solid, primary) */}
-        <motion.path
-          d={marketPath}
-          fill="none"
-          stroke="#D36E52"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 1, ease: "easeOut", delay: 0.1 }}
-        />
-
-        {/* Data points — market */}
-        {data.map((d, i) => (
-          <circle
-            key={`m${i}`}
-            cx={toX(i)}
-            cy={toY(d.market)}
-            r={i === data.length - 1 ? 3.5 : 2}
-            fill="#D36E52"
-            stroke="#FAF7F0"
-            strokeWidth={1}
-          />
-        ))}
-
-        {/* Data points — odds */}
-        {data.map((d, i) => (
-          <circle
-            key={`o${i}`}
-            cx={toX(i)}
-            cy={toY(d.odds)}
-            r={1.5}
-            fill="#9E948C"
-          />
-        ))}
-
-        {/* X-axis labels */}
-        {data.map((d, i) => (
-          <text
-            key={`t${i}`}
-            x={toX(i)}
-            y={chartH + 14}
-            textAnchor="middle"
-            fontSize={7}
-            fill="#9E948C"
-          >
-            {d.time}
-          </text>
-        ))}
-      </g>
-
-      {/* Legend */}
-      <g transform={`translate(${PAD.left}, ${H - 2})`}>
-        <line x1={0} y1={0} x2={12} y2={0} stroke="#D36E52" strokeWidth={2} />
-        <text x={15} y={0} dominantBaseline="middle" fontSize={7} fill="#5C524C">
-          市场概率
-        </text>
-        <line x1={62} y1={0} x2={74} y2={0} stroke="#9E948C" strokeWidth={1.5} strokeDasharray="4 2" />
-        <text x={77} y={0} dominantBaseline="middle" fontSize={7} fill="#5C524C">
-          赔率隐含
-        </text>
-      </g>
-    </svg>
-  );
-}
-
-// ============================================================
-// 差值 Badge
-// ============================================================
-const diffConfig: Record<RadarMatch["diffLabel"], { label: string; bg: string; text: string; textColor: string }> = {
-  aligned:     { label: "基本一致",  bg: "bg-[#9CB48A]", text: "text-white",     textColor: "text-[#9CB48A]" },
-  notable:     { label: "值得关注",  bg: "bg-[#E4A853]", text: "text-[#241A14]", textColor: "text-[#E4A853]" },
-  significant: { label: "明显分歧",  bg: "bg-[#D36E52]", text: "text-white",     textColor: "text-[#D36E52]" },
+type LocalizedText = {
+  zh: string;
+  en: string;
 };
 
-// ============================================================
-// Prob Bar Row
-// ============================================================
-function ProbBarRow({ label, prob, color }: { label: string; prob: number; color: string }) {
-  return (
-    <div className="space-y-0.5">
-      <div className="flex justify-between text-[10px]">
-        <span className="text-[#5C524C] font-bold">{label}</span>
-        <span className="font-bold text-[#241A14]">{prob}%</span>
-      </div>
-      <div className="h-2 bg-black/10 border border-[#241A14] overflow-hidden">
-        <motion.div
-          className={`h-full ${color}`}
-          initial={{ width: 0 }}
-          animate={{ width: `${prob}%` }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
-        />
-      </div>
-    </div>
-  );
+type TabKey = "games" | "props" | "groups" | "bracket";
+type GameDetailTabKey = "markets" | "halftime" | "corners" | "goals" | "assists" | "shots";
+type GameInfoTabKey = "rules" | "background";
+type DataSourceMode = "remote" | "fallback" | "cache";
+
+type Outcome = {
+  label: LocalizedText;
+  value: string;
+  tone?: "primary" | "neutral" | "success";
+};
+
+type MatchMarket = {
+  title: LocalizedText;
+  outcomes: Outcome[];
+};
+
+type GameMatch = {
+  id: string;
+  kickoffBj: string;
+  volume?: string;
+  volumeUsd?: number;
+  homeScore: number | null;
+  awayScore: number | null;
+  home: string;
+  away: string;
+  homeCode: string;
+  awayCode: string;
+  homeFlag: string;
+  awayFlag: string;
+  sourceMatch: Match;
+  radarMatch?: RadarMatch;
+  markets: MatchMarket[];
+};
+
+type DisplayMatchDay = {
+  key: string;
+  label: string;
+  matches: GameMatch[];
+};
+
+type PropMarket = {
+  id: string;
+  title: LocalizedText;
+  volume: string;
+  icon: string;
+  choices: Array<{
+    label: LocalizedText;
+    probability: number;
+    yes: string;
+    no: string;
+  }>;
+};
+
+type BracketRound = {
+  title: LocalizedText;
+  matches: Match[];
+};
+
+const beijingTimeZone = "Asia/Shanghai";
+const dateKeys = ["yesterday", "today", "tomorrow"] as const;
+
+const tabDefinitions: Array<{ key: TabKey; label: LocalizedText; Icon: LucideIcon }> = [
+  { key: "games", label: { zh: "比赛", en: "Games" }, Icon: CalendarDays },
+  { key: "props", label: { zh: "玩法", en: "Props" }, Icon: Trophy },
+  { key: "groups", label: { zh: "Groups", en: "Groups" }, Icon: Table2 },
+  { key: "bracket", label: { zh: "对阵图", en: "Bracket" }, Icon: Brackets },
+];
+
+const gameDetailTabs: Array<{ key: GameDetailTabKey; label: LocalizedText }> = [
+  { key: "markets", label: { zh: "比赛盘口", en: "Game lines" } },
+  { key: "halftime", label: { zh: "半场", en: "Halftime" } },
+  { key: "corners", label: { zh: "角球", en: "Corners" } },
+  { key: "goals", label: { zh: "进球", en: "Goals" } },
+  { key: "assists", label: { zh: "助攻", en: "Assists" } },
+  { key: "shots", label: { zh: "射门", en: "Shots" } },
+];
+
+const gameInfoTabs: Array<{ key: GameInfoTabKey; label: LocalizedText }> = [
+  { key: "rules", label: { zh: "规则", en: "Rules" } },
+  { key: "background", label: { zh: "盘口背景", en: "Market background" } },
+];
+
+function localize(locale: string, text: LocalizedText): string {
+  return tr(locale, text.zh, text.en);
 }
 
-// ============================================================
-// Radar Card
-// ============================================================
-function RadarCard({ match }: { match: RadarMatch }) {
-  const [showChart, setShowChart] = useState(false);
-  const config = diffConfig[match.diffLabel];
-  const diffValue = Math.abs(match.homeMarketProb - match.homeOddsProb);
-
-  return (
-    <motion.div
-      className="border border-[#241A14] bg-[#FAF7F0] p-3 relative space-y-3"
-      style={{ boxShadow: "3px 3px 0 0 #241A14" }}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <span className={`text-xs font-black uppercase ${config.textColor}`}>
-          {config.label}（+{diffValue}%）
-        </span>
-        <span className="text-[10px] text-[#9E948C]">{match.updatedAt}</span>
-      </div>
-
-      {/* Match name */}
-      <div
-        className="font-black text-base text-[#241A14] flex items-center gap-2 flex-wrap"
-        style={{ fontFamily: "var(--font-heading)" }}
-      >
-        <span>{match.homeFlag} {match.homeTeam}</span>
-        <span className="text-[#9E948C] font-light text-sm">VS</span>
-        <span>{match.awayFlag} {match.awayTeam}</span>
-        {match.status === "finished" && (
-          <span className="ml-auto text-[10px] font-bold text-[#9E948C] border border-[#241A14] px-1.5 py-0.5">
-            已完赛
-          </span>
-        )}
-      </div>
-
-      {/* Prob bars */}
-      <div className="space-y-1.5">
-        <ProbBarRow label="Polymarket 真实资金池概率" prob={match.homeMarketProb} color="bg-[#D36E52]" />
-        <ProbBarRow label="传统赔率隐含概率" prob={match.homeOddsProb} color="bg-[#9E948C]" />
-      </div>
-
-      {/* Diff badge */}
-      <div className="flex justify-center">
-        <span className={`inline-block px-3 py-1 border border-[#241A14] text-[10px] font-black tracking-wide ${config.bg} ${config.text}`}>
-          差值 {diffValue >= 10 ? "≥10%" : diffValue >= 5 ? "5-10%" : "<5%"} · {config.label}
-        </span>
-      </div>
-
-      {/* Plain text */}
-      <div className="bg-black/5 border border-dashed border-[#241A14] p-2.5 text-xs text-[#241A14]">
-        <strong className="text-[#D36E52]">大白话：</strong> {match.diffText}
-      </div>
-
-      {/* Chart toggle */}
-      <motion.button
-        whileTap={{ scale: 0.97 }}
-        onClick={() => setShowChart(!showChart)}
-        className="w-full flex items-center justify-between py-1.5 text-[11px] font-bold text-[#5C524C] border-t border-dashed border-[#241A14]/30 pt-2 hover:text-[#D36E52] transition-colors"
-      >
-        <span className="flex items-center gap-1.5">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-          </svg>
-          {showChart ? "收起概率变化曲线" : "查看 24h 概率变化曲线"}
-        </span>
-        <motion.span animate={{ rotate: showChart ? 180 : 0 }} transition={{ duration: 0.2 }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 9l6 6 6-6"/>
-          </svg>
-        </motion.span>
-      </motion.button>
-
-      <AnimatePresence>
-        {showChart && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="overflow-hidden"
-          >
-            <div className="border border-[#241A14]/20 bg-[#F5F1E8] p-3 rounded-[2px]">
-              <p className="text-[10px] text-[#9E948C] mb-2">
-                {match.homeTeam} 胜率变化 · 红线 = 市场概率，虚线 = 赔率隐含
-              </p>
-              <ProbLineChart data={match.history} homeTeam={match.homeTeam} />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <p className="text-[10px] text-[#9E948C] text-right">
-        来源：Polymarket · 赔率隐含换算 · 非投注建议
-      </p>
-    </motion.div>
-  );
+function localeForIntl(locale: string) {
+  return locale.startsWith("zh") ? "zh-CN" : "en-US";
 }
 
-// ============================================================
-// Legend
-// ============================================================
-function DiffLegend() {
-  return (
-    <div className="border border-[#241A14] p-3 bg-[#FAF7F0]">
-      <p className="text-[10px] font-black tracking-wider uppercase text-[#9E948C] mb-2" style={{ fontFamily: "var(--font-heading)" }}>
-        差值阈值图例
-      </p>
-      <div className="flex gap-3 flex-wrap">
-        {[
-          { label: "< 5%  基本一致", color: "bg-[#9CB48A]" },
-          { label: "5-10%  值得关注", color: "bg-[#E4A853]" },
-          { label: "> 10%  明显分歧", color: "bg-[#D36E52]" },
-        ].map((item) => (
-          <div key={item.label} className="flex items-center gap-1.5 text-[11px] text-[#5C524C]">
-            <span className={`w-3 h-3 ${item.color} border border-[#241A14]`} />
-            {item.label}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+function formatBrowserDateLabel(locale: string) {
+  return new Intl.DateTimeFormat(localeForIntl(locale), {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(new Date());
 }
 
-// ============================================================
-// 主页面
-// ============================================================
+function useBrowserDateLabel(locale: string) {
+  const [dateLabel, setDateLabel] = useState(() => formatBrowserDateLabel(locale));
+
+  useEffect(() => {
+    const updateDateLabel = () => setDateLabel(formatBrowserDateLabel(locale));
+    updateDateLabel();
+    const interval = window.setInterval(updateDateLabel, 60_000);
+    return () => window.clearInterval(interval);
+  }, [locale]);
+
+  return dateLabel;
+}
+
+function zonedParts(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    weekday: "short",
+  }).formatToParts(date);
+
+  return {
+    year: parts.find((part) => part.type === "year")?.value || "",
+    month: parts.find((part) => part.type === "month")?.value || "",
+    day: parts.find((part) => part.type === "day")?.value || "",
+    hour: parts.find((part) => part.type === "hour")?.value || "",
+    minute: parts.find((part) => part.type === "minute")?.value || "",
+  };
+}
+
+function weekdayZh(date: Date, timeZone: string) {
+  return new Intl.DateTimeFormat("zh-CN", { timeZone, weekday: "short" }).format(date);
+}
+
+function kickoffDate(match: Match | GameMatch): Date | null {
+  const source = "sourceMatch" in match ? match.sourceMatch : match;
+  if (source.kickoffAt) {
+    const parsed = new Date(source.kickoffAt);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+
+  const raw = match.kickoffBj;
+  const matchDate = raw.match(/^(\d{2})-(\d{2})\s+(\d{2}):(\d{2})$/);
+  if (!matchDate) return null;
+  const [, month, day, hour, minute] = matchDate;
+  const parsed = new Date(`2026-${month}-${day}T${hour}:${minute}:00+08:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatLocalDayLabel(date: Date, timeZone: string, locale: string) {
+  const parts = zonedParts(date, timeZone);
+  if (locale.startsWith("zh")) {
+    return `${Number(parts.month)}月${Number(parts.day)}日 ${weekdayZh(date, timeZone)}`;
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    weekday: "short",
+    month: "long",
+    day: "numeric",
+  }).format(date);
+}
+
+function formatKickoff(match: GameMatch, timeZone: string, locale: string) {
+  const kickoff = kickoffDate(match);
+  if (!kickoff) {
+    return {
+      time: match.kickoffBj || tr(locale, "时间待接入", "Time pending"),
+      zone: timeZone,
+      full: `${match.kickoffBj || tr(locale, "时间待接入", "Time pending")} · ${timeZone}`,
+    };
+  }
+
+  const intlLocale = localeForIntl(locale);
+  const localParts = zonedParts(kickoff, timeZone);
+  const time = locale.startsWith("zh")
+    ? `${Number(localParts.month)}月${Number(localParts.day)}日 ${Number(localParts.hour)}:${localParts.minute}`
+    : new Intl.DateTimeFormat(intlLocale, {
+      timeZone,
+      month: "numeric",
+      day: "numeric",
+      weekday: "short",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(kickoff);
+  const zoneName =
+    new Intl.DateTimeFormat(intlLocale, {
+      timeZone,
+      timeZoneName: "short",
+    })
+      .formatToParts(kickoff)
+      .find((part) => part.type === "timeZoneName")?.value || timeZone;
+
+  return {
+    time,
+    zone: `${timeZone} · ${zoneName}`,
+    full: `${time} · ${timeZone} ${zoneName}`,
+  };
+}
+
+function canonicalName(input: string | undefined) {
+  return String(input || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9\u4e00-\u9fff]+/g, "");
+}
+
+function teamCode(name: string, code?: string) {
+  if (code) return code;
+  const english = teamName(name, "en-US");
+  const letters = english.replace(/[^a-z0-9]/gi, "").slice(0, 3).toUpperCase();
+  return letters || "TBD";
+}
+
+function mergeLiveMatches(liveMatches: Match[]) {
+  const byId = new Map<string, Match[]>();
+  const byKey = new Map<string, Match[]>();
+
+  for (const match of liveMatches) {
+    byId.set(match.id, [...(byId.get(match.id) || []), match]);
+    const key = matchIdentityKey(match);
+    byKey.set(key, [...(byKey.get(key) || []), match]);
+  }
+
+  const usedIds = new Set<string>();
+  const usedKeys = new Set<string>();
+
+  const markUsed = (matches: Match[]) => {
+    for (const match of matches) {
+      usedIds.add(match.id);
+      usedKeys.add(matchIdentityKey(match));
+    }
+  };
+
+  const merged = allMatches.map((base) => {
+    const exactMatches = byId.get(base.id) || [];
+    const identityMatches = byKey.get(matchIdentityKey(base)) || [];
+    const live = exactMatches[0] || identityMatches[0];
+    if (!live) return base;
+    markUsed([...exactMatches, ...identityMatches]);
+    return mergeMatchWithOfficialSource(base, live);
+  });
+
+  const mergedKeys = new Set(merged.map(matchIdentityKey));
+  for (const match of liveMatches) {
+    const key = matchIdentityKey(match);
+    if (usedIds.has(match.id) || usedKeys.has(key) || mergedKeys.has(key)) continue;
+    merged.push(match);
+    usedIds.add(match.id);
+    usedKeys.add(key);
+    mergedKeys.add(key);
+  }
+
+  return merged;
+}
+
+function findRadarForMatch(match: Match, radarMatches: RadarMatch[]) {
+  const home = canonicalName(match.homeTeam);
+  const away = canonicalName(match.awayTeam);
+  return radarMatches.find((item) => {
+    const fields = [item.homeTeam, item.awayTeam, item.title, item.marketLabel].map(canonicalName);
+    return fields.some((field) => field.includes(home)) && fields.some((field) => field.includes(away));
+  });
+}
+
+function probabilityPrice(value: number) {
+  return `${Math.max(0, Math.min(100, Math.round(value)))}¢`;
+}
+
+function moneylineOutcomes(match: Match): Outcome[] {
+  const home = match.homeWinProb || match.oddsImpliedHome;
+  const draw = match.drawProb || match.oddsImpliedDraw;
+  const away = match.awayWinProb || match.oddsImpliedAway;
+  if (![home, draw, away].some((value) => value > 0)) return [];
+
+  return [
+    {
+      label: { zh: `${teamCode(match.homeTeam, match.homeCode)} ${probabilityPrice(home)}`, en: `${teamCode(match.homeTeam, match.homeCode)} ${probabilityPrice(home)}` },
+      value: `${teamCode(match.homeTeam, match.homeCode)} ${probabilityPrice(home)}`,
+      tone: "primary",
+    },
+    {
+      label: { zh: `DRAW ${probabilityPrice(draw)}`, en: `DRAW ${probabilityPrice(draw)}` },
+      value: `DRAW ${probabilityPrice(draw)}`,
+      tone: "neutral",
+    },
+    {
+      label: { zh: `${teamCode(match.awayTeam, match.awayCode)} ${probabilityPrice(away)}`, en: `${teamCode(match.awayTeam, match.awayCode)} ${probabilityPrice(away)}` },
+      value: `${teamCode(match.awayTeam, match.awayCode)} ${probabilityPrice(away)}`,
+      tone: "success",
+    },
+  ];
+}
+
+function marketsFromMatch(match: Match): MatchMarket[] {
+  return [
+    { title: { zh: "胜负线", en: "Moneyline" }, outcomes: moneylineOutcomes(match) },
+    { title: { zh: "让分", en: "Spread" }, outcomes: [] },
+    { title: { zh: "总分", en: "Total" }, outcomes: [] },
+  ];
+}
+
+function toGameMatch(match: Match, radarMatches: RadarMatch[]): GameMatch {
+  const radarMatch = findRadarForMatch(match, radarMatches);
+  return {
+    id: match.id,
+    kickoffBj: match.kickoffBj,
+    volume: radarMatch?.volume,
+    volumeUsd: radarMatch?.volumeUsd,
+    homeScore: match.homeScore,
+    awayScore: match.awayScore,
+    home: match.homeTeam,
+    away: match.awayTeam,
+    homeCode: teamCode(match.homeTeam, match.homeCode),
+    awayCode: teamCode(match.awayTeam, match.awayCode),
+    homeFlag: match.homeFlag,
+    awayFlag: match.awayFlag,
+    sourceMatch: match,
+    radarMatch,
+    markets: marketsFromMatch(match),
+  };
+}
+
+function groupGameMatches(matches: Match[], radarMatches: RadarMatch[], locale: string): DisplayMatchDay[] {
+  const grouped = new Map<string, DisplayMatchDay & { firstKickoff: number }>();
+
+  for (const match of matches) {
+    const kickoff = kickoffDate(match);
+    if (!kickoff) continue;
+    const parts = zonedParts(kickoff, beijingTimeZone);
+    const key = `${parts.year}-${parts.month.padStart(2, "0")}-${parts.day.padStart(2, "0")}`;
+    const gameMatch = toGameMatch(match, radarMatches);
+    const existing = grouped.get(key);
+    if (existing) {
+      existing.matches.push(gameMatch);
+      existing.firstKickoff = Math.min(existing.firstKickoff, kickoff.getTime());
+    } else {
+      grouped.set(key, {
+        key,
+        label: formatLocalDayLabel(kickoff, beijingTimeZone, locale),
+        matches: [gameMatch],
+        firstKickoff: kickoff.getTime(),
+      });
+    }
+  }
+
+  return Array.from(grouped.values())
+    .sort((left, right) => left.firstKickoff - right.firstKickoff)
+    .map((day) => ({
+      key: day.key,
+      label: day.label,
+      matches: day.matches.sort((left, right) => {
+        const leftDate = kickoffDate(left)?.getTime() || 0;
+        const rightDate = kickoffDate(right)?.getTime() || 0;
+        return leftDate - rightDate;
+      }),
+    }));
+}
+
+function bracketRoundsFromMatches(matches: Match[]): BracketRound[] {
+  const groups = new Map<string, Match[]>();
+  for (const match of matches) {
+    if (match.group.includes("组")) continue;
+    groups.set(match.round, [...(groups.get(match.round) || []), match]);
+  }
+
+  return Array.from(groups.entries())
+    .map(([round, roundMatches]) => ({
+      title: { zh: round, en: roundLabel(round, "en-US") },
+      matches: roundMatches.sort((left, right) => (kickoffDate(left)?.getTime() || 0) - (kickoffDate(right)?.getTime() || 0)),
+    }))
+    .sort((left, right) => {
+      const leftTime = kickoffDate(left.matches[0])?.getTime() || 0;
+      const rightTime = kickoffDate(right.matches[0])?.getTime() || 0;
+      return leftTime - rightTime;
+    });
+}
+
+function liveMarketFromRadar(match: RadarMatch): PropMarket {
+  const title = match.title || `${match.homeTeam} vs ${match.awayTeam}`;
+  return {
+    id: match.id,
+    title: { zh: title, en: title },
+    volume: match.volume || (typeof match.volumeUsd === "number" ? `$${Math.round(match.volumeUsd).toLocaleString()}` : "Polymarket"),
+    icon: "PM",
+    choices: [
+      {
+        label: { zh: match.homeTeam, en: match.homeTeam },
+        probability: match.homeMarketProb,
+        yes: `${match.homeMarketProb}%`,
+        no: `${Math.max(0, 100 - match.homeMarketProb)}%`,
+      },
+      {
+        label: { zh: match.awayTeam, en: match.awayTeam },
+        probability: match.awayMarketProb,
+        yes: `${match.awayMarketProb}%`,
+        no: `${Math.max(0, 100 - match.awayMarketProb)}%`,
+      },
+    ],
+  };
+}
+
+function volumeValue(match: RadarMatch): number {
+  if (typeof match.volumeUsd === "number" && Number.isFinite(match.volumeUsd)) return match.volumeUsd;
+  const raw = String(match.volume || "").trim().toLowerCase().replace(/[$,\s]/g, "");
+  const matchValue = raw.match(/^(\d+(?:\.\d+)?)([kmb])?$/);
+  if (!matchValue) return 0;
+  const value = Number(matchValue[1]);
+  const multiplier = matchValue[2] === "b" ? 1_000_000_000 : matchValue[2] === "m" ? 1_000_000 : matchValue[2] === "k" ? 1_000 : 1;
+  return value * multiplier;
+}
+
+function isWorldCupRadarMatch(match: RadarMatch): boolean {
+  const text = [match.title, match.marketLabel, match.homeTeam, match.awayTeam].filter(Boolean).join(" ").toLowerCase();
+  return ["world cup", "世界杯", "fifa"].some((keyword) => text.includes(keyword));
+}
+
+function sourceLabel(source: DataSourceMode | undefined, diagnostics: Array<{ name: string; ok: boolean }> | undefined, emptyLabel: string) {
+  const firstOk = diagnostics?.find((item) => item.ok);
+  if (source === "remote" && firstOk) return `${firstOk.name} · 远端数据`;
+  if (source === "cache") return "PostgreSQL · 持久化快照";
+  return emptyLabel;
+}
+
 export function RadarEyeScreen() {
-  const [items, setItems] = useState<RadarMatch[]>([]);
-  const [dataSourceLabel, setDataSourceLabel] = useState("等待数据源");
+  const { i18n } = useTranslation();
+  const locale = i18n.resolvedLanguage || i18n.language;
+  const [activeTab, setActiveTab] = useState<TabKey>("games");
+  const [radarItems, setRadarItems] = useState<RadarMatch[]>([]);
+  const [liveMatches, setLiveMatches] = useState<Match[]>([]);
+  const [radarSourceLabel, setRadarSourceLabel] = useState("预测市场数据待接入");
+  const [matchSourceLabel, setMatchSourceLabel] = useState("FIFA 官方赛程 · 本地/数据库数据源");
+  const browserDateLabel = useBrowserDateLabel(locale);
+
+  const sortedRadarItems = useMemo(
+    () =>
+      radarItems.slice().sort((left, right) =>
+        volumeValue(right) - volumeValue(left)
+        || Math.abs(right.homeMarketProb - right.homeOddsProb) - Math.abs(left.homeMarketProb - left.homeOddsProb),
+      ),
+    [radarItems],
+  );
+
+  const mergedMatches = useMemo(() => mergeLiveMatches(liveMatches), [liveMatches]);
+  const displayMatchDays = useMemo(
+    () => groupGameMatches(mergedMatches, sortedRadarItems, locale),
+    [mergedMatches, sortedRadarItems, locale],
+  );
+  const propMarkets = useMemo(() => sortedRadarItems.slice(0, 12).map(liveMarketFromRadar), [sortedRadarItems]);
+  const standings = useMemo(() => getGroupStandings(mergedMatches), [mergedMatches]);
+  const bracketRounds = useMemo(() => bracketRoundsFromMatches(mergedMatches), [mergedMatches]);
+  const matchSequence = useMemo(() => createMatchSequenceLookup(mergedMatches), [mergedMatches]);
 
   useEffect(() => {
     let cancelled = false;
-    async function loadRadar() {
-      const res = await fetch("/api/data/radar", { cache: "no-store" });
-      if (!res.ok) return;
-      const data = (await res.json()) as {
-        radarMatches?: RadarMatch[];
-        source?: "remote" | "fallback" | "cache";
-        diagnostics?: Array<{ name: string; ok: boolean }>;
-      };
-      if (cancelled) return;
-      setItems(data.radarMatches || []);
-      const firstOk = data.diagnostics?.find((item) => item.ok);
-      if (data.source === "cache") {
-        setDataSourceLabel("PostgreSQL · 持久化快照");
-      } else if (data.source === "remote" && firstOk) {
-        setDataSourceLabel(`${firstOk.name} · 远端数据`);
-      } else {
-        setDataSourceLabel("暂无可用市场数据");
+
+    async function loadData() {
+      try {
+        const [radarResponse, matchResponses] = await Promise.all([
+          fetch("/api/data/radar"),
+          Promise.all(
+            dateKeys.map(async (dateKey) => {
+              const response = await fetch(`/api/data/matches?dateKey=${dateKey}`);
+              if (!response.ok) return { matches: [] as Match[], source: undefined as DataSourceMode | undefined, diagnostics: [] };
+              return (await response.json()) as {
+                matches?: Match[];
+                source?: DataSourceMode;
+                diagnostics?: Array<{ name: string; ok: boolean }>;
+              };
+            }),
+          ),
+        ]);
+
+        if (cancelled) return;
+
+        if (radarResponse.ok) {
+          const data = (await radarResponse.json()) as {
+            radarMatches?: RadarMatch[];
+            source?: DataSourceMode;
+            diagnostics?: Array<{ name: string; ok: boolean }>;
+          };
+          const worldCupMatches = (data.radarMatches || []).filter(isWorldCupRadarMatch);
+          setRadarItems(worldCupMatches);
+          setRadarSourceLabel(sourceLabel(data.source, data.diagnostics, "预测市场数据待接入"));
+        }
+
+        const matches = matchResponses.flatMap((item) => item.matches || []);
+        setLiveMatches(matches);
+        const firstUsefulSource = matchResponses.find((item) => item.source === "remote" || item.source === "cache");
+        setMatchSourceLabel(sourceLabel(firstUsefulSource?.source, firstUsefulSource?.diagnostics, "FIFA 官方赛程 · 本地/数据库数据源"));
+      } catch {
+        if (!cancelled) {
+          setRadarSourceLabel("预测市场数据待接入");
+          setMatchSourceLabel("FIFA 官方赛程 · 本地/数据库数据源");
+        }
       }
     }
 
-    void loadRadar();
+    void loadData();
     return () => {
       cancelled = true;
     };
   }, []);
 
   return (
-    <div className="flex flex-col min-h-svh bg-[#F5F1E8]">
-      {/* Masthead */}
-      <div className="px-4 py-3 border-b-2 border-[#241A14] bg-[#FAF7F0]">
-        <div className="text-[10px] font-black tracking-[0.25em] text-[#9E948C] uppercase mb-0.5" style={{ fontFamily: "var(--font-heading)" }}>
-          赔率情报站
+    <div className="flex min-h-svh flex-col bg-[#F5F1E8]">
+      <header className="border-b-2 border-[#241A14] bg-[#FAF7F0] px-4 py-4 md:px-6">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-[10px] font-black uppercase tracking-[0.25em] text-[#9E948C]" style={{ fontFamily: "var(--font-heading)" }}>
+                {tr(locale, "2026 世界杯", "2026 World Cup")}
+              </div>
+              <h1 className="mt-1 text-2xl font-black leading-tight text-[#241A14] md:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>
+                {tr(locale, "盘口", "Odds")}
+              </h1>
+            </div>
+            <div className="border border-[#241A14] bg-[#EDE9E0] px-3 py-2 text-right">
+              <p className="text-xs font-black text-[#241A14]">{browserDateLabel}</p>
+            </div>
+          </div>
+
+          <p className="mt-2 max-w-2xl text-xs leading-relaxed text-[#5C524C]">
+            {tr(
+              locale,
+              `比赛结构来自赛程/比分源；盘口、交易量和玩法只展示已接入来源返回的数据。当前赛程：${matchSourceLabel}；市场：${radarSourceLabel}。`,
+              `Fixtures come from schedule/score sources; prices, volume, and props are shown only when connected sources return them. Fixtures: ${matchSourceLabel}; markets: ${radarSourceLabel}.`,
+            )}
+          </p>
+
+          <div className="mt-4 overflow-x-auto">
+            <div className="inline-flex min-w-full border border-[#241A14] bg-[#F5F1E8] p-1 sm:min-w-0">
+              {tabDefinitions.map(({ key, label, Icon }) => {
+                const isActive = activeTab === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setActiveTab(key)}
+                    className={`flex min-h-10 flex-1 items-center justify-center gap-1.5 border px-3 text-xs font-black transition-colors sm:min-w-28 ${
+                      isActive
+                        ? "border-[#241A14] bg-[#D36E52] text-white"
+                        : "border-transparent text-[#5C524C] hover:border-[#241A14]/30 hover:bg-[#EDE9E0]"
+                    }`}
+                  >
+                    <Icon className="size-4" strokeWidth={2.4} />
+                    {localize(locale, label)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
-        <div className="flex justify-between items-start">
-          <h1 className="text-2xl font-black text-[#241A14] leading-tight" style={{ fontFamily: "var(--font-heading)" }}>
-            天眼雷达
-          </h1>
-          <span className="text-[9px] font-bold bg-[#D36E52] text-white px-1.5 py-0.5 border border-[#241A14] mt-1">
-            异常实时更新
-          </span>
+      </header>
+
+      <main className="flex-1 px-4 py-4 md:px-6 md:py-6">
+        <div className="mx-auto max-w-6xl">
+          {activeTab === "games" && <GamesTab locale={locale} days={displayMatchDays} sourceLabel={matchSourceLabel} />}
+          {activeTab === "props" && <PropsTab locale={locale} markets={propMarkets} sourceLabel={radarSourceLabel} />}
+          {activeTab === "groups" && <GroupsTab locale={locale} standings={standings} />}
+          {activeTab === "bracket" && <BracketTab locale={locale} rounds={bracketRounds} matchSequence={matchSequence} />}
         </div>
-        <p className="text-xs text-[#5C524C] mt-1.5 leading-relaxed">
-          对比 <strong>Polymarket 链上真实资金池</strong> 与 <strong>传统赔率隐含概率</strong> 的差距。
-          点击每张卡片可展开 24h 概率变化曲线。当前：{dataSourceLabel}。
-        </p>
+      </main>
+    </div>
+  );
+}
+
+function GamesTab({ locale, days, sourceLabel }: { locale: string; days: DisplayMatchDay[]; sourceLabel: string }) {
+  return (
+    <div className="space-y-4">
+      <SectionLead
+        locale={locale}
+        label={{ zh: "比赛", en: "Games" }}
+        title={{ zh: "按日期展开比赛盘口", en: "Game markets by date" }}
+        copy={{
+          zh: `赛程和比分来自数据源：${sourceLabel}。未接入的盘口列显示待接入，不使用固定价格。`,
+          en: `Fixtures and scores come from data sources: ${sourceLabel}. Missing market columns show pending instead of fixed prices.`,
+        }}
+      />
+
+      {days.map((day) => (
+        <section key={day.key} className="border-2 border-[#241A14] bg-[#FAF7F0]">
+          <div className="flex items-center gap-2 border-b-2 border-[#241A14] bg-[#EDE9E0] px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-[#241A14]">
+            <CalendarDays className="size-4 text-[#D36E52]" strokeWidth={2.4} />
+            {day.label}
+          </div>
+
+          <div className="divide-y divide-[#241A14]/25">
+            {day.matches.map((match, index) => (
+              <CompactGameCard key={match.id} match={match} locale={locale} index={index} timeZone={beijingTimeZone} />
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function MarketColumnHeaderRow({ locale }: { locale: string }) {
+  return (
+    <div className="grid grid-cols-[minmax(11rem,1.25fr)_repeat(3,minmax(0,0.75fr))] gap-1.5 text-[9px] font-black uppercase tracking-[0.08em] text-[#9E948C] md:grid-cols-[minmax(14rem,1.35fr)_repeat(3,minmax(0,0.8fr))] md:gap-2 md:text-[10px] lg:grid-cols-[360px_repeat(3,minmax(0,1fr))] lg:gap-3 lg:tracking-[0.16em]">
+      <span aria-hidden="true" />
+      <span className="text-center">{tr(locale, "胜负线", "Moneyline")}</span>
+      <span className="text-center">{tr(locale, "让分", "Spread")}</span>
+      <span className="text-center">{tr(locale, "总分", "Total")}</span>
+    </div>
+  );
+}
+
+function CompactGameCard({
+  match,
+  locale,
+  index,
+  timeZone,
+}: {
+  match: GameMatch;
+  locale: string;
+  index: number;
+  timeZone: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [detailTab, setDetailTab] = useState<GameDetailTabKey>("markets");
+  const [infoTab, setInfoTab] = useState<GameInfoTabKey>("rules");
+  const kickoff = formatKickoff(match, timeZone, locale);
+  const volumeLabel = match.volume || tr(locale, "交易量待接入", "Volume pending");
+
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, delay: index * 0.03 }}
+      className="bg-[#FAF7F0]"
+    >
+      <div className="space-y-3 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2 text-[10px] font-black text-[#9E948C]">
+            <span className="border border-[#241A14] bg-[#F5F1E8] px-2 py-1 text-xs text-[#241A14]">{kickoff.time}</span>
+            <span className="uppercase tracking-[0.12em]">{kickoff.zone}</span>
+            <span className="text-xs">{volumeLabel} {match.volume ? tr(locale, "交易量", "Volume") : ""}</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setExpanded((value) => !value)}
+            className={`inline-flex min-h-8 items-center gap-1.5 border border-[#241A14] px-2.5 text-[11px] font-black transition-colors ${
+              expanded ? "bg-[#D36E52] text-white" : "bg-[#EDE9E0] text-[#241A14] hover:bg-[#D36E52] hover:text-white"
+            }`}
+            aria-expanded={expanded}
+          >
+            {tr(locale, "比赛视图", "Match view")}
+            <ChevronRight className={`size-3.5 transition-transform ${expanded ? "rotate-90" : ""}`} />
+          </button>
+        </div>
+
+        <MarketColumnHeaderRow locale={locale} />
+
+        <div className="grid grid-cols-[minmax(11rem,1.25fr)_repeat(3,minmax(0,0.75fr))] items-stretch gap-1.5 md:grid-cols-[minmax(14rem,1.35fr)_repeat(3,minmax(0,0.8fr))] md:gap-2 lg:grid-cols-[360px_repeat(3,minmax(0,1fr))] lg:gap-3">
+          <div className="self-center space-y-1.5">
+            <TeamScoreLine
+              flag={match.homeFlag}
+              name={teamName(match.home, locale)}
+              code={match.homeCode}
+              score={`${match.homeScore ?? 0}-${match.awayScore ?? 0}`}
+            />
+            <TeamScoreLine
+              flag={match.awayFlag}
+              name={teamName(match.away, locale)}
+              code={match.awayCode}
+              score={`${match.awayScore ?? 0}-${match.homeScore ?? 0}`}
+            />
+          </div>
+
+          {match.markets.map((market) => (
+            <CompactMarketColumn key={market.title.en} locale={locale} market={market} />
+          ))}
+        </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        {items.length > 0 ? (
-          <>
-            <DiffLegend />
-            {items.map((m) => (
-              <RadarCard key={m.id} match={m} />
-            ))}
-          </>
-        ) : (
-          <div className="border-2 border-dashed border-[#241A14] p-8 text-center">
-            <p className="text-sm font-bold text-[#241A14]">暂无雷达数据</p>
-            <p className="mt-1 text-[11px] text-[#9E948C]">预测市场或赔率源返回数据后会自动显示。</p>
-          </div>
-        )}
-        <div className="border border-[#241A14] p-3 text-xs text-[#5C524C]">
-          <strong className="text-[#241A14]">数据来源说明：</strong>
-          「Polymarket 概率」来自链上真实资金池，反映真金白银的市场判断。
-          「赔率隐含概率」由欧赔换算（公式：1 ÷ 欧赔），代表传统机构定价。
-          两者分歧越大，信息越值得关注。本工具不构成任何投注建议。
+      {expanded && (
+        <GameDetailView
+          match={match}
+          locale={locale}
+          detailTab={detailTab}
+          onDetailTabChange={setDetailTab}
+          infoTab={infoTab}
+          onInfoTabChange={setInfoTab}
+          kickoffLabel={kickoff.full}
+        />
+      )}
+    </motion.article>
+  );
+}
+
+function TeamScoreLine({ flag, name, code, score }: { flag: string; name: string; code: string; score: string }) {
+  return (
+    <div className="grid grid-cols-[1.5rem_minmax(0,1fr)] items-center gap-1.5 text-left text-[#241A14] sm:grid-cols-[2rem_minmax(0,1fr)] sm:gap-2">
+      <span className="grid size-6 place-items-center border border-[#241A14] bg-[#F5F1E8] text-xs sm:size-8 sm:text-base">{flag}</span>
+      <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <span className="text-xs font-black leading-tight md:text-base">{name}</span>
+        <span className="shrink-0 text-[10px] font-black text-[#9E948C] sm:text-sm">{score}</span>
+        <span className="shrink-0 text-[10px] font-black uppercase tracking-[0.12em] text-[#9E948C] sm:tracking-[0.16em]">{code}</span>
+      </span>
+    </div>
+  );
+}
+
+function CompactMarketColumn({ locale, market }: { locale: string; market: MatchMarket }) {
+  if (market.outcomes.length === 0) {
+    return (
+      <div className="min-w-0 self-stretch">
+        <div className="flex h-full min-h-8 items-center justify-center border border-dashed border-[#241A14]/50 bg-[#EDE9E0]/60 px-1.5 py-1 text-center text-[9px] font-black text-[#9E948C] sm:text-[10px] lg:min-h-10">
+          {tr(locale, "待接入", "Pending")}
         </div>
       </div>
+    );
+  }
+
+  const isTwoOutcomeMarket = market.outcomes.length === 2;
+  return (
+    <div className="min-w-0 self-stretch">
+      <div className={isTwoOutcomeMarket ? "flex h-full flex-col gap-1" : "grid h-full grid-rows-3 gap-1"}>
+        {market.outcomes.map((outcome) => (
+          <CompactPriceButton key={outcome.value} outcome={outcome} locale={locale} fill={isTwoOutcomeMarket} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CompactPriceButton({ outcome, locale, fill = false }: { outcome: Outcome; locale: string; fill?: boolean }) {
+  const displayValue = localize(locale, outcome.label);
+  const match = displayValue.match(/^(.*)\s+(\S+(?:¢|%))$/);
+  const label = match?.[1] || displayValue;
+  const price = match?.[2];
+  const toneClass =
+    outcome.tone === "success"
+      ? "bg-[#9CB48A]/20 hover:bg-[#9CB48A]/35"
+      : outcome.tone === "neutral"
+        ? "bg-[#EDE9E0] hover:bg-[#E4A853]/25"
+        : "bg-[#D36E52]/12 hover:bg-[#D36E52]/22";
+
+  return (
+    <button
+      type="button"
+      className={`flex min-h-8 min-w-0 flex-col justify-center border border-[#241A14] px-1.5 py-1 text-left text-[9px] font-black leading-tight text-[#241A14] transition-colors sm:text-[10px] lg:min-h-10 lg:flex-row lg:items-center lg:justify-center lg:gap-1 lg:px-2 lg:text-center lg:text-sm ${toneClass} ${fill ? "flex-1" : ""}`}
+    >
+      {price ? (
+        <>
+          <span className="min-w-0 truncate">{label}</span>
+          <span className="shrink-0">{price}</span>
+        </>
+      ) : (
+        <span className="min-w-0 truncate">{displayValue}</span>
+      )}
+    </button>
+  );
+}
+
+function GameDetailView({
+  match,
+  locale,
+  detailTab,
+  onDetailTabChange,
+  infoTab,
+  onInfoTabChange,
+  kickoffLabel,
+}: {
+  match: GameMatch;
+  locale: string;
+  detailTab: GameDetailTabKey;
+  onDetailTabChange: (tab: GameDetailTabKey) => void;
+  infoTab: GameInfoTabKey;
+  onInfoTabChange: (tab: GameInfoTabKey) => void;
+  kickoffLabel: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      className="overflow-hidden border-t border-[#241A14]/25 bg-[#F5F1E8]"
+    >
+      <div className="grid gap-3 p-3 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="border border-[#241A14] bg-[#FAF7F0] p-3">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
+                {teamName(match.home, locale)} vs {teamName(match.away, locale)}
+              </h3>
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9E948C]">
+                {tr(locale, "概率走势 · 来源数据", "Probability trend · source data")}
+              </p>
+            </div>
+            <span className="border border-[#241A14] bg-[#EDE9E0] px-2 py-1 text-[10px] font-black text-[#241A14]">
+              {match.volume || tr(locale, "交易量待接入", "Volume pending")}
+            </span>
+          </div>
+
+          <ProbabilityTrendChart match={match} locale={locale} />
+
+          <div className="mt-3 overflow-x-auto">
+            <div className="inline-flex min-w-full border border-[#241A14] bg-[#F5F1E8] p-1 sm:min-w-0">
+              {gameDetailTabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => onDetailTabChange(tab.key)}
+                  className={`min-h-8 flex-1 whitespace-nowrap border px-2 text-[10px] font-black transition-colors ${
+                    detailTab === tab.key
+                      ? "border-[#241A14] bg-[#D36E52] text-white"
+                      : "border-transparent text-[#5C524C] hover:bg-[#EDE9E0]"
+                  }`}
+                >
+                  {localize(locale, tab.label)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <MarketDetailPanel match={match} locale={locale} activeTab={detailTab} />
+        </div>
+
+        <div className="border border-[#241A14] bg-[#FAF7F0] p-3">
+          <div className="grid grid-cols-2 border border-[#241A14] bg-[#F5F1E8] p-1">
+            {gameInfoTabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => onInfoTabChange(tab.key)}
+                className={`min-h-8 border px-2 text-[10px] font-black transition-colors ${
+                  infoTab === tab.key
+                    ? "border-[#241A14] bg-[#D36E52] text-white"
+                    : "border-transparent text-[#5C524C] hover:bg-[#EDE9E0]"
+                }`}
+              >
+                {localize(locale, tab.label)}
+              </button>
+            ))}
+          </div>
+          <InfoPanel match={match} locale={locale} activeTab={infoTab} kickoffLabel={kickoffLabel} />
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function ProbabilityTrendChart({ match, locale }: { match: GameMatch; locale: string }) {
+  const points = (match.radarMatch?.history || []).filter((point) =>
+    Number.isFinite(point.market) && Number.isFinite(point.odds),
+  );
+
+  if (points.length < 2) {
+    return (
+      <div className="flex h-48 items-center justify-center border border-dashed border-[#241A14]/50 bg-[#F5F1E8] px-4 text-center text-xs font-bold text-[#9E948C]">
+        {tr(locale, "概率走势图待数据源返回历史价格后显示。", "Trend chart appears after the data source returns historical prices.")}
+      </div>
+    );
+  }
+
+  const W = 720;
+  const H = 180;
+  const PAD = { top: 18, right: 18, bottom: 30, left: 34 };
+  const chartW = W - PAD.left - PAD.right;
+  const chartH = H - PAD.top - PAD.bottom;
+  const allValues = points.flatMap((point) => [point.market, point.odds]);
+  const min = Math.max(0, Math.min(...allValues) - 8);
+  const max = Math.min(100, Math.max(...allValues) + 8);
+  const toX = (index: number) => (index / (points.length - 1)) * chartW;
+  const toY = (value: number) => chartH - ((value - min) / Math.max(1, max - min)) * chartH;
+  const line = (key: "market" | "odds") =>
+    points.map((point, index) => `${index === 0 ? "M" : "L"} ${toX(index).toFixed(1)} ${toY(point[key]).toFixed(1)}`).join(" ");
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="h-48 w-full border border-[#241A14] bg-[#F5F1E8]" role="img" aria-label={tr(locale, "比赛概率走势图", "Match probability trend")}>
+      <g transform={`translate(${PAD.left}, ${PAD.top})`}>
+        {[min, Math.round((min + max) / 2), max].map((tick) => (
+          <g key={tick}>
+            <line x1={0} x2={chartW} y1={toY(tick)} y2={toY(tick)} stroke="#241A14" strokeDasharray="4 4" opacity={0.18} />
+            <text x={-8} y={toY(tick)} textAnchor="end" dominantBaseline="middle" fontSize="10" fill="#9E948C">
+              {Math.round(tick)}%
+            </text>
+          </g>
+        ))}
+
+        <motion.path d={line("market")} fill="none" stroke="#D36E52" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} />
+        <motion.path d={line("odds")} fill="none" stroke="#9E948C" strokeWidth="2" strokeDasharray="5 4" strokeLinecap="round" strokeLinejoin="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} />
+
+        {points.map((point, index) => (
+          <g key={`${point.time}-${index}`}>
+            <text x={toX(index)} y={chartH + 20} textAnchor="middle" fontSize="10" fill="#9E948C">
+              {point.time}
+            </text>
+            <circle cx={toX(index)} cy={toY(point.market)} r="3" fill="#D36E52" />
+            <circle cx={toX(index)} cy={toY(point.odds)} r="2.5" fill="#9E948C" />
+          </g>
+        ))}
+      </g>
+    </svg>
+  );
+}
+
+function MarketDetailPanel({ match, locale, activeTab }: { match: GameMatch; locale: string; activeTab: GameDetailTabKey }) {
+  const detailItems = detailItemsFor(match, locale, activeTab);
+
+  return (
+    <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+      {detailItems.map((item) => (
+        <div key={item.title} className="border border-[#241A14] bg-[#F5F1E8] p-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-black text-[#241A14]">{item.title}</span>
+            <span className="text-[10px] font-black text-[#9E948C]">{item.value}</span>
+          </div>
+          <p className="mt-1 text-[10px] leading-relaxed text-[#5C524C]">{item.copy}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function InfoPanel({ match, locale, activeTab, kickoffLabel }: { match: GameMatch; locale: string; activeTab: GameInfoTabKey; kickoffLabel: string }) {
+  const isRules = activeTab === "rules";
+  return (
+    <div className="mt-3 space-y-2 text-xs leading-relaxed text-[#5C524C]">
+      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-[#9E948C]">
+        <Info className="size-3.5 text-[#D36E52]" />
+        {isRules ? tr(locale, "结算说明", "Settlement") : tr(locale, "盘口背景", "Market context")}
+      </div>
+      {isRules ? (
+        <>
+          <p>
+            {tr(locale, "胜负线、让分、总分只展示已接入数据源返回的字段；未返回时显示待接入。比分以比分源或官方赛程状态为准，未开赛显示 0-0。", "Moneyline, spread, and total only show fields returned by connected sources; missing fields show pending. Scores follow score feeds or official fixture state, with upcoming matches shown as 0-0.")}
+          </p>
+          <p className="font-bold text-[#241A14]">
+            {tr(locale, "本页只做信息展示，不提供交易能力，也不构成投注建议。", "This page is informational only and does not provide trading or betting advice.")}
+          </p>
+        </>
+      ) : (
+        <>
+          <p>
+            {teamName(match.home, locale)} vs {teamName(match.away, locale)} · {kickoffLabel}
+          </p>
+          <p>
+            {tr(locale, `赛程来源：${match.sourceMatch.updatedAt || "数据源"}。盘口历史、让分、总分、半场、角球、进球、助攻和射门等待对应数据源返回。`, `Fixture source: ${match.sourceMatch.updatedAt || "data source"}. Price history, spread, totals, halftime, corners, goals, assists, and shots wait for matching source fields.`)}
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+function pendingDetail(locale: string, title: string) {
+  return {
+    title,
+    value: tr(locale, "待接入", "Pending"),
+    copy: tr(locale, "对应数据源暂未返回该字段，页面不会用固定值或估算值填充。", "The connected source has not returned this field, so the page does not fill it with fixed or estimated values."),
+  };
+}
+
+function detailItemsFor(match: GameMatch, locale: string, activeTab: GameDetailTabKey) {
+  if (activeTab === "markets") {
+    const rows = match.markets.flatMap((market) =>
+      market.outcomes.map((outcome) => ({
+        title: localize(locale, outcome.label),
+        value: localize(locale, market.title),
+        copy: tr(locale, "该价格来自已接入盘口或市场数据源。", "This price comes from a connected odds or market source."),
+      })),
+    );
+    return rows.length ? rows : [pendingDetail(locale, tr(locale, "比赛盘口", "Game lines"))];
+  }
+
+  const labels: Record<GameDetailTabKey, string> = {
+    markets: tr(locale, "比赛盘口", "Game lines"),
+    halftime: tr(locale, "半场", "Halftime"),
+    corners: tr(locale, "角球", "Corners"),
+    goals: tr(locale, "进球", "Goals"),
+    assists: tr(locale, "助攻", "Assists"),
+    shots: tr(locale, "射门", "Shots"),
+  };
+
+  return [pendingDetail(locale, labels[activeTab])];
+}
+
+function PropsTab({ locale, markets, sourceLabel }: { locale: string; markets: PropMarket[]; sourceLabel: string }) {
+  return (
+    <div className="space-y-4">
+      <SectionLead
+        locale={locale}
+        label={{ zh: "玩法", en: "Props" }}
+        title={{ zh: "热门冠军与事件玩法", en: "Popular winner and event markets" }}
+        copy={{
+          zh: `当前：${sourceLabel}。只展示预测市场源返回的玩法，不提供本地演示盘口。`,
+          en: `Current: ${sourceLabel}. Only markets returned by prediction-market sources are shown; no local demo props are used.`,
+        }}
+      />
+
+      {markets.length === 0 ? (
+        <EmptyState
+          locale={locale}
+          title={{ zh: "暂无玩法数据", en: "No prop markets" }}
+          copy={{ zh: "预测市场数据源返回记录后会自动显示。", en: "Markets will appear once the prediction-market source returns records." }}
+        />
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {markets.map((market, index) => (
+            <motion.article
+              key={market.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, delay: index * 0.025 }}
+              className="border border-[#241A14] bg-[#FAF7F0] p-3 shadow-[3px_3px_0_0_#241A14]"
+            >
+              <div className="flex gap-3">
+                <div className="grid size-12 shrink-0 place-items-center border border-[#241A14] bg-[#EDE9E0] text-sm font-black text-[#D36E52]">
+                  {market.icon}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="line-clamp-2 text-sm font-black leading-snug text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
+                    {localize(locale, market.title)}
+                  </h2>
+                  <p className="mt-1 text-[10px] font-bold text-[#9E948C]">{market.volume} {tr(locale, "交易量", "Volume")}</p>
+                </div>
+              </div>
+
+              <div className="mt-3 space-y-2">
+                {market.choices.map((choice) => (
+                  <div key={choice.label.en} className="space-y-1.5 border-t border-dashed border-[#241A14]/30 pt-2 first:border-t-0 first:pt-0">
+                    <div className="flex items-center justify-between gap-3 text-xs font-black text-[#241A14]">
+                      <span className="truncate">{localize(locale, choice.label)}</span>
+                      <span>{choice.probability}%</span>
+                    </div>
+                    <div className="h-2 border border-[#241A14] bg-[#EDE9E0]">
+                      <div className="h-full bg-[#D36E52]" style={{ width: `${Math.max(2, Math.min(100, choice.probability))}%` }} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button type="button" className="border border-[#241A14] bg-[#D36E52]/12 px-2 py-1.5 text-[11px] font-black text-[#241A14]">
+                        {tr(locale, "是", "Yes")} · {choice.yes}
+                      </button>
+                      <button type="button" className="border border-[#241A14] bg-[#9CB48A]/20 px-2 py-1.5 text-[11px] font-black text-[#241A14]">
+                        {tr(locale, "否", "No")} · {choice.no}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.article>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GroupsTab({ locale, standings }: { locale: string; standings: GroupStanding[] }) {
+  return (
+    <div className="space-y-4">
+      <SectionLead
+        locale={locale}
+        label={{ zh: "Groups", en: "Groups" }}
+        title={{ zh: "小组积分表", en: "Group tables" }}
+        copy={{
+          zh: "分组和积分由赛程/比分源派生；夺冠概率字段未返回时显示待接入。",
+          en: "Groups and standings are derived from fixture/score sources; title probability shows pending until returned.",
+        }}
+      />
+
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {standings.map((group, index) => (
+          <motion.section
+            key={group.group}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: index * 0.02 }}
+            className="border border-[#241A14] bg-[#FAF7F0] shadow-[3px_3px_0_0_#241A14]"
+          >
+            <div className="flex items-center justify-between border-b-2 border-[#241A14] bg-[#EDE9E0] px-3 py-2">
+              <h2 className="text-base font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
+                {groupLabel(`${group.group} 组`, locale)}
+              </h2>
+              <span className="text-[10px] font-black uppercase tracking-[0.16em] text-[#9E948C]">Adv</span>
+            </div>
+
+            <div className="grid grid-cols-[1fr_repeat(5,2.1rem)_3.2rem] border-b border-[#241A14]/20 px-3 py-2 text-[10px] font-black uppercase text-[#9E948C]">
+              <span>{tr(locale, "球队", "Team")}</span>
+              <span className="text-center">P</span>
+              <span className="text-center">W</span>
+              <span className="text-center">D</span>
+              <span className="text-center">L</span>
+              <span className="text-center">Pts</span>
+              <span className="text-right">%</span>
+            </div>
+
+            <div>
+              {group.rows.map((row) => (
+                <div key={row.team} className="grid grid-cols-[1fr_repeat(5,2.1rem)_3.2rem] items-center px-3 py-2 text-xs font-bold text-[#241A14] odd:bg-[#F5F1E8]">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="grid size-7 shrink-0 place-items-center border border-[#241A14] bg-[#FAF7F0] text-sm">{row.flag}</span>
+                    <span className="truncate">{teamName(row.team, locale)}</span>
+                  </div>
+                  <span className="text-center text-[#5C524C]">{row.played}</span>
+                  <span className="text-center text-[#5C524C]">{row.won}</span>
+                  <span className="text-center text-[#5C524C]">{row.drawn}</span>
+                  <span className="text-center text-[#5C524C]">{row.lost}</span>
+                  <span className="text-center text-[#5C524C]">{row.points}</span>
+                  <span className="text-right font-black text-[#9E948C]">
+                    {row.championProbability === null ? tr(locale, "待接入", "Pending") : `${row.championProbability}%`}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BracketTab({ locale, rounds, matchSequence }: { locale: string; rounds: BracketRound[]; matchSequence: Map<string, number> }) {
+  return (
+    <div className="space-y-4">
+      <SectionLead
+        locale={locale}
+        label={{ zh: "对阵图", en: "Bracket" }}
+        title={{ zh: "淘汰赛晋级树", en: "Knockout bracket" }}
+        copy={{
+          zh: "淘汰赛席位由赛程数据源返回的占位或球队名称直接渲染。",
+          en: "Knockout slots render directly from fixture-source placeholders or team names.",
+        }}
+      />
+
+      <div className="overflow-x-auto border-2 border-[#241A14] bg-[#FAF7F0] p-3">
+        <div className="grid min-w-[980px] grid-flow-col auto-cols-[minmax(11rem,1fr)] gap-3">
+          {rounds.map((round) => (
+            <section key={round.title.zh} className="space-y-2">
+              <div className="sticky top-0 z-10 border border-[#241A14] bg-[#EDE9E0] px-2 py-2 text-center text-[11px] font-black uppercase tracking-[0.12em] text-[#241A14]">
+                {localize(locale, round.title)}
+              </div>
+              <div className="space-y-2">
+                {round.matches.map((match) => (
+                  <BracketMatch key={match.id} match={match} locale={locale} compact={round.matches.length <= 2} matchNo={getMatchSequenceNumber(match, matchSequence)} />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BracketMatch({ match, locale, compact, matchNo }: { match: Match; locale: string; compact: boolean; matchNo?: number }) {
+  return (
+    <div className={`relative border border-[#241A14] bg-[#F5F1E8] ${compact ? "my-8" : ""}`}>
+      <div className="border-b border-[#241A14] px-2 py-1.5 text-[10px] font-black text-[#9E948C]">
+        {matchNo ? `#${matchNo}` : ""}
+      </div>
+      <div className="grid grid-rows-2 divide-y divide-[#241A14]/20">
+        <div className="flex items-center justify-between px-2 py-2 text-xs font-black text-[#241A14]">
+          <span>{teamName(match.homeTeam, locale)}</span>
+          <span className="text-[#9E948C]">{teamCode(match.homeTeam, match.homeCode)}</span>
+        </div>
+        <div className="flex items-center justify-between px-2 py-2 text-xs font-black text-[#241A14]">
+          <span>{teamName(match.awayTeam, locale)}</span>
+          <span className="text-[#9E948C]">{teamCode(match.awayTeam, match.awayCode)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ locale, title, copy }: { locale: string; title: LocalizedText; copy: LocalizedText }) {
+  return (
+    <div className="border-2 border-dashed border-[#241A14] bg-[#FAF7F0] p-8 text-center">
+      <p className="text-sm font-black text-[#241A14]">{localize(locale, title)}</p>
+      <p className="mt-1 text-[11px] text-[#9E948C]">{localize(locale, copy)}</p>
+    </div>
+  );
+}
+
+function SectionLead({
+  locale,
+  label,
+  title,
+  copy,
+}: {
+  locale: string;
+  label: LocalizedText;
+  title: LocalizedText;
+  copy: LocalizedText;
+}) {
+  return (
+    <div className="border-l-4 border-[#D36E52] pl-3">
+      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#9E948C]">
+        <BarChart3 className="size-3.5 text-[#D36E52]" />
+        {localize(locale, label)}
+      </div>
+      <h2 className="mt-1 text-xl font-black leading-tight text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
+        {localize(locale, title)}
+      </h2>
+      <p className="mt-1 max-w-3xl text-xs leading-relaxed text-[#5C524C]">{localize(locale, copy)}</p>
     </div>
   );
 }

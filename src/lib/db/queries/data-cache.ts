@@ -1,11 +1,12 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { and, count, eq, gt, gte } from "drizzle-orm";
-import { db, isDatabaseConfigured } from "../client";
+import { getDb, isDatabaseConfigured } from "../client";
 import { dataSnapshots, dataSourceFetches, dataSourceUsageEvents } from "../schema/data-cache";
 
 export interface StoredCache<T> {
   payload: T;
+  storage: "database" | "file";
   expiresAt: Date;
   fetchedAt?: Date;
   computedAt?: Date;
@@ -54,7 +55,49 @@ type RuntimeCacheFile = {
   usageEvents: FileUsageEvent[];
 };
 
+type RawFetchCacheInput = {
+  cacheKey: string;
+  sourceId: string;
+  sourceType: string;
+  adapter: string;
+  requestUrl: string;
+  requestParams: Record<string, string | number | undefined>;
+  payload: unknown;
+  statusCode?: number;
+  ttlSeconds: number;
+};
+
+type SnapshotCacheInput = {
+  snapshotKey: string;
+  feature: string;
+  sourceMode: "remote" | "fallback";
+  sourceId?: string | null;
+  payload: unknown;
+  diagnostics: unknown;
+  ttlSeconds: number;
+};
+
+type SourceUsageInput = {
+  eventId: string;
+  sourceId: string;
+  sourceType: string;
+  adapter: string;
+  quotaCost?: number;
+  statusCode?: number;
+  fetchedAt?: Date;
+};
+
 const runtimeCachePath = path.join(process.cwd(), "data", "runtime-cache.json");
+
+function canUseRuntimeFileCache(): boolean {
+  return !isDatabaseConfigured && process.env.NODE_ENV !== "production";
+}
+
+function assertRuntimeCacheAllowed(operation: string) {
+  if (!canUseRuntimeFileCache()) {
+    throw new Error(`DATABASE_URL is required for ${operation} in production.`);
+  }
+}
 
 async function readRuntimeCache(): Promise<RuntimeCacheFile> {
   try {
@@ -89,21 +132,98 @@ function pruneRuntimeCache(cache: RuntimeCacheFile, now = new Date()): RuntimeCa
   return { rawFetches, snapshots, usageEvents };
 }
 
-export async function readRawFetchCache<T>(cacheKey: string): Promise<StoredCache<T> | undefined> {
-  if (!isDatabaseConfigured) {
-    const cache = await readRuntimeCache();
-    const row = cache.rawFetches[cacheKey];
-    if (!row || new Date(row.expiresAt) <= new Date()) return undefined;
+async function readRawFetchFile<T>(cacheKey: string): Promise<StoredCache<T> | undefined> {
+  const cache = await readRuntimeCache();
+  const row = cache.rawFetches[cacheKey];
+  if (!row || new Date(row.expiresAt) <= new Date()) return undefined;
+  return {
+    payload: row.payload as T,
+    storage: "file",
+    expiresAt: new Date(row.expiresAt),
+    fetchedAt: new Date(row.fetchedAt),
+    statusCode: row.statusCode,
+    sourceId: row.sourceId,
+  };
+}
+
+async function upsertRawFetchFile(input: RawFetchCacheInput): Promise<void> {
+  const now = new Date();
+  const cache = pruneRuntimeCache(await readRuntimeCache(), now);
+  cache.rawFetches[input.cacheKey] = {
+    payload: input.payload,
+    expiresAt: new Date(now.getTime() + Math.max(10, input.ttlSeconds) * 1000).toISOString(),
+    fetchedAt: now.toISOString(),
+    statusCode: input.statusCode,
+    sourceId: input.sourceId,
+  };
+  await writeRuntimeCache(cache);
+}
+
+async function readSnapshotFile<T>(
+  snapshotKey: string,
+  options: { allowStale?: boolean } = {},
+): Promise<StoredCache<T> | undefined> {
+  const cache = await readRuntimeCache();
+  const row = cache.snapshots[snapshotKey];
+  if (!row) return undefined;
+  if (!options.allowStale && new Date(row.expiresAt) <= new Date()) return undefined;
     return {
       payload: row.payload as T,
+      storage: "file",
       expiresAt: new Date(row.expiresAt),
-      fetchedAt: new Date(row.fetchedAt),
-      statusCode: row.statusCode,
-      sourceId: row.sourceId,
-    };
+    computedAt: new Date(row.computedAt),
+    sourceMode: row.sourceMode,
+    sourceId: row.sourceId,
+    diagnostics: row.diagnostics,
+  };
+}
+
+async function upsertSnapshotFile(input: SnapshotCacheInput): Promise<void> {
+  const now = new Date();
+  const cache = pruneRuntimeCache(await readRuntimeCache(), now);
+  cache.snapshots[input.snapshotKey] = {
+    payload: input.payload,
+    diagnostics: input.diagnostics,
+    sourceMode: input.sourceMode,
+    sourceId: input.sourceId,
+    computedAt: now.toISOString(),
+    expiresAt: new Date(now.getTime() + Math.max(10, input.ttlSeconds) * 1000).toISOString(),
+  };
+  await writeRuntimeCache(cache);
+}
+
+async function countSourceUsageFile(sourceId: string, since: Date): Promise<number> {
+  const sinceMs = since.getTime();
+  const cache = await readRuntimeCache();
+  return cache.usageEvents.filter(
+    (event) => event.sourceId === sourceId && new Date(event.fetchedAt).getTime() >= sinceMs,
+  ).length;
+}
+
+async function recordSourceUsageFile(input: SourceUsageInput): Promise<void> {
+  const now = new Date();
+  const cache = pruneRuntimeCache(await readRuntimeCache(), now);
+  if (!cache.usageEvents.some((event) => event.eventId === input.eventId)) {
+    cache.usageEvents.push({
+      eventId: input.eventId,
+      sourceId: input.sourceId,
+      sourceType: input.sourceType,
+      adapter: input.adapter,
+      quotaCost: Math.max(1, Math.round(input.quotaCost || 1)),
+      statusCode: input.statusCode,
+      fetchedAt: (input.fetchedAt || now).toISOString(),
+    });
+  }
+  await writeRuntimeCache(cache);
+}
+
+export async function readRawFetchCache<T>(cacheKey: string): Promise<StoredCache<T> | undefined> {
+  if (!isDatabaseConfigured) {
+    assertRuntimeCacheAllowed("read raw fetch cache");
+    return readRawFetchFile<T>(cacheKey);
   }
   try {
-    const rows = await db
+    const rows = await getDb()
       .select()
       .from(dataSourceFetches)
       .where(and(eq(dataSourceFetches.cacheKey, cacheKey), gt(dataSourceFetches.expiresAt, new Date())))
@@ -112,6 +232,7 @@ export async function readRawFetchCache<T>(cacheKey: string): Promise<StoredCach
     if (!row) return undefined;
     return {
       payload: row.payload as T,
+      storage: "database",
       expiresAt: row.expiresAt,
       fetchedAt: row.fetchedAt,
       statusCode: row.statusCode,
@@ -119,38 +240,20 @@ export async function readRawFetchCache<T>(cacheKey: string): Promise<StoredCach
     };
   } catch (error) {
     logDbCacheError("read raw fetch cache", error);
-    return undefined;
+    return readRawFetchFile<T>(cacheKey);
   }
 }
 
-export async function upsertRawFetchCache(input: {
-  cacheKey: string;
-  sourceId: string;
-  sourceType: string;
-  adapter: string;
-  requestUrl: string;
-  requestParams: Record<string, string | number | undefined>;
-  payload: unknown;
-  statusCode?: number;
-  ttlSeconds: number;
-}): Promise<void> {
+export async function upsertRawFetchCache(input: RawFetchCacheInput): Promise<void> {
   if (!isDatabaseConfigured) {
-    const now = new Date();
-    const cache = pruneRuntimeCache(await readRuntimeCache(), now);
-    cache.rawFetches[input.cacheKey] = {
-      payload: input.payload,
-      expiresAt: new Date(now.getTime() + Math.max(10, input.ttlSeconds) * 1000).toISOString(),
-      fetchedAt: now.toISOString(),
-      statusCode: input.statusCode,
-      sourceId: input.sourceId,
-    };
-    await writeRuntimeCache(cache);
+    assertRuntimeCacheAllowed("write raw fetch cache");
+    await upsertRawFetchFile(input);
     return;
   }
   try {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + Math.max(10, input.ttlSeconds) * 1000);
-    await db
+    await getDb()
       .insert(dataSourceFetches)
       .values({
         cacheKey: input.cacheKey,
@@ -182,6 +285,7 @@ export async function upsertRawFetchCache(input: {
       });
   } catch (error) {
     logDbCacheError("write raw fetch cache", error);
+    await upsertRawFetchFile(input);
   }
 }
 
@@ -190,21 +294,11 @@ export async function readSnapshotCache<T>(
   options: { allowStale?: boolean } = {},
 ): Promise<StoredCache<T> | undefined> {
   if (!isDatabaseConfigured) {
-    const cache = await readRuntimeCache();
-    const row = cache.snapshots[snapshotKey];
-    if (!row) return undefined;
-    if (!options.allowStale && new Date(row.expiresAt) <= new Date()) return undefined;
-    return {
-      payload: row.payload as T,
-      expiresAt: new Date(row.expiresAt),
-      computedAt: new Date(row.computedAt),
-      sourceMode: row.sourceMode,
-      sourceId: row.sourceId,
-      diagnostics: row.diagnostics,
-    };
+    assertRuntimeCacheAllowed("read snapshot cache");
+    return readSnapshotFile<T>(snapshotKey, options);
   }
   try {
-    const rows = await db
+    const rows = await getDb()
       .select()
       .from(dataSnapshots)
       .where(eq(dataSnapshots.snapshotKey, snapshotKey))
@@ -214,6 +308,7 @@ export async function readSnapshotCache<T>(
     if (!options.allowStale && row.expiresAt <= new Date()) return undefined;
     return {
       payload: row.payload as T,
+      storage: "database",
       expiresAt: row.expiresAt,
       computedAt: row.computedAt,
       sourceMode: row.sourceMode,
@@ -222,37 +317,20 @@ export async function readSnapshotCache<T>(
     };
   } catch (error) {
     logDbCacheError("read snapshot cache", error);
-    return undefined;
+    return readSnapshotFile<T>(snapshotKey, options);
   }
 }
 
-export async function upsertSnapshotCache(input: {
-  snapshotKey: string;
-  feature: string;
-  sourceMode: "remote" | "fallback";
-  sourceId?: string | null;
-  payload: unknown;
-  diagnostics: unknown;
-  ttlSeconds: number;
-}): Promise<void> {
+export async function upsertSnapshotCache(input: SnapshotCacheInput): Promise<void> {
   if (!isDatabaseConfigured) {
-    const now = new Date();
-    const cache = pruneRuntimeCache(await readRuntimeCache(), now);
-    cache.snapshots[input.snapshotKey] = {
-      payload: input.payload,
-      diagnostics: input.diagnostics,
-      sourceMode: input.sourceMode,
-      sourceId: input.sourceId,
-      computedAt: now.toISOString(),
-      expiresAt: new Date(now.getTime() + Math.max(10, input.ttlSeconds) * 1000).toISOString(),
-    };
-    await writeRuntimeCache(cache);
+    assertRuntimeCacheAllowed("write snapshot cache");
+    await upsertSnapshotFile(input);
     return;
   }
   try {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + Math.max(10, input.ttlSeconds) * 1000);
-    await db
+    await getDb()
       .insert(dataSnapshots)
       .values({
         snapshotKey: input.snapshotKey,
@@ -280,19 +358,17 @@ export async function upsertSnapshotCache(input: {
       });
   } catch (error) {
     logDbCacheError("write snapshot cache", error);
+    await upsertSnapshotFile(input);
   }
 }
 
 export async function countSourceUsageSince(sourceId: string, since: Date): Promise<number> {
   if (!isDatabaseConfigured) {
-    const sinceMs = since.getTime();
-    const cache = await readRuntimeCache();
-    return cache.usageEvents.filter(
-      (event) => event.sourceId === sourceId && new Date(event.fetchedAt).getTime() >= sinceMs,
-    ).length;
+    assertRuntimeCacheAllowed("count source usage");
+    return countSourceUsageFile(sourceId, since);
   }
   try {
-    const rows = await db
+    const rows = await getDb()
       .select({ value: count() })
       .from(dataSourceUsageEvents)
       .where(
@@ -304,38 +380,18 @@ export async function countSourceUsageSince(sourceId: string, since: Date): Prom
     return Number(rows[0]?.value || 0);
   } catch (error) {
     logDbCacheError("count source usage", error);
-    return 0;
+    return countSourceUsageFile(sourceId, since);
   }
 }
 
-export async function recordSourceUsage(input: {
-  eventId: string;
-  sourceId: string;
-  sourceType: string;
-  adapter: string;
-  quotaCost?: number;
-  statusCode?: number;
-  fetchedAt?: Date;
-}): Promise<void> {
+export async function recordSourceUsage(input: SourceUsageInput): Promise<void> {
   if (!isDatabaseConfigured) {
-    const now = new Date();
-    const cache = pruneRuntimeCache(await readRuntimeCache(), now);
-    if (!cache.usageEvents.some((event) => event.eventId === input.eventId)) {
-      cache.usageEvents.push({
-        eventId: input.eventId,
-        sourceId: input.sourceId,
-        sourceType: input.sourceType,
-        adapter: input.adapter,
-        quotaCost: Math.max(1, Math.round(input.quotaCost || 1)),
-        statusCode: input.statusCode,
-        fetchedAt: (input.fetchedAt || now).toISOString(),
-      });
-    }
-    await writeRuntimeCache(cache);
+    assertRuntimeCacheAllowed("record source usage");
+    await recordSourceUsageFile(input);
     return;
   }
   try {
-    await db
+    await getDb()
       .insert(dataSourceUsageEvents)
       .values({
         eventId: input.eventId,
@@ -349,5 +405,6 @@ export async function recordSourceUsage(input: {
       .onConflictDoNothing();
   } catch (error) {
     logDbCacheError("record source usage", error);
+    await recordSourceUsageFile(input);
   }
 }

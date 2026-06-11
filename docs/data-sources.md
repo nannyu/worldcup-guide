@@ -1,8 +1,8 @@
 # Data Source Configuration
 
-Runtime config is stored in `data/admin-config.json`. This file is ignored by Git because it may contain API keys.
+Runtime config is stored in `data/admin-config.json`. It stores source/provider metadata and API-key environment variable names only. Actual API keys live in `.env` and are resolved on the server at runtime.
 
-External responses and normalized view payloads are persisted in PostgreSQL when `DATABASE_URL` is configured. See `docs/database.md`.
+External responses and normalized view payloads are persisted in PostgreSQL when `DATABASE_URL` is configured. If PostgreSQL is unavailable, the same cache layer falls back to `data/runtime-cache.json` and reports `runtime-file-snapshot` or `runtime file cache hit` in diagnostics. See `docs/database.md`.
 
 ## Redundancy Strategy
 
@@ -10,13 +10,14 @@ Sources are grouped by `type` and ordered by `priority` ascending.
 
 For match/team features:
 
-1. Read a fresh normalized snapshot from PostgreSQL.
-2. Read enabled sources for the required `type`.
-3. Before calling a provider, check its persisted raw response cache.
-4. Try each source adapter in priority order.
-5. Persist successful raw responses and normalized snapshots.
-6. If providers fail, use a stale snapshot, seeded domain data, or the local FIFA JSON.
-7. Return diagnostics so the UI/admin can show whether data came from remote, database, or fallback.
+1. Read a normalized snapshot from PostgreSQL.
+2. Page APIs default to `cache-first`, so a stale snapshot is also acceptable for fast reads.
+3. `refresh=1`, cron refreshes, and `npm run data:refresh` read enabled sources for the required `type`.
+4. Before calling a provider, check its persisted raw response cache.
+5. Try each source adapter in priority order.
+6. Persist successful raw responses and normalized snapshots.
+7. If providers fail, use a stale snapshot, seeded domain data, or the local FIFA JSON.
+8. Return diagnostics so the UI/admin can show whether data came from remote, database, runtime file cache, or fallback.
 
 News uses a multi-source path instead of first-success fallback:
 
@@ -53,8 +54,10 @@ The JSON contains all 104 matches from the FIFA PDF, including match number, sta
 | `zafronix-worldcup` | `team-content` | `zafronix` | disabled | Historical/team/stadium candidate |
 | `balldontlie-fifa` | `team-content` | `balldontlie-fifa` | disabled | Advanced stats candidate |
 | `legal-highlights` | `highlights` | `generic-json` | disabled | Legal highlight links |
-| `espn-soccer-rss` | `news` | `rss-feed` | enabled | Primary soccer headlines feed; falls through on empty responses |
+| `espn-soccer-rss` | `news` | `espn-site-api` | enabled | Primary ESPN FIFA World Cup JSON news source; old RSS URL is WAF-challenged |
+| `chinanews-sports-rss` | `news` | `rss-feed` | enabled | Free Chinese sports RSS with World Cup football keyword filtering |
 | `bbc-sport-football-rss` | `news` | `rss-feed` | enabled | First RSS fallback |
+| `people-sports-rss` | `news` | `rss-feed` | disabled | Free Chinese sports RSS fallback; disabled by default because the feed can lag |
 | `currents-worldcup-news` | `news` | `currents-api` | disabled | Keyword-based sport news fallback, requires key |
 | `gdelt-worldcup-news` | `news` | `gdelt-doc` | enabled | Free GDELT DOC ArticleList source; may be rate limited |
 | `newsapi-worldcup` | `news` | `newsapi-org` | disabled | Optional article discovery source, requires key |
@@ -78,13 +81,16 @@ type DataSourceConfig = {
     | "zafronix"
     | "balldontlie-fifa"
     | "rss-feed"
+    | "espn-site-api"
     | "currents-api"
     | "gdelt-doc"
     | "newsapi-org"
     | "generic-json";
   baseUrl: string;
   endpointPath: string;
-  apiKey: string;
+  apiKey: string; // Server-side runtime value resolved from env; never returned to admin clients.
+  apiKeyEnvName?: string;
+  apiKeyConfigured?: boolean;
   apiKeyPlacement: "none" | "query" | "header" | "bearer" | "path";
   apiKeyParamName: string;
   apiKeyHeaderName: string;
@@ -103,17 +109,19 @@ type DataSourceConfig = {
 - `GET /api/data/radar`
 - `GET /api/data/odds`
 - `GET /api/data/teams`
-- `GET /api/data/news?q=World%20Cup%202026&limit=12`
+- `GET /api/data/news?q=World%20Cup%202026&limit=60`
 - `GET /api/data/morning?dateKey=yesterday`
 - `GET /api/data/sources`
 
 `dateKey` accepts `yesterday`, `today`, or `tomorrow`.
+Append `refresh=1` to bypass normalized snapshots and refresh the stored cache synchronously.
 
 ## Adapter Status
 
 - `openfootball-worldcup-json`: implemented and normalized into `Match[]`.
 - `polymarket-gamma`: implemented and normalized into `RadarMatch[]` when World Cup/FIFA markets are present.
 - `rss-feed`: implemented as a text/RSS source and normalized into `NewsArticle[]`.
+- `espn-site-api`: implemented for `site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/news`. The previous `www.espn.com/espn/rss/soccer/news` endpoint returns CloudFront WAF challenge responses in server-side fetches, so existing `espn-soccer-rss` configs are normalized to this JSON API.
 - `currents-api`: implemented with the V2 search endpoint, `sport` category and World Cup query.
 - `gdelt-doc`: implemented and normalized into `NewsArticle[]`; keep RSS/NewsAPI enabled as redundancy because GDELT can return 429 under rate pressure.
 - `newsapi-org`: implemented and normalized into `NewsArticle[]`, disabled until an API key is configured.
@@ -123,11 +131,13 @@ type DataSourceConfig = {
 - `worldcupapi-com`: implemented, but should remain disabled when the account key does not have data access.
 - Other adapters are configured and fetch-ready, but remain disabled by default until their endpoint shape and quota are verified.
 
-API keys are stripped from persisted request URLs before raw responses are cached.
+API keys are read from `.env` by environment variable name. `data/admin-config.json` stores only source metadata and the variable name. API keys are also stripped from persisted request URLs before raw responses are cached.
 
 ## News Aggregation
 
-Default source order is ESPN Soccer RSS, BBC Football RSS, Currents API and GDELT. Priority controls display and fetch configuration, but every enabled source is requested during each uncached aggregation run.
+Default source order is ESPN FIFA World Cup Site API, ChinaNews Sports RSS, BBC Football RSS, Currents API and GDELT. Priority controls display and fetch configuration, but every enabled source is requested during each uncached aggregation run.
+
+Chinese RSS feeds use the same `rss-feed` adapter. For Chinese sports portals, the aggregator appends Chinese World Cup terms such as `世界杯`、`美加墨` and `足球` to the relevance filter, so general sports headlines do not dominate the morning brief.
 
 The response includes:
 
@@ -139,9 +149,11 @@ The response includes:
 - `aggregation.aiProvider`
 - `aggregation.aiMessage`
 
+Morning briefs request every enabled news source for the selected Beijing calendar day, keep up to 60 deduplicated records, and display the full retained `brief.news` list. The leading headline block is only a compact highlight summary and should not cap the underlying fetched news set.
+
 AI curation supports enabled OpenAI-compatible providers and Gemini. Provider failure does not remove or replace factual source records.
 
-The admin config stores `primaryAiProviderId`. The selected provider is tried first, followed by other enabled providers in configuration order. Xiaomi MiMo Token Plan is supported through its OpenAI-compatible endpoint with the current flagship model `mimo-v2.5-pro`.
+The admin config stores `primaryAiProviderId`. The selected provider is tried first, followed by other enabled providers in configuration order. AI Provider API keys use the same env-var mechanism as data sources: config JSON stores only `apiKeyEnvName`, server-side reads the real value from `.env`, and admin API responses always redact `apiKey`. The current preferred provider is Xiaomi MiMo Token Plan through its OpenAI-compatible endpoint with `mimo-v2.5-pro`; DeepSeek `deepseek-v4-flash` remains enabled as fallback.
 
 Kimi Code (`https://api.kimi.com/coding/v1`, model `kimi-for-coding`) is restricted to supported Coding Agent clients and returns `403` for this web backend. Use a Kimi Platform key with `https://api.moonshot.cn/v1` for production news curation.
 
@@ -164,7 +176,7 @@ Official limits used in the current policy:
 | Currents API | Free account documents 1,000 daily requests. | Reserve 50% of daily quota for manual/admin use; automated news refresh is no faster than 15 minutes. |
 | GDELT | GDELT 2.0 updates every 15 minutes. | Never poll faster than 15 minutes. |
 | NewsAPI | Developer tier lists 100 requests/day and is for development/testing only. | Disabled by default; if enabled, automated usage reserves 50% of daily quota. |
-| ESPN/BBC RSS | Public RSS feeds do not publish app-specific quota in the feed URL. | Conservative RSS polling: 15 minutes in match windows, slower outside. |
+| ESPN Site API / BBC / ChinaNews RSS | Public endpoints do not publish app-specific quota in the feed URL. | Conservative polling: 15 minutes in match windows, slower outside. |
 | TheSportsDB | Public page documents free legacy API and paid V2/livescore features, but no clear free-key rate number. | Low-priority fallback with conservative intervals. |
 
 Every successful external call is recorded in `data_source_usage_events` when PostgreSQL is configured. The runtime also keeps in-memory usage counters so one server process cannot burst past the configured official window even without a database.
@@ -186,4 +198,4 @@ npm run data:init
 npm run tools:audit
 ```
 
-`data:init` calls the initialize mode and warms teams, odds, radar, yesterday/today/tomorrow matches, yesterday/today morning briefs, and three daily news windows for the latest three UTC days. The news windows are passed to Currents, GDELT and NewsAPI where supported, and RSS results are filtered locally by publish time.
+`data:init` runs directly through `scripts/refresh-data.ts`. When `DATABASE_URL` is configured it first seeds the FIFA official schedule, then warms teams, odds, radar, yesterday/today/tomorrow matches, yesterday/today morning briefs, and three daily news windows for the latest three UTC days. The news windows are passed to Currents, GDELT and NewsAPI where supported, and RSS results are filtered locally by publish time.

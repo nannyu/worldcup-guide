@@ -174,11 +174,18 @@ const policyBySourceId: Record<string, Partial<SourceRatePolicy>> = {
     note: "Team endpoint is a fallback and free key has result limits.",
   },
   "espn-soccer-rss": {
-    docsUrl: "https://www.espn.com/espn/rss/soccer/news",
+    docsUrl: "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/news",
     quietRefreshSeconds: 3600,
     tournamentRefreshSeconds: 1800,
     matchWindowRefreshSeconds: 900,
-    note: "RSS feed. Poll no faster than 15 minutes.",
+    note: "ESPN Site API FIFA World Cup news endpoint. Poll no faster than 15 minutes.",
+  },
+  "chinanews-sports-rss": {
+    docsUrl: "https://www.chinanews.com/rss/",
+    quietRefreshSeconds: 3600,
+    tournamentRefreshSeconds: 1800,
+    matchWindowRefreshSeconds: 900,
+    note: "Chinese sports RSS. Poll no faster than 15 minutes and filter to World Cup football terms.",
   },
   "bbc-sport-football-rss": {
     docsUrl: "https://feeds.bbci.co.uk/sport/football/rss.xml",
@@ -186,6 +193,13 @@ const policyBySourceId: Record<string, Partial<SourceRatePolicy>> = {
     tournamentRefreshSeconds: 1800,
     matchWindowRefreshSeconds: 900,
     note: "RSS fallback. Poll no faster than 15 minutes.",
+  },
+  "people-sports-rss": {
+    docsUrl: "http://www.people.com.cn/rss/sports.xml",
+    quietRefreshSeconds: 21600,
+    tournamentRefreshSeconds: 3600,
+    matchWindowRefreshSeconds: 1800,
+    note: "Chinese sports RSS fallback. Default disabled because the feed can lag behind current news.",
   },
   "currents-worldcup-news": {
     docsUrl: "https://currentsapi.services/en/docs/",

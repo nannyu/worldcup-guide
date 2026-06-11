@@ -17,7 +17,7 @@ export function detectSystemLocale(): LocaleCode {
 }
 
 export function parseLocalePreference(raw: string | null | undefined): LocalePreference {
-  if (!raw) return "system";
+  if (!raw) return "zh-CN";
   if (raw === "system") return "system";
   return normalizeLocale(raw) ?? "system";
 }

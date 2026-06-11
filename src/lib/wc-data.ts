@@ -19,8 +19,11 @@ export interface Match {
   id: string;
   homeTeam: string;
   awayTeam: string;
+  homeCode?: string;
+  awayCode?: string;
   homeFlag: string;
   awayFlag: string;
+  kickoffAt?: string;
   homeScore: number | null;
   awayScore: number | null;
   kickoffBj: string;
@@ -160,8 +163,11 @@ export function fifaRecordToMatch(record: FifaScheduleRecord): Match {
     id: `fifa-${record.matchNo}`,
     homeTeam: home.name,
     awayTeam: away.name,
+    homeCode: record.home.code,
+    awayCode: record.away.code,
     homeFlag: home.flag,
     awayFlag: away.flag,
+    kickoffAt: record.kickoffBeijing,
     homeScore: null,
     awayScore: null,
     kickoffBj: formatBeijingKickoff(record.kickoffBeijing),
@@ -191,6 +197,7 @@ function fifaMatchesOn(date: string): Match[] {
 
 export interface Team {
   id: string;
+  code?: string;
   name: string;
   nameEn: string;
   flag: string;
@@ -208,10 +215,33 @@ export interface Team {
     won: number;
     drawn: number;
     lost: number;
+    goalsFor?: number;
+    goalsAgainst?: number;
     pts: number;
   };
   crestUrl?: string;
   source?: string;
+  starPlayers?: TeamStarPlayer[];
+  roster?: PlayerProfile[];
+  roast?: string;
+  championProbability?: number | null;
+}
+
+export interface TeamStarPlayer {
+  name: string;
+  position: string;
+}
+
+export interface PlayerProfile {
+  id: string;
+  name: string;
+  position: string;
+  club?: string;
+  age?: number;
+  avatarUrl?: string;
+  intro?: string;
+  career?: string[];
+  roast?: string;
 }
 
 export interface GossipItem {
@@ -236,11 +266,27 @@ export interface NewsArticle {
   domain?: string;
   language?: string;
   country?: string;
+  sourceText?: string;
+  bodySource?: "original-page" | "source-api" | "summary";
+  bodyUpdatedAt?: string;
+  bodyZh?: string[];
+  bodyEn?: string[];
+  body?: string[];
   relatedSources?: string[];
   relatedUrls?: string[];
   sourceCount?: number;
   aiSummary?: string;
   aiKeyPoints?: string[];
+  aiScore?: number;
+  aiComment?: string;
+  titleZh?: string;
+  titleEn?: string;
+  summaryZh?: string;
+  summaryEn?: string;
+  keyPointsZh?: string[];
+  keyPointsEn?: string[];
+  commentZh?: string;
+  commentEn?: string;
 }
 
 export interface NewsAggregationMeta {
@@ -257,8 +303,11 @@ export interface MorningBrief {
   issueDate: string;
   edition: string;
   title: string;
+  titleZh?: string;
   summary: string;
+  summaryZh?: string;
   quote: string;
+  quoteZh?: string;
   sourceLabel: string;
   updatedAt: string;
   matches: Match[];
@@ -269,6 +318,7 @@ export interface MorningBrief {
 
 export interface RadarMatch {
   id: string;
+  title?: string;
   homeTeam: string;
   awayTeam: string;
   homeFlag: string;
@@ -284,6 +334,9 @@ export interface RadarMatch {
   kickoffBj: string;
   status: MatchStatus;
   updatedAt: string;
+  volume?: string;
+  volumeUsd?: number;
+  marketLabel?: string;
   history: { time: string; market: number; odds: number }[];
 }
 
@@ -293,12 +346,43 @@ export interface OddsMatch {
   awayTeam: string;
   kickoffAt: string;
   kickoffBj: string;
+  homeOdds?: number;
+  drawOdds?: number;
+  awayOdds?: number;
   homeProbability: number;
   drawProbability: number;
   awayProbability: number;
   bookmakerCount: number;
   updatedAt: string;
   source: string;
+}
+
+export interface ScheduleDayGroup {
+  date: string;
+  label: string;
+  relativeLabel: string;
+  matches: Match[];
+}
+
+export interface GroupStandingRow {
+  code?: string;
+  team: string;
+  flag: string;
+  group: string;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  points: number;
+  championProbability: number | null;
+  zone: "qualify" | "pending" | "outside";
+}
+
+export interface GroupStanding {
+  group: string;
+  rows: GroupStandingRow[];
 }
 
 function beijingDate(offsetDays: number): string {
@@ -356,6 +440,218 @@ export const yesterdayMatches = matchesByDate.yesterday;
 export const todayMatches = matchesByDate.today;
 export const tomorrowMatches = matchesByDate.tomorrow;
 export const allMatches = fifaSchedule.matches.map(fifaRecordToMatch);
+
+function groupSortValue(group: string): number {
+  const letter = group.match(/[A-Z]/)?.[0] || "Z";
+  return letter.charCodeAt(0);
+}
+
+export function matchKickoffSortValue(match: Pick<Match, "kickoffAt" | "kickoffBj">): number {
+  const kickoffAt = match.kickoffAt ? Date.parse(match.kickoffAt) : NaN;
+  if (Number.isFinite(kickoffAt)) return kickoffAt;
+
+  const [monthDay = "", time = ""] = match.kickoffBj.split(" ");
+  const fallback = Number(`${monthDay.replace(/\D/g, "")}${time.replace(/\D/g, "")}`);
+  return Number.isFinite(fallback) ? fallback : Number.MAX_SAFE_INTEGER;
+}
+
+function canonicalMatchName(input: string | undefined) {
+  return String(input || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9\u4e00-\u9fff]+/g, "");
+}
+
+export function matchIdentityKey(match: Match): string {
+  return `${canonicalMatchName(match.homeTeam)}:${canonicalMatchName(match.awayTeam)}:${match.kickoffBj}`;
+}
+
+export function compareMatchesByKickoff(left: Match, right: Match): number {
+  return matchKickoffSortValue(left) - matchKickoffSortValue(right)
+    || matchIdentityKey(left).localeCompare(matchIdentityKey(right), "zh-CN");
+}
+
+export function createMatchSequenceLookup(matches: Match[]): Map<string, number> {
+  const lookup = new Map<string, number>();
+  matches.slice().sort(compareMatchesByKickoff).forEach((match, index) => {
+    const sequence = index + 1;
+    lookup.set(match.id, sequence);
+    lookup.set(matchIdentityKey(match), sequence);
+  });
+  return lookup;
+}
+
+export function getMatchSequenceNumber(match: Match, lookup: Map<string, number>): number | undefined {
+  return lookup.get(match.id) ?? lookup.get(matchIdentityKey(match));
+}
+
+export function mergeMatchWithOfficialSource(base: Match, live?: Match): Match {
+  if (!live) return base;
+
+  return {
+    ...base,
+    ...live,
+    id: base.id,
+    homeTeam: base.homeTeam,
+    awayTeam: base.awayTeam,
+    homeCode: base.homeCode || live.homeCode,
+    awayCode: base.awayCode || live.awayCode,
+    homeFlag: base.homeFlag || live.homeFlag,
+    awayFlag: base.awayFlag || live.awayFlag,
+    kickoffAt: base.kickoffAt || live.kickoffAt,
+    kickoffBj: base.kickoffBj || live.kickoffBj,
+    group: base.group,
+    round: base.round,
+    venue: live.venue || base.venue,
+    previewText: live.previewText || base.previewText,
+    updatedAt: live.updatedAt || base.updatedAt,
+  };
+}
+
+export function scheduleDateLabel(date: string): string {
+  const [, month, day] = date.split("-");
+  return `${Number(month)}月${Number(day)}日`;
+}
+
+export function relativeBeijingDayLabel(date: string): string {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const today = formatter.format(new Date());
+  const target = new Date(`${date}T00:00:00+08:00`).getTime();
+  const base = new Date(`${today}T00:00:00+08:00`).getTime();
+  const diffDays = Math.round((target - base) / (24 * 60 * 60 * 1000));
+  if (diffDays === -1) return "昨天";
+  if (diffDays === 0) return "今天";
+  if (diffDays === 1) return "明天";
+  if (diffDays === 2) return "后天";
+  return "";
+}
+
+export const allScheduleDayGroups: ScheduleDayGroup[] = Object.values(
+  allMatches.reduce<Record<string, ScheduleDayGroup>>((groups, match) => {
+    const date = `2026-${match.kickoffBj.slice(0, 5)}`;
+    groups[date] ||= {
+      date,
+      label: scheduleDateLabel(date),
+      relativeLabel: relativeBeijingDayLabel(date),
+      matches: [],
+    };
+    groups[date].matches.push(match);
+    return groups;
+  }, {}),
+)
+  .map((group) => ({
+    ...group,
+    matches: group.matches.slice().sort(compareMatchesByKickoff),
+  }))
+  .sort((left, right) => left.date.localeCompare(right.date));
+
+export function getGroupStandings(matches: Match[] = allMatches): GroupStanding[] {
+  const rows = new Map<string, GroupStandingRow>();
+
+  for (const match of matches) {
+    if (!match.group.includes("组")) continue;
+    const group = match.group.replace(/\s*组$/, "");
+    for (const side of [
+      { code: match.homeCode, team: match.homeTeam, flag: match.homeFlag, goalsFor: match.homeScore, goalsAgainst: match.awayScore },
+      { code: match.awayCode, team: match.awayTeam, flag: match.awayFlag, goalsFor: match.awayScore, goalsAgainst: match.homeScore },
+    ]) {
+      const key = `${group}:${side.team}`;
+      if (!rows.has(key)) {
+        rows.set(key, {
+          code: side.code,
+          team: side.team,
+          flag: side.flag,
+          group,
+          played: 0,
+          won: 0,
+          drawn: 0,
+          lost: 0,
+          goalsFor: 0,
+          goalsAgainst: 0,
+          points: 0,
+          championProbability: null,
+          zone: "outside",
+        });
+      }
+      const row = rows.get(key);
+      if (!row || match.status !== "finished" || side.goalsFor === null || side.goalsAgainst === null) continue;
+      row.played += 1;
+      row.goalsFor += side.goalsFor;
+      row.goalsAgainst += side.goalsAgainst;
+      if (side.goalsFor > side.goalsAgainst) {
+        row.won += 1;
+        row.points += 3;
+      } else if (side.goalsFor === side.goalsAgainst) {
+        row.drawn += 1;
+        row.points += 1;
+      } else {
+        row.lost += 1;
+      }
+    }
+  }
+
+  const groups = new Map<string, GroupStandingRow[]>();
+  for (const row of rows.values()) {
+    groups.set(row.group, [...(groups.get(row.group) || []), row]);
+  }
+
+  return Array.from(groups.entries())
+    .sort(([left], [right]) => groupSortValue(left) - groupSortValue(right))
+    .map(([group, groupRows]) => ({
+      group,
+      rows: groupRows
+        .slice()
+        .sort((left, right) =>
+          right.points - left.points
+          || (right.goalsFor - right.goalsAgainst) - (left.goalsFor - left.goalsAgainst)
+          || right.goalsFor - left.goalsFor
+          || left.team.localeCompare(right.team, "zh-CN"),
+        )
+        .map((row, index) => ({
+          ...row,
+          zone: index < 2 ? "qualify" : index === 2 ? "pending" : "outside",
+        })),
+    }));
+}
+
+export function teamsFromOfficialSchedule(): Team[] {
+  return getGroupStandings().flatMap((group) =>
+    group.rows.map((row) => ({
+      id: `fifa-team-${row.group}-${row.team}`,
+      code: row.code,
+      name: row.team,
+      nameEn: row.team,
+      flag: row.flag,
+      group: `${row.group} 组`,
+      rank: 0,
+      coach: "",
+      formation: "",
+      stars: [],
+      style: "",
+      hotLevel: 0,
+      tags: [],
+      talkingPoints: [],
+      groupStandings: {
+        played: row.played,
+        won: row.won,
+        drawn: row.drawn,
+        lost: row.lost,
+        goalsFor: row.goalsFor,
+        goalsAgainst: row.goalsAgainst,
+        pts: row.points,
+      },
+      championProbability: row.championProbability,
+      source: "FIFA 官方赛程分组",
+    })),
+  );
+}
 
 // No local demo fallback. Data-backed features remain empty until a source
 // returns verified records.

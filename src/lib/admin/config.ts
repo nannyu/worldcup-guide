@@ -23,6 +23,7 @@ export type DataSourceAdapter =
   | "zafronix"
   | "balldontlie-fifa"
   | "rss-feed"
+  | "espn-site-api"
   | "currents-api"
   | "gdelt-doc"
   | "newsapi-org"
@@ -47,6 +48,8 @@ export interface DataSourceConfig {
   baseUrl: string;
   endpointPath: string;
   apiKey: string;
+  apiKeyEnvName?: string;
+  apiKeyConfigured?: boolean;
   apiKeyPlacement: ApiKeyPlacement;
   apiKeyParamName: string;
   apiKeyHeaderName: string;
@@ -64,6 +67,8 @@ export interface AiProviderConfig {
   provider: AiProviderType;
   baseUrl: string;
   apiKey: string;
+  apiKeyEnvName?: string;
+  apiKeyConfigured?: boolean;
   defaultModel: string;
   enabled: boolean;
   notes: string;
@@ -80,7 +85,7 @@ const configPath = path.join(process.cwd(), "data", "admin-config.json");
 
 export const defaultAdminConfig: AdminConfig = {
   updatedAt: new Date(0).toISOString(),
-  primaryAiProviderId: "deepseek",
+  primaryAiProviderId: "xiaomi-mimo",
   dataSources: [
     {
       id: "openfootball-worldcup-json",
@@ -318,11 +323,11 @@ export const defaultAdminConfig: AdminConfig = {
     },
     {
       id: "espn-soccer-rss",
-      name: "ESPN Soccer RSS",
+      name: "ESPN FIFA World Cup News",
       type: "news",
-      adapter: "rss-feed",
-      baseUrl: "https://www.espn.com",
-      endpointPath: "/espn/rss/soccer/news",
+      adapter: "espn-site-api",
+      baseUrl: "https://site.api.espn.com",
+      endpointPath: "/apis/site/v2/sports/soccer/fifa.world/news",
       apiKey: "",
       apiKeyPlacement: "none",
       apiKeyParamName: "",
@@ -332,7 +337,25 @@ export const defaultAdminConfig: AdminConfig = {
       refreshSeconds: 900,
       cacheTtlSeconds: 900,
       timeoutMs: 8000,
-      notes: "ESPN 官方 Soccer Headlines RSS，作为足球新闻第一优先级；空响应时自动切换 BBC。",
+      notes: "ESPN Site API 的 FIFA World Cup News JSON。旧 RSS 地址会触发 CloudFront WAF challenge，已切换为 JSON 端点。",
+    },
+    {
+      id: "chinanews-sports-rss",
+      name: "中新网体育 RSS",
+      type: "news",
+      adapter: "rss-feed",
+      baseUrl: "https://www.chinanews.com.cn",
+      endpointPath: "/rss/sports.xml",
+      apiKey: "",
+      apiKeyPlacement: "none",
+      apiKeyParamName: "",
+      apiKeyHeaderName: "",
+      enabled: true,
+      priority: 6,
+      refreshSeconds: 900,
+      cacheTtlSeconds: 900,
+      timeoutMs: 8000,
+      notes: "免 key 中文体育 RSS。当前会用世界杯、足球、美加墨等中文关键词过滤后进入新闻聚合。",
     },
     {
       id: "bbc-sport-football-rss",
@@ -351,6 +374,24 @@ export const defaultAdminConfig: AdminConfig = {
       cacheTtlSeconds: 900,
       timeoutMs: 8000,
       notes: "免 key RSS 新闻源。作为 ESPN Soccer RSS 的第一替补。",
+    },
+    {
+      id: "people-sports-rss",
+      name: "人民网体育 RSS",
+      type: "news",
+      adapter: "rss-feed",
+      baseUrl: "http://www.people.com.cn",
+      endpointPath: "/rss/sports.xml",
+      apiKey: "",
+      apiKeyPlacement: "none",
+      apiKeyParamName: "",
+      apiKeyHeaderName: "",
+      enabled: false,
+      priority: 18,
+      refreshSeconds: 3600,
+      cacheTtlSeconds: 3600,
+      timeoutMs: 8000,
+      notes: "免 key 中文体育 RSS 候补源。近期更新频率偏低，默认关闭，可在管理面板按需启用。",
     },
     {
       id: "currents-worldcup-news",
@@ -435,8 +476,8 @@ export const defaultAdminConfig: AdminConfig = {
       baseUrl: "https://api.deepseek.com",
       apiKey: "",
       defaultModel: "deepseek-v4-flash",
-      enabled: false,
-      notes: "用于多源新闻去重、中文摘要和早报整理。V4 Flash 使用非思考模式降低后台延迟。",
+      enabled: true,
+      notes: "小米 MiMo 不可用时的备用新闻整理 Provider。V4 Flash 使用非思考模式降低后台延迟。",
     },
     {
       id: "xiaomi-mimo",
@@ -445,8 +486,8 @@ export const defaultAdminConfig: AdminConfig = {
       baseUrl: "https://token-plan-cn.xiaomimimo.com/v1",
       apiKey: "",
       defaultModel: "mimo-v2.5-pro",
-      enabled: false,
-      notes: "小米 MiMo Token Plan 最新旗舰 Pro 模型，作为新闻整理备用 Provider。",
+      enabled: true,
+      notes: "小米 MiMo Token Plan 最新旗舰 Pro 模型，作为新闻整理主 Provider。",
     },
     {
       id: "kimi-coding",
@@ -498,12 +539,17 @@ function inferAdapter(source: Partial<DataSourceConfig>): DataSourceAdapter {
     return "thesportsdb";
   }
   if (
-    source.id === "espn-soccer-rss"
-    || source.id === "bbc-sport-football-rss"
-    || source.baseUrl?.includes("espn.com")
+    source.id === "bbc-sport-football-rss"
+    || source.id === "chinanews-sports-rss"
+    || source.id === "people-sports-rss"
     || source.baseUrl?.includes("feeds.bbci.co.uk")
+    || source.baseUrl?.includes("chinanews.com")
+    || source.baseUrl?.includes("people.com.cn")
   ) {
     return "rss-feed";
+  }
+  if (source.id === "espn-soccer-rss" || source.baseUrl?.includes("site.api.espn.com")) {
+    return "espn-site-api";
   }
   if (source.id === "currents-worldcup-news" || source.baseUrl?.includes("currentsapi.services")) {
     return "currents-api";
@@ -521,76 +567,156 @@ function defaultDataSourceFor(id: string): DataSourceConfig | undefined {
   return defaultAdminConfig.dataSources.find((source) => source.id === id);
 }
 
-function normalizeDataSource(source: Partial<DataSourceConfig>, index: number): DataSourceConfig {
+function envNameFromId(prefix: string, id: string): string {
+  const suffix = id
+    .replace(/[^a-z0-9]+/gi, "_")
+    .replace(/^_+|_+$/g, "")
+    .toUpperCase();
+  return `${prefix}_${suffix}_API_KEY`;
+}
+
+function defaultDataSourceApiKeyEnvName(id: string, placement: ApiKeyPlacement): string {
+  return placement === "none" ? "" : envNameFromId("DATA_SOURCE", id);
+}
+
+function defaultAiProviderApiKeyEnvName(id: string): string {
+  return envNameFromId("AI_PROVIDER", id);
+}
+
+function resolveApiKey(envName: string | undefined, legacyApiKey: string): string {
+  if (envName) {
+    const envValue = process.env[envName];
+    if (typeof envValue === "string" && envValue.length > 0) return envValue;
+  }
+  return legacyApiKey;
+}
+
+function normalizeDataSource(source: Partial<DataSourceConfig>, index: number, resolveSecrets: boolean): DataSourceConfig {
   const id = String(source.id || `data-source-${index + 1}`);
   const defaults = defaultDataSourceFor(id);
+  const migratedSource = id === "espn-soccer-rss" && source.adapter === "rss-feed"
+    ? {
+        ...source,
+        adapter: defaults?.adapter,
+        baseUrl: defaults?.baseUrl,
+        endpointPath: defaults?.endpointPath,
+        name: defaults?.name,
+        notes: defaults?.notes,
+      }
+    : source;
+  const apiKeyPlacement = (source.apiKeyPlacement || defaults?.apiKeyPlacement || "none") as ApiKeyPlacement;
+  const apiKeyEnvName = String(
+    source.apiKeyEnvName
+    || defaults?.apiKeyEnvName
+    || defaultDataSourceApiKeyEnvName(id, apiKeyPlacement),
+  );
+  const legacyApiKey = String(source.apiKey || "");
+  const resolvedApiKey = resolveSecrets ? resolveApiKey(apiKeyEnvName, legacyApiKey) : "";
   return {
     id,
-    name: String(source.name || defaults?.name || "未命名数据源"),
-    type: (source.type || defaults?.type || "custom") as DataSourceType,
-    adapter: (source.adapter || defaults?.adapter || inferAdapter(source)) as DataSourceAdapter,
-    baseUrl: String(source.baseUrl || defaults?.baseUrl || ""),
-    endpointPath: String(source.endpointPath || defaults?.endpointPath || ""),
-    apiKey: String(source.apiKey || ""),
-    apiKeyPlacement: (source.apiKeyPlacement || defaults?.apiKeyPlacement || "none") as ApiKeyPlacement,
+    name: String(migratedSource.name || defaults?.name || "未命名数据源"),
+    type: (migratedSource.type || defaults?.type || "custom") as DataSourceType,
+    adapter: (migratedSource.adapter || defaults?.adapter || inferAdapter(migratedSource)) as DataSourceAdapter,
+    baseUrl: String(migratedSource.baseUrl || defaults?.baseUrl || ""),
+    endpointPath: String(migratedSource.endpointPath || defaults?.endpointPath || ""),
+    apiKey: resolvedApiKey,
+    apiKeyEnvName,
+    apiKeyConfigured: Boolean(resolveApiKey(apiKeyEnvName, legacyApiKey)),
+    apiKeyPlacement,
     apiKeyParamName: String(source.apiKeyParamName || defaults?.apiKeyParamName || ""),
     apiKeyHeaderName: String(source.apiKeyHeaderName || defaults?.apiKeyHeaderName || ""),
-    enabled: source.enabled ?? defaults?.enabled ?? false,
-    priority: Number.isFinite(Number(source.priority))
-      ? Number(source.priority)
+    enabled: migratedSource.enabled ?? defaults?.enabled ?? false,
+    priority: Number.isFinite(Number(migratedSource.priority))
+      ? Number(migratedSource.priority)
       : defaults?.priority ?? index + 1,
-    refreshSeconds: normalizeRefreshSeconds(source.refreshSeconds || defaults?.refreshSeconds),
+    refreshSeconds: normalizeRefreshSeconds(migratedSource.refreshSeconds || defaults?.refreshSeconds),
     cacheTtlSeconds: normalizeRefreshSeconds(
-      source.cacheTtlSeconds || source.refreshSeconds || defaults?.cacheTtlSeconds || defaults?.refreshSeconds,
+      migratedSource.cacheTtlSeconds || migratedSource.refreshSeconds || defaults?.cacheTtlSeconds || defaults?.refreshSeconds,
     ),
-    timeoutMs: Number.isFinite(Number(source.timeoutMs))
-      ? Number(source.timeoutMs)
+    timeoutMs: Number.isFinite(Number(migratedSource.timeoutMs))
+      ? Number(migratedSource.timeoutMs)
       : defaults?.timeoutMs ?? 6000,
-    notes: String(source.notes || defaults?.notes || ""),
+    notes: String(migratedSource.notes || defaults?.notes || ""),
   };
 }
 
-function mergeMissingDefaultSources(sources: DataSourceConfig[]): DataSourceConfig[] {
+function mergeMissingDefaultSources(sources: DataSourceConfig[], resolveSecrets: boolean): DataSourceConfig[] {
   const seen = new Set(sources.map((source) => source.id));
-  const missingDefaults = defaultAdminConfig.dataSources.filter((source) => !seen.has(source.id));
+  const missingDefaults = defaultAdminConfig.dataSources
+    .filter((source) => !seen.has(source.id))
+    .map((source, index) => normalizeDataSource(source, sources.length + index, resolveSecrets));
   return [...sources, ...missingDefaults];
 }
 
-function mergeMissingDefaultProviders(providers: AiProviderConfig[]): AiProviderConfig[] {
+function mergeMissingDefaultProviders(providers: AiProviderConfig[], resolveSecrets: boolean): AiProviderConfig[] {
   const seen = new Set(providers.map((provider) => provider.id));
-  const missingDefaults = defaultAdminConfig.aiProviders.filter((provider) => !seen.has(provider.id));
+  const missingDefaults = defaultAdminConfig.aiProviders
+    .filter((provider) => !seen.has(provider.id))
+    .map((provider, index) => normalizeAiProvider(provider, providers.length + index, resolveSecrets));
   return [...providers, ...missingDefaults];
 }
 
-function normalizeConfig(input: Partial<AdminConfig>): AdminConfig {
-  const dataSources = (input.dataSources || []).map(normalizeDataSource);
-  const aiProviders = (input.aiProviders || []).map((provider, index) => ({
-    id: String(provider.id || `ai-provider-${index + 1}`),
+function normalizeAiProvider(provider: Partial<AiProviderConfig>, index: number, resolveSecrets: boolean): AiProviderConfig {
+  const id = String(provider.id || `ai-provider-${index + 1}`);
+  const apiKeyEnvName = String(provider.apiKeyEnvName || defaultAiProviderApiKeyEnvName(id));
+  const legacyApiKey = String(provider.apiKey || "");
+  return {
+    id,
     name: String(provider.name || "未命名模型服务"),
     provider: (provider.provider || "custom") as AiProviderType,
     baseUrl: String(provider.baseUrl || ""),
-    apiKey: String(provider.apiKey || ""),
+    apiKey: resolveSecrets ? resolveApiKey(apiKeyEnvName, legacyApiKey) : "",
+    apiKeyEnvName,
+    apiKeyConfigured: Boolean(resolveApiKey(apiKeyEnvName, legacyApiKey)),
     defaultModel: String(provider.defaultModel || ""),
     enabled: Boolean(provider.enabled),
     notes: String(provider.notes || ""),
-  }));
+  };
+}
+
+function normalizeConfig(input: Partial<AdminConfig>, options: { resolveSecrets: boolean }): AdminConfig {
+  const dataSources = (input.dataSources || []).map((source, index) =>
+    normalizeDataSource(source, index, options.resolveSecrets),
+  );
+  const aiProviders = (input.aiProviders || []).map((provider, index) =>
+    normalizeAiProvider(provider, index, options.resolveSecrets),
+  );
 
   return {
     updatedAt: input.updatedAt || new Date().toISOString(),
     primaryAiProviderId: String(
       input.primaryAiProviderId || defaultAdminConfig.primaryAiProviderId,
     ),
-    dataSources: mergeMissingDefaultSources(dataSources),
-    aiProviders: mergeMissingDefaultProviders(aiProviders),
+    dataSources: mergeMissingDefaultSources(dataSources, options.resolveSecrets),
+    aiProviders: mergeMissingDefaultProviders(aiProviders, options.resolveSecrets),
   };
 }
 
-export async function readAdminConfig(): Promise<AdminConfig> {
+function withoutSecrets(config: AdminConfig): AdminConfig {
+  return {
+    ...config,
+    dataSources: config.dataSources.map((source) => ({
+      ...source,
+      apiKey: "",
+    })),
+    aiProviders: config.aiProviders.map((provider) => ({
+      ...provider,
+      apiKey: "",
+    })),
+  };
+}
+
+export function sanitizeAdminConfigForClient(config: AdminConfig): AdminConfig {
+  return withoutSecrets(config);
+}
+
+export async function readAdminConfig(options: { resolveSecrets?: boolean } = {}): Promise<AdminConfig> {
+  const resolveSecrets = options.resolveSecrets ?? true;
   try {
     const raw = await readFile(configPath, "utf8");
-    return normalizeConfig(JSON.parse(raw));
+    return normalizeConfig(JSON.parse(raw), { resolveSecrets });
   } catch {
-    return defaultAdminConfig;
+    return normalizeConfig(defaultAdminConfig, { resolveSecrets });
   }
 }
 
@@ -598,8 +724,8 @@ export async function writeAdminConfig(config: AdminConfig): Promise<AdminConfig
   const nextConfig = normalizeConfig({
     ...config,
     updatedAt: new Date().toISOString(),
-  });
+  }, { resolveSecrets: false });
   await mkdir(path.dirname(configPath), { recursive: true });
-  await writeFile(configPath, `${JSON.stringify(nextConfig, null, 2)}\n`, "utf8");
-  return nextConfig;
+  await writeFile(configPath, `${JSON.stringify(withoutSecrets(nextConfig), null, 2)}\n`, "utf8");
+  return readAdminConfig();
 }

@@ -1,11 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { readAdminConfig, writeAdminConfig } from "@/lib/admin/config";
+import { readAdminConfig, sanitizeAdminConfigForClient, writeAdminConfig } from "@/lib/admin/config";
 import { unauthorizedResponse, verifyAdminRequest } from "@/lib/admin/auth";
 
 export async function GET(request: NextRequest) {
   if (!verifyAdminRequest(request)) return unauthorizedResponse();
   const config = await readAdminConfig();
-  return NextResponse.json({ ok: true, config });
+  return NextResponse.json({ ok: true, config: sanitizeAdminConfigForClient(config) });
 }
 
 export async function PUT(request: NextRequest) {
@@ -17,5 +17,5 @@ export async function PUT(request: NextRequest) {
   }
 
   const config = await writeAdminConfig(body.config as Awaited<ReturnType<typeof readAdminConfig>>);
-  return NextResponse.json({ ok: true, config });
+  return NextResponse.json({ ok: true, config: sanitizeAdminConfigForClient(config) });
 }

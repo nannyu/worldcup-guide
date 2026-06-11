@@ -24,6 +24,24 @@
     "enUS": "English",
     "zhCN": "中文"
   },
+  "theme": {
+    "dark": "Switch to dark mode",
+    "light": "Switch to light mode"
+  },
+  "nav": {
+    "morning": "Brief",
+    "schedule": "Schedule",
+    "teams": "Teams",
+    "radar": "Odds",
+    "tools": "Tools"
+  },
+  "layout": {
+    "eyebrow": "2026 FIFA WORLD CUP",
+    "title": "World Cup Bluff Guide",
+    "subtitle": "Built for casual fans",
+    "sources": "Sources: football-data.org · The Odds API · FIFA",
+    "disclaimer": "For reference only, not betting advice"
+  },
   "errors": {
     "notFound": {
       "code": "404",

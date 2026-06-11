@@ -1,20 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Geist } from "next/font/google";
-import { Noto_Serif_SC } from "next/font/google";
 import { cn } from "@/utils/utils";
 import { Toaster } from "@/components/ui/sonner";
 import { I18nProvider } from "@/components/i18n/i18n-provider";
 import { getServerLocale } from "@/lib/i18n/server-preference";
 import { AppShell } from "@/components/layout/app-shell";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
-const notoSerifSC = Noto_Serif_SC({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  variable: "--font-heading-loaded",
-  display: "swap",
-});
 
 const SITE_URL = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -63,13 +57,15 @@ export default async function RootLayout({
     <html
       lang={locale}
       suppressHydrationWarning
-      className={cn("h-full antialiased", "font-sans", geist.variable, notoSerifSC.variable)}
+      className={cn("h-full antialiased", "font-sans", geist.variable)}
     >
       <body className="min-h-full flex flex-col bg-[#F5F1E8]">
-        <I18nProvider>
-          <AppShell>{children}</AppShell>
-          <Toaster />
-        </I18nProvider>
+        <ThemeProvider>
+          <I18nProvider>
+            <AppShell>{children}</AppShell>
+            <Toaster />
+          </I18nProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

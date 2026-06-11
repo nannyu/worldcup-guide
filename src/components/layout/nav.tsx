@@ -3,11 +3,22 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 const tabs = [
   {
+    href: "/morning",
+    labelKey: "nav.morning",
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+      </svg>
+    ),
+  },
+  {
     href: "/",
-    label: "今日",
+    labelKey: "nav.schedule",
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
@@ -18,18 +29,8 @@ const tabs = [
     ),
   },
   {
-    href: "/morning",
-    label: "早报",
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-      </svg>
-    ),
-  },
-  {
     href: "/teams",
-    label: "球队",
+    labelKey: "nav.teams",
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -41,7 +42,7 @@ const tabs = [
   },
   {
     href: "/radar",
-    label: "天眼",
+    labelKey: "nav.radar",
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10"/>
@@ -52,7 +53,7 @@ const tabs = [
   },
   {
     href: "/tools",
-    label: "工具",
+    labelKey: "nav.tools",
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="4" y1="21" x2="20" y2="21"/>
@@ -66,6 +67,7 @@ const tabs = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { t } = useTranslation();
 
   return (
     <nav
@@ -106,7 +108,7 @@ export function BottomNav() {
                     className="text-[10px] font-medium tracking-wider"
                     style={{ fontFamily: "var(--font-heading)" }}
                   >
-                    {tab.label}
+                    {t(tab.labelKey)}
                   </span>
                 </motion.div>
               </Link>
@@ -120,18 +122,19 @@ export function BottomNav() {
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const { t } = useTranslation();
 
   return (
     <aside className="hidden md:flex flex-col w-56 border-r-2 border-[#241A14] bg-[#FAF7F0] min-h-svh sticky top-0 shrink-0">
       {/* Header */}
       <div className="p-6 border-b-2 border-[#241A14]">
         <div className="text-xs font-bold tracking-[0.2em] text-[#9E948C] mb-1" style={{ fontFamily: "var(--font-heading)" }}>
-          2026 FIFA WORLD CUP
+          {t("layout.eyebrow")}
         </div>
         <h1 className="text-lg font-bold leading-tight text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
-          世界杯装杯指南
+          {t("layout.title")}
         </h1>
-        <p className="text-[11px] text-[#9E948C] mt-1">专为普通球迷打造</p>
+        <p className="text-[11px] text-[#9E948C] mt-1">{t("layout.subtitle")}</p>
       </div>
 
       {/* Nav items */}
@@ -152,7 +155,7 @@ export function SidebarNav() {
               }`}
             >
               {tab.icon}
-              <span className="font-medium text-sm">{tab.label}</span>
+              <span className="font-medium text-sm">{t(tab.labelKey)}</span>
               {active && (
                 <div className="absolute inset-0 border border-[#241A14] rounded-[4px] pointer-events-none" />
               )}
@@ -163,9 +166,9 @@ export function SidebarNav() {
 
       {/* Footer */}
       <div className="p-4 border-t border-[#241A14]/20 text-[10px] text-[#9E948C] text-center">
-        数据来源：football-data.org · The Odds API · FIFA
+        {t("layout.sources")}
         <br />
-        仅供参考，非投注建议
+        {t("layout.disclaimer")}
       </div>
     </aside>
   );

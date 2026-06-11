@@ -185,6 +185,37 @@ interface CurrentsApiResponse {
   }>;
 }
 
+interface EspnSiteNewsResponse {
+  header?: string;
+  articles?: Array<{
+    id?: number | string;
+    nowId?: string;
+    type?: string;
+    headline?: string;
+    description?: string;
+    lastModified?: string;
+    published?: string;
+    images?: Array<{
+      url?: string;
+      type?: string;
+      name?: string;
+      caption?: string;
+    }>;
+    categories?: Array<{
+      type?: string;
+      description?: string;
+    }>;
+    links?: {
+      web?: {
+        href?: string;
+      };
+      mobile?: {
+        href?: string;
+      };
+    };
+  }>;
+}
+
 const teamZh: Record<string, { name: string; flag: string }> = {
   Algeria: { name: "阿尔及利亚", flag: "🇩🇿" },
   Austria: { name: "奥地利", flag: "🇦🇹" },
@@ -251,6 +282,9 @@ const englishNameByZh = new Map(
 );
 
 const defaultNewsQuery = `"World Cup 2026" football OR "FIFA World Cup"`;
+export const MAX_AGGREGATED_NEWS_LIMIT = 60;
+export const MORNING_BRIEF_NEWS_LIMIT = 60;
+export const NEWS_TRANSLATION_LIMIT = 30;
 
 const dateKeyToSourceDate: Record<ScheduleDateKey, string> = {
   yesterday: scheduleDateMeta.yesterday.date,
@@ -258,20 +292,55 @@ const dateKeyToSourceDate: Record<ScheduleDateKey, string> = {
   tomorrow: scheduleDateMeta.tomorrow.date,
 };
 
+function beijingDayWindow(date: string): { start: Date; end: Date } {
+  const start = new Date(`${date}T00:00:00+08:00`);
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+  return { start, end };
+}
+
+export interface AggregationReadOptions {
+  cacheMode?: "cache-first" | "cache-only" | "refresh";
+}
+
+function isCacheFirst(options: AggregationReadOptions | undefined): boolean {
+  return options?.cacheMode === "cache-first" || options?.cacheMode === "cache-only";
+}
+
+function isCacheOnly(options: AggregationReadOptions | undefined): boolean {
+  return options?.cacheMode === "cache-only";
+}
+
+function shouldUseSnapshot<T>(
+  snapshot: { payload: T } | undefined,
+  hasData: (payload: T) => boolean,
+  options?: AggregationReadOptions,
+): snapshot is { payload: T } {
+  if (!snapshot) return false;
+  if (options?.cacheMode === "refresh") return false;
+  return isCacheFirst(options) || hasData(snapshot.payload);
+}
+
 function snapshotDiagnostic(
   key: string,
   type: SourceDiagnostic["type"],
-  computedAt: Date | undefined,
+  cache: { computedAt?: Date; storage?: "database" | "file" } | Date | undefined,
   stale = false,
 ): SourceDiagnostic {
+  const computedAt = cache instanceof Date ? cache : cache?.computedAt;
+  const storage = cache instanceof Date ? "database" : cache?.storage || "database";
+  const isDatabase = storage === "database";
   return {
     id: key,
-    name: "PostgreSQL 数据快照",
-    adapter: "database-snapshot",
+    name: isDatabase ? "PostgreSQL 数据快照" : "本地运行缓存",
+    adapter: isDatabase ? "database-snapshot" : "runtime-file-snapshot",
     type,
     ok: true,
     fromCache: true,
-    message: stale ? "stale database snapshot" : "database snapshot hit",
+    cacheStorage: storage,
+    message: stale
+      ? (isDatabase ? "stale database snapshot" : "stale runtime file snapshot")
+      : (isDatabase ? "database snapshot hit" : "runtime file snapshot hit"),
     updatedAt: computedAt?.toISOString() || new Date().toISOString(),
   };
 }
@@ -553,6 +622,9 @@ function transformTheOddsApi(data: TheOddsApiEvent[]): OddsMatch[] {
     const homeValues: number[] = [];
     const drawValues: number[] = [];
     const awayValues: number[] = [];
+    const homeOddsValues: number[] = [];
+    const drawOddsValues: number[] = [];
+    const awayOddsValues: number[] = [];
     const updateTimes: string[] = [];
 
     for (const bookmaker of event.bookmakers || []) {
@@ -568,6 +640,9 @@ function transformTheOddsApi(data: TheOddsApiEvent[]): OddsMatch[] {
         (outcome) => canonicalTeamName(outcome.name) === "draw",
       )?.price;
       if (!homePrice || !awayPrice || !drawPrice) continue;
+      homeOddsValues.push(homePrice);
+      drawOddsValues.push(drawPrice);
+      awayOddsValues.push(awayPrice);
 
       const rawHome = 1 / homePrice;
       const rawDraw = 1 / drawPrice;
@@ -589,6 +664,9 @@ function transformTheOddsApi(data: TheOddsApiEvent[]): OddsMatch[] {
       awayTeam: away.name,
       kickoffAt: event.commence_time || "",
       kickoffBj: formatKickoffBj(event.commence_time),
+      homeOdds: Number(average(homeOddsValues).toFixed(2)),
+      drawOdds: Number(average(drawOddsValues).toFixed(2)),
+      awayOdds: Number(average(awayOddsValues).toFixed(2)),
       homeProbability: Math.round(average(homeValues)),
       drawProbability: Math.round(average(drawValues)),
       awayProbability: Math.round(average(awayValues)),
@@ -691,12 +769,58 @@ function mergeTeamLists(lists: Team[][]): Team[] {
   return Array.from(merged.values());
 }
 
-function transformPolymarketEvents(_data: PolymarketEvent[]): RadarMatch[] {
-  void _data;
-  // Radar requires a verified prediction-market probability and a verified
-  // bookmaker implied probability for the same event. Until an odds adapter
-  // supplies that second side, no comparison record is emitted.
-  return [];
+function parseStringArray(input: string | undefined): string[] {
+  if (!input) return [];
+  try {
+    const parsed = JSON.parse(input);
+    return Array.isArray(parsed) ? parsed.map((item) => String(item)) : [];
+  } catch {
+    return input.split(",").map((item) => item.trim()).filter(Boolean);
+  }
+}
+
+function parseMarketVolume(input: string | undefined): number {
+  const value = Number(String(input || "").replace(/[$,\s]/g, ""));
+  return Number.isFinite(value) ? value : 0;
+}
+
+function transformPolymarketEvents(data: PolymarketEvent[]): RadarMatch[] {
+  return data.flatMap((event, eventIndex) =>
+    (event.markets || []).flatMap((market, marketIndex) => {
+      const outcomes = parseStringArray(market.outcomes);
+      const prices = parseStringArray(market.outcomePrices).map((price) => Number(price));
+      const yes = prices[0];
+      const no = prices[1];
+      if (!Number.isFinite(yes) || outcomes.length < 2) return [];
+      const yesProb = Math.round(yes * 100);
+      const noProb = Number.isFinite(no) ? Math.round(no * 100) : Math.max(0, 100 - yesProb);
+      const volumeUsd = parseMarketVolume(market.volume);
+      const title = market.question || event.title || "World Cup prediction";
+      return [{
+        id: `polymarket-${market.id || event.id || `${eventIndex}-${marketIndex}`}`,
+        title,
+        marketLabel: outcomes.join(" / "),
+        homeTeam: outcomes[0] || "Yes",
+        awayTeam: outcomes[1] || "No",
+        homeFlag: "▴",
+        awayFlag: "▾",
+        homeMarketProb: yesProb,
+        awayMarketProb: noProb,
+        homeOddsProb: yesProb,
+        awayOddsProb: noProb,
+        diff: 0,
+        diffLabel: "aligned" as const,
+        diffTeam: "home" as const,
+        diffText: "此卡展示 Polymarket 预测市场价格和资金热度；传统赔率对照源未匹配时，不强行制造分歧。",
+        kickoffBj: "",
+        status: "upcoming" as MatchStatus,
+        updatedAt: "Polymarket",
+        volume: market.volume,
+        volumeUsd,
+        history: [],
+      }];
+    }),
+  ).sort((left, right) => (right.volumeUsd || 0) - (left.volumeUsd || 0));
 }
 
 function snapshotKeyFor(prefix: string, value: string, updatedAt: string): string {
@@ -725,6 +849,46 @@ function normalizeSummary(value: string | null | undefined, fallback = ""): stri
   return text.length > 180 ? `${text.slice(0, 177)}...` : text;
 }
 
+function normalizeArticleText(value: string | null | undefined, fallback = ""): string {
+  const text = String(value || fallback || "")
+    .replace(/\[\+\d+\s+chars?\]/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return text.length > 6500 ? `${text.slice(0, 6500).trim()}...` : text;
+}
+
+function splitArticleParagraphs(input: string): string[] {
+  return input
+    .split(/\n{2,}|(?<=[.!?。！？])\s+(?=[A-Z\u4e00-\u9fff])/)
+    .map((paragraph) => paragraph.replace(/\s+/g, " ").trim())
+    .filter((paragraph) => paragraph.length >= 24)
+    .slice(0, 8);
+}
+
+function fallbackArticleBody(article: NewsArticle): string[] {
+  const sourceParagraphs = splitArticleParagraphs(article.sourceText || "");
+  if (sourceParagraphs.length >= 2) return sourceParagraphs;
+  return [
+    article.summary,
+    ...(article.aiKeyPoints || article.keyPointsZh || article.keyPointsEn || []),
+    article.sourceText || "",
+  ]
+    .map((paragraph) => paragraph.replace(/\s+/g, " ").trim())
+    .filter((paragraph, index, all) => paragraph && all.indexOf(paragraph) === index)
+    .slice(0, 6);
+}
+
+function ensureArticleBody(article: NewsArticle): NewsArticle {
+  const fallback = fallbackArticleBody(article);
+  return {
+    ...article,
+    body: article.body?.length ? article.body : fallback,
+    bodyZh: article.bodyZh?.length ? article.bodyZh : undefined,
+    bodyEn: article.bodyEn?.length ? article.bodyEn : undefined,
+    bodyUpdatedAt: article.bodyUpdatedAt || new Date().toISOString(),
+  };
+}
+
 function uniqueArticles(articles: NewsArticle[], limit: number): NewsArticle[] {
   const seen = new Set<string>();
   const result: NewsArticle[] = [];
@@ -736,6 +900,66 @@ function uniqueArticles(articles: NewsArticle[], limit: number): NewsArticle[] {
     if (result.length >= limit) break;
   }
   return result;
+}
+
+function articleSearchText(article: NewsArticle): string {
+  return `${article.title} ${article.summary} ${article.sourceText || ""} ${article.domain || ""}`.toLowerCase();
+}
+
+function worldCupRelevanceScore(article: NewsArticle): number {
+  const text = articleSearchText(article);
+  let score = 0;
+
+  const weightedPatterns: Array<[number, RegExp]> = [
+    [10, /fifa world cup|world cup 2026|2026 world cup|世界杯|美加墨/i],
+    [7, /\bworld cup\b|fifa/i],
+    [4, /qualif(?:y|ier|ication)|draw|group stage|squad|roster|lineup|selection|call[- ]?up|阵容|名单|小组赛|预选赛|分组/i],
+    [3, /referee|official|var|stadium|host cit|tournament|裁判|执法|主办|球场|赛事/i],
+    [2, /mexico|canada|united states|usa|england|scotland|morocco|egypt|pulisic|declan rice|墨西哥|加拿大|美国|英格兰|苏格兰|摩洛哥|埃及/i],
+  ];
+  for (const [weight, pattern] of weightedPatterns) {
+    if (pattern.test(text)) score += weight;
+  }
+
+  if (!/\bworld cup\b|fifa|世界杯|美加墨|2026/i.test(text)) {
+    const domesticOnly = /premier league|championship|league one|league two|transfer|takeover|man utd|manchester united|everton|burnley|wolves|colchester|英超|转会|俱乐部/i.test(text);
+    if (domesticOnly) score -= 6;
+  }
+
+  return Math.max(0, score);
+}
+
+function isChinaNewsArticle(article: NewsArticle): boolean {
+  const sourceText = `${article.source} ${article.domain || ""} ${article.url || ""}`.toLowerCase();
+  return sourceText.includes("chinanews") || sourceText.includes("中新网");
+}
+
+function isStrongWorldCupArticle(article: NewsArticle): boolean {
+  const text = articleSearchText(article);
+  return worldCupRelevanceScore(article) >= 7
+    && /\bworld cup\b|fifa world cup|world cup 2026|2026 world cup|世界杯|美加墨/i.test(text);
+}
+
+function rankWorldCupNews(articles: NewsArticle[]): NewsArticle[] {
+  const scored = articles.map((article, index) => ({
+    article,
+    index,
+    score: Math.max(0, worldCupRelevanceScore(article) - (isChinaNewsArticle(article) ? 3 : 0)),
+    published: new Date(article.publishedAt).getTime(),
+  }));
+  const hasRelevantNews = scored.some((item) => item.score > 0);
+
+  return scored
+    .sort((left, right) => {
+      if (hasRelevantNews && left.score !== right.score) return right.score - left.score;
+      const leftSourceCount = left.article.sourceCount || 1;
+      const rightSourceCount = right.article.sourceCount || 1;
+      if (leftSourceCount !== rightSourceCount) return rightSourceCount - leftSourceCount;
+      return (Number.isFinite(right.published) ? right.published : 0)
+        - (Number.isFinite(left.published) ? left.published : 0)
+        || left.index - right.index;
+    })
+    .map((item) => item.article);
 }
 
 function canonicalArticleUrl(input: string): string {
@@ -784,9 +1008,7 @@ function publishedDistanceHours(left: string, right: string): number {
 }
 
 function mergeNewsArticles(articles: NewsArticle[], limit: number): NewsArticle[] {
-  const sorted = articles
-    .slice()
-    .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+  const sorted = rankWorldCupNews(articles);
   const groups: NewsArticle[][] = [];
 
   for (const article of sorted) {
@@ -844,6 +1066,16 @@ function applyAiCuration(
         ...article,
         aiSummary: item.summary || undefined,
         aiKeyPoints: item.keyPoints,
+        aiScore: item.score,
+        aiComment: item.comment || undefined,
+        titleZh: item.titleZh,
+        titleEn: item.titleEn,
+        summaryZh: item.summaryZh,
+        summaryEn: item.summaryEn,
+        keyPointsZh: item.keyPointsZh,
+        keyPointsEn: item.keyPointsEn,
+        commentZh: item.commentZh,
+        commentEn: item.commentEn,
       };
     });
 }
@@ -878,10 +1110,28 @@ async function fetchNewsSource(
 ): Promise<{ articles: NewsArticle[]; diagnostic: SourceDiagnostic }> {
   if (source.adapter === "rss-feed") {
     const { data, diagnostic } = await fetchTextFromSource(source);
-    const articles = filterArticlesByWindow(transformRssArticles(data, limit, query), window);
+    const rssArticles = transformRssArticles(data, limit, rssQueryForSource(source, query));
+    const sourceFilteredArticles = source.id.includes("chinanews")
+      ? rssArticles.filter(isStrongWorldCupArticle)
+      : rssArticles;
+    const articles = filterArticlesByWindow(sourceFilteredArticles, window);
     if (!articles.length) {
       diagnostic.ok = false;
-      diagnostic.message = "fetched but no usable RSS articles";
+      diagnostic.message = source.id.includes("chinanews")
+        ? "fetched but no strong World Cup ChinaNews RSS articles"
+        : "fetched but no usable RSS articles";
+    }
+    return { articles, diagnostic };
+  }
+
+  if (source.adapter === "espn-site-api") {
+    const { data, diagnostic } = await fetchJsonFromSource<EspnSiteNewsResponse>(source, {
+      limit,
+    });
+    const articles = filterArticlesByWindow(transformEspnSiteArticles(data, limit), window);
+    if (!articles.length) {
+      diagnostic.ok = false;
+      diagnostic.message = "fetched but no usable ESPN Site API articles";
     }
     return { articles, diagnostic };
   }
@@ -945,6 +1195,8 @@ function transformGdeltArticles(data: GdeltDocResponse, limit: number): NewsArti
         source: article.domain || "GDELT",
         publishedAt: parseGdeltDate(article.seendate),
         summary: normalizeSummary(article.title),
+        sourceText: normalizeArticleText(article.title),
+        bodySource: "summary" as const,
         imageUrl: article.socialimage || undefined,
         domain: article.domain || undefined,
         language: article.language || undefined,
@@ -965,6 +1217,8 @@ function transformNewsApiArticles(data: NewsApiResponse, limit: number): NewsArt
         source: article.source?.name || "NewsAPI",
         publishedAt: article.publishedAt || new Date().toISOString(),
         summary: normalizeSummary(article.description, article.content || article.title),
+        sourceText: normalizeArticleText(article.content || article.description, article.title),
+        bodySource: article.content ? "source-api" as const : "summary" as const,
         imageUrl: article.urlToImage || undefined,
         domain: undefined,
         language: "en",
@@ -997,6 +1251,8 @@ function transformCurrentsArticles(data: CurrentsApiResponse, limit: number): Ne
             ? new Date().toISOString()
             : published.toISOString(),
           summary: normalizeSummary(article.description, article.title),
+          sourceText: normalizeArticleText(article.description, article.title),
+          bodySource: article.description ? "source-api" as const : "summary" as const,
           imageUrl: article.image || undefined,
           domain,
           language: article.language || "en",
@@ -1004,6 +1260,56 @@ function transformCurrentsArticles(data: CurrentsApiResponse, limit: number): Ne
       }),
     limit,
   );
+}
+
+function espnArticleUrl(article: NonNullable<EspnSiteNewsResponse["articles"]>[number]): string {
+  return article.links?.web?.href || article.links?.mobile?.href || "";
+}
+
+function transformEspnSiteArticles(data: EspnSiteNewsResponse, limit: number): NewsArticle[] {
+  return uniqueArticles(
+    (data.articles || [])
+      .filter((article) => espnArticleUrl(article) && article.headline)
+      .map((article, index) => {
+        const url = espnArticleUrl(article);
+        const image = article.images?.find((item) => item.url && item.type === "header") || article.images?.find((item) => item.url);
+        const published = new Date(article.published || article.lastModified || "");
+        const categoryText = (article.categories || [])
+          .map((category) => category.description)
+          .filter(Boolean)
+          .join(", ");
+        return {
+          id: `espn-${article.id || article.nowId || articleId(url, `${article.headline}-${index}`)}`,
+          title: article.headline || "Untitled",
+          url,
+          source: "ESPN",
+          publishedAt: Number.isNaN(published.getTime()) ? new Date().toISOString() : published.toISOString(),
+          summary: normalizeSummary(article.description, categoryText || article.headline),
+          sourceText: normalizeArticleText(article.description, categoryText || article.headline),
+          bodySource: article.description ? "source-api" as const : "summary" as const,
+          imageUrl: image?.url,
+          domain: "espn.com",
+          language: "en",
+        };
+      }),
+    limit,
+  );
+}
+
+function isChineseNewsSource(source: DataSourceConfig): boolean {
+  return (
+    source.id.includes("chinanews")
+    || source.id.includes("people")
+    || source.id.includes("sohu")
+    || source.baseUrl.includes("chinanews.com")
+    || source.baseUrl.includes("people.com.cn")
+    || source.baseUrl.includes("sohu.com")
+  );
+}
+
+function rssQueryForSource(source: DataSourceConfig, query: string): string {
+  if (!isChineseNewsSource(source)) return query;
+  return `${query} 世界杯 美加墨 足球 FIFA 2026`;
 }
 
 function decodeXmlText(input: string | undefined): string {
@@ -1014,9 +1320,124 @@ function decodeXmlText(input: string | undefined): string {
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, "\"")
     .replace(/&#39;/g, "'")
+    .replace(/&#x([0-9a-f]+);/gi, (_, code: string) => String.fromCharCode(parseInt(code, 16)))
     .replace(/&#(\d+);/g, (_, code: string) => String.fromCharCode(Number(code)))
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function decodeHtmlText(input: string | undefined): string {
+  return String(input || "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&#x([0-9a-f]+);/gi, (_, code: string) => String.fromCharCode(parseInt(code, 16)))
+    .replace(/&#(\d+);/g, (_, code: string) => String.fromCharCode(Number(code)))
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function htmlToText(input: string | undefined): string {
+  return decodeHtmlText(
+    String(input || "")
+      .replace(/<script\b[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style\b[\s\S]*?<\/style>/gi, " ")
+      .replace(/<noscript\b[\s\S]*?<\/noscript>/gi, " ")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/(?:p|h1|h2|h3|li|blockquote)>/gi, "\n\n")
+      .replace(/<[^>]+>/g, " "),
+  );
+}
+
+function isUsefulArticleParagraph(text: string): boolean {
+  if (text.length < 40) return false;
+  if (text.length > 1400) return false;
+  return !/(cookie|privacy policy|advertisement|subscribe|newsletter|sign in|sign up|share this|read more|all rights reserved|javascript|browser does not support|this video can not be played)/i.test(text);
+}
+
+function extractArticleTextFromHtml(html: string): string {
+  const cleaned = html
+    .replace(/<script\b[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[\s\S]*?<\/style>/gi, " ")
+    .replace(/<svg\b[\s\S]*?<\/svg>/gi, " ")
+    .replace(/<(?:nav|header|footer|aside)\b[\s\S]*?<\/(?:nav|header|footer|aside)>/gi, " ");
+  const articleScopes = [...cleaned.matchAll(/<article\b[\s\S]*?<\/article>/gi)].map((match) => match[0]);
+  const scope = articleScopes.length ? articleScopes.join("\n") : cleaned;
+  const paragraphs = [...scope.matchAll(/<(?:p|h2|h3|blockquote)\b[^>]*>([\s\S]*?)<\/(?:p|h2|h3|blockquote)>/gi)]
+    .map((match) => htmlToText(match[1]))
+    .filter(isUsefulArticleParagraph);
+  const unique = [...new Set(paragraphs)];
+  return normalizeArticleText(unique.join("\n\n"));
+}
+
+async function fetchOriginalArticleText(article: NewsArticle): Promise<string | undefined> {
+  if (!/^https?:\/\//i.test(article.url)) return undefined;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 4500);
+  try {
+    const response = await fetch(article.url, {
+      headers: {
+        accept: "text/html,application/xhtml+xml",
+        "user-agent": "WorldCupGuideBot/1.0 (+local news reader)",
+      },
+      signal: controller.signal,
+    });
+    if (!response.ok) return undefined;
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("html") && !contentType.includes("text")) return undefined;
+    const text = extractArticleTextFromHtml(await response.text());
+    return text.length >= 180 ? text : undefined;
+  } catch {
+    return undefined;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+  const workers = Array.from({ length: Math.min(Math.max(1, concurrency), items.length) }, async () => {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      results[index] = await mapper(items[index], index);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
+async function enrichArticlesWithSourceText(articles: NewsArticle[]): Promise<NewsArticle[]> {
+  const fetchLimit = Math.min(articles.length, 12);
+  const enrichedTop = await mapWithConcurrency(
+    articles.slice(0, fetchLimit),
+    4,
+    async (article) => {
+      const remoteText = await fetchOriginalArticleText(article);
+      const sourceText = normalizeArticleText(remoteText, article.sourceText || article.summary);
+      return {
+        ...article,
+        sourceText,
+        bodySource: remoteText ? "original-page" as const : article.bodySource || (article.sourceText ? "source-api" as const : "summary" as const),
+      };
+    },
+  );
+  return [
+    ...enrichedTop,
+    ...articles.slice(fetchLimit).map((article) => ({
+      ...article,
+      sourceText: normalizeArticleText(article.sourceText, article.summary),
+      bodySource: article.bodySource || (article.sourceText ? "source-api" as const : "summary" as const),
+    })),
+  ];
 }
 
 function xmlTagValue(xml: string, tag: string): string {
@@ -1031,11 +1452,16 @@ function queryTerms(query: string): string[] {
     .replace(/["()]/g, " ")
     .split(/\s+|\s+or\s+/)
     .map((term) => term.trim())
-    .filter((term) => term.length >= 4 && !["world", "football", "fifa", "2026"].includes(term));
+    .filter((term) => (
+      /[\u3400-\u9fff]/.test(term)
+        ? term.length >= 2
+        : term.length >= 4 && !["world", "football", "fifa", "2026"].includes(term)
+    ));
 }
 
 function transformRssArticles(xml: string, limit: number, query: string): NewsArticle[] {
   const channelTitle = xmlTagValue(xml, "title") || "RSS Feed";
+  const channelLanguage = xmlTagValue(xml, "language") || xmlTagValue(xml, "dc:language") || "en";
   const itemMatches = xml.match(/<item\b[\s\S]*?<\/item>/gi) || [];
   const terms = queryTerms(query);
   const articles = itemMatches
@@ -1043,6 +1469,11 @@ function transformRssArticles(xml: string, limit: number, query: string): NewsAr
       const title = xmlTagValue(item, "title");
       const link = xmlTagValue(item, "link") || xmlTagValue(item, "guid");
       const description = xmlTagValue(item, "description");
+      const encodedContent = xmlTagValue(item, "content:encoded");
+      const sourceText = normalizeArticleText(
+        htmlToText(encodedContent || description),
+        title,
+      );
       const pubDate = xmlTagValue(item, "pubDate");
       const source = xmlTagValue(item, "source") || channelTitle;
       const parsedDate = new Date(pubDate);
@@ -1053,20 +1484,22 @@ function transformRssArticles(xml: string, limit: number, query: string): NewsAr
         source,
         publishedAt: Number.isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString(),
         summary: normalizeSummary(description, title),
+        sourceText,
+        bodySource: encodedContent ? "source-api" as const : "summary" as const,
         domain: source,
-        language: "en",
+        language: channelLanguage.toLowerCase(),
       };
     })
     .filter((article) => article.url && article.title);
 
-  const relevant = terms.length
-    ? articles.filter((article) => {
-        const haystack = `${article.title} ${article.summary}`.toLowerCase();
-        return terms.some((term) => haystack.includes(term));
-      })
-    : articles;
+  const relevant = articles.filter((article) => {
+    if (worldCupRelevanceScore(article) > 0) return true;
+    if (!terms.length) return false;
+    const haystack = `${article.title} ${article.summary}`.toLowerCase();
+    return terms.some((term) => haystack.includes(term));
+  });
 
-  return uniqueArticles(relevant.length >= 3 ? relevant : articles, limit);
+  return uniqueArticles(relevant, limit);
 }
 
 function transformGenericNews(data: unknown, limit: number): NewsArticle[] {
@@ -1092,6 +1525,15 @@ function transformGenericNews(data: unknown, limit: number): NewsArticle[] {
             typeof item.summary === "string" ? item.summary : undefined,
             typeof item.description === "string" ? item.description : title,
           ),
+          sourceText: normalizeArticleText(
+            typeof item.content === "string" ? item.content : undefined,
+            typeof item.summary === "string"
+              ? item.summary
+              : typeof item.description === "string"
+                ? item.description
+                : title,
+          ),
+          bodySource: typeof item.content === "string" ? "source-api" as const : "summary" as const,
           imageUrl: typeof item.imageUrl === "string" ? item.imageUrl : undefined,
           domain: typeof item.domain === "string" ? item.domain : undefined,
           language: typeof item.language === "string" ? item.language : undefined,
@@ -1101,6 +1543,109 @@ function transformGenericNews(data: unknown, limit: number): NewsArticle[] {
       .filter((article) => article.url && article.title),
     limit,
   );
+}
+
+function shortenText(value: string | undefined, maxLength: number): string {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength - 1).trim()}…`;
+}
+
+function articleFocusSentence(article: NewsArticle): string | undefined {
+  const text = `${article.title} ${article.summary} ${article.sourceText || ""}`;
+  if (/stadium|venue|host cit/i.test(text) && /england|scotland/i.test(text)) {
+    return "英格兰和苏格兰的世界杯比赛场馆安排成为关注点";
+  }
+  if (/how to watch|socceroos|fixtures?|results?|观赛|直播|赛程|赛果/i.test(text)) {
+    return "澳大利亚队观赛方式、赛程和赛果入口被集中整理";
+  }
+  if (/scotland/i.test(text) && /route|knockout|france|england tie|淘汰赛|晋级路径/i.test(text)) {
+    return "苏格兰的淘汰赛路径、潜在对手和英格兰交锋可能性受到关注";
+  }
+  if (/scotland/i.test(text) && /squad|26 players|steve clarke|名单|阵容/i.test(text)) {
+    return "苏格兰26人名单和克拉克的选人逻辑进入阵容讨论";
+  }
+  if (/world cup daily|opener|opening|mexico vs\.? sa|mexico.*south africa|揭幕|墨西哥.*南非/i.test(text)) {
+    return "揭幕战墨西哥对南非以及超大规模赛事开局进入预热";
+  }
+  if (/weather|天气/i.test(text) && /opening|games?|比赛/i.test(text)) {
+    return "揭幕阶段天气影响成为比赛准备变量";
+  }
+  if (/yellow card|red card|rules?|黄牌|红牌|新规|规则/i.test(text)) {
+    return "黄牌清零、红牌判罚等2026世界杯新规被集中解读";
+  }
+  if (/中国元素|美加墨世界杯/i.test(text)) {
+    return shortenText(article.titleZh || article.title, 40);
+  }
+  if (/巨星|新星|北美之夏/i.test(text)) {
+    return "巨星与新星的北美之夏表现成为人物线索";
+  }
+  return /[\u3400-\u9fff]/.test(article.title) ? shortenText(article.titleZh || article.title, 40) : undefined;
+}
+
+function buildFallbackNewsSummary(news: NewsArticle[], aggregation: NewsAggregationMeta): string {
+  if (!news.length) return "新闻源暂未返回可用条目。";
+
+  const rankedNews = rankWorldCupNews(news);
+  const relevantNews = rankedNews.filter((article) => worldCupRelevanceScore(article) > 0);
+  const summaryNews = relevantNews.length ? relevantNews : rankedNews;
+
+  const themeRules: Array<[string, RegExp]> = [
+    ["裁判与赛事执法", /referee|official|var|disciplin|裁判|执法/i],
+    ["球队阵容与选人", /squad|roster|lineup|selection|call[- ]?up|阵容|名单|首发/i],
+    ["球员状态与伤病", /injur|fitness|return|recover|伤病|复出|状态/i],
+    ["足协与赛事治理", /fifa|federation|ban|appeal|governance|足协|禁赛|治理/i],
+    ["球队备战动态", /training|friendly|preparation|coach|manager|备战|训练|主帅/i],
+    ["市场与商业信号", /market|sponsor|ticket|broadcast|rights|商业|门票|转播/i],
+  ];
+  const themeLabels = themeRules
+    .map(([label, pattern]) => ({
+      label,
+      count: summaryNews.filter((article) => pattern.test(`${article.title} ${article.summary} ${article.sourceText || ""}`)).length,
+    }))
+    .filter((item) => item.count > 0)
+    .sort((left, right) => right.count - left.count)
+    .slice(0, 3)
+    .map((item) => item.label);
+  const themes = themeLabels.length ? themeLabels.join("、") : "赛前动态、球队新闻与赛事运营";
+  const topicRules: Array<[string, RegExp]> = [
+    ["比赛场馆与城市指南", /stadium|venue|host cit|场馆|球场|城市/i],
+    ["观赛方式、赛程与结果入口", /how to watch|fixture|schedule|results?|直播|赛程|赛果/i],
+    ["小组出线和淘汰赛路径", /route|knockout|draw|group|path|小组|淘汰赛|晋级/i],
+    ["参赛名单与阵容选择", /squad|roster|players picked|lineup|selection|call[- ]?up|名单|阵容|首发/i],
+    ["揭幕战和赛事开局", /daily|opener|opening|mexico|south africa|揭幕|开幕|墨西哥|南非/i],
+    ["裁判安排和赛事执法", /referee|official|var|裁判|执法/i],
+    ["核心球员状态与球队备战", /pulisic|declan rice|injur|fitness|training|coach|manager|备战|训练|伤病|状态/i],
+    ["FIFA 规则、治理与争议", /fifa|ban|appeal|governance|disciplin|禁赛|治理|争议/i],
+  ];
+  const highlights = summaryNews
+    .map((article) => {
+      const text = `${article.title} ${article.summary} ${article.sourceText || ""}`;
+      return topicRules.find(([, pattern]) => pattern.test(text))?.[0];
+    })
+    .filter((topic): topic is string => Boolean(topic))
+    .filter((topic, index, all) => all.indexOf(topic) === index)
+    .slice(0, 4)
+    .filter(Boolean)
+    .join("、");
+  const focusText = summaryNews
+    .slice(0, 8)
+    .map(articleFocusSentence)
+    .filter((item): item is string => Boolean(item))
+    .filter((item, index, all) => all.indexOf(item) === index)
+    .slice(0, 5)
+    .join("；");
+  const total = aggregation.deduplicatedArticleCount || news.length;
+  const scopeText = relevantNews.length
+    ? ""
+    : `目前可用条目相关性有限，已从 ${total} 条新闻中优先挑选最接近世界杯主题的内容。`;
+  const highlightText = focusText
+    ? `具体焦点是：${focusText}。`
+    : highlights
+      ? `重点包括${highlights}，相关报道已在下方新闻列表展开。`
+      : `重点报道已在下方新闻列表展开。`;
+
+  return `今日世界杯新闻主线集中在${themes}。${highlightText}${scopeText}`;
 }
 
 function buildMorningBrief(input: {
@@ -1120,15 +1665,18 @@ function buildMorningBrief(input: {
     ? `世界杯早报：${headlineMatch.homeTeam} vs ${headlineMatch.awayTeam}`
     : "世界杯早报：新闻、赛程与市场信号";
   const matchSummary = input.matches.length
-    ? `${scheduleDateMeta[input.dateKey].listLabel}共 ${input.matches.length} 场，已完赛 ${finishedMatches.length} 场。`
-    : "暂无比赛结果源返回。";
-  const newsSummary = topNews ? `头条新闻：${topNews.title}` : "新闻源暂未返回可用条目。";
+    ? finishedMatches.length
+      ? `${scheduleDateMeta[input.dateKey].listLabel}共 ${input.matches.length} 场，已完赛 ${finishedMatches.length} 场。`
+      : `${scheduleDateMeta[input.dateKey].listLabel}共 ${input.matches.length} 场，赛况更新后进入战局拆解。`
+    : "";
+  const newsSummary = buildFallbackNewsSummary(input.news, input.aggregation);
+  const fallbackSummary = [newsSummary, matchSummary].filter(Boolean).join(" ");
   return {
     issueDate,
     edition,
-    title: input.curation?.title || fallbackTitle,
-    summary: input.curation?.summary || `${matchSummary}${newsSummary}`,
-    quote: input.curation?.quote || "",
+    title: input.curation?.title || topNews?.titleZh || fallbackTitle,
+    summary: input.curation?.summary || fallbackSummary,
+    quote: input.curation?.quote || (topNews ? articleFocusSentence(topNews) || shortenText(topNews.summaryZh || topNews.summary, 96) : ""),
     sourceLabel: input.sourceLabel,
     updatedAt: new Date().toISOString(),
     matches: input.matches,
@@ -1138,7 +1686,7 @@ function buildMorningBrief(input: {
   };
 }
 
-export async function getAggregatedOdds(): Promise<{
+export async function getAggregatedOdds(options: AggregationReadOptions = {}): Promise<{
   oddsMatches: OddsMatch[];
   source: "remote" | "fallback" | "cache";
   diagnostics: SourceDiagnostic[];
@@ -1146,12 +1694,27 @@ export async function getAggregatedOdds(): Promise<{
   const { dataSources, updatedAt } = await readAdminConfig();
   const snapshotKey = `odds:v2:world-cup:${updatedAt}`;
   const persisted = await readSnapshotCache<OddsMatch[]>(snapshotKey);
-  if (persisted?.payload.length) {
+  if (shouldUseSnapshot(persisted, (payload) => payload.length > 0, options)) {
     return {
       oddsMatches: persisted.payload,
       source: "cache",
-      diagnostics: [snapshotDiagnostic(snapshotKey, "odds", persisted.computedAt)],
+      diagnostics: [snapshotDiagnostic(snapshotKey, "odds", persisted)],
     };
+  }
+
+  if (isCacheFirst(options)) {
+    const stale = await readSnapshotCache<OddsMatch[]>(snapshotKey, { allowStale: true });
+    if (stale) {
+      return {
+        oddsMatches: stale.payload,
+        source: "cache",
+        diagnostics: [snapshotDiagnostic(snapshotKey, "odds", stale, true)],
+      };
+    }
+  }
+
+  if (isCacheOnly(options)) {
+    return { oddsMatches: [], source: "fallback", diagnostics: [] };
   }
 
   const diagnostics: SourceDiagnostic[] = [];
@@ -1188,14 +1751,14 @@ export async function getAggregatedOdds(): Promise<{
     return {
       oddsMatches: stale.payload,
       source: "cache",
-      diagnostics: [...diagnostics, snapshotDiagnostic(snapshotKey, "odds", stale.computedAt, true)],
+      diagnostics: [...diagnostics, snapshotDiagnostic(snapshotKey, "odds", stale, true)],
     };
   }
 
   return { oddsMatches: [], source: "fallback", diagnostics };
 }
 
-export async function getAggregatedTeams(): Promise<{
+export async function getAggregatedTeams(options: AggregationReadOptions = {}): Promise<{
   teams: Team[];
   source: "remote" | "fallback" | "cache";
   diagnostics: SourceDiagnostic[];
@@ -1203,12 +1766,27 @@ export async function getAggregatedTeams(): Promise<{
   const { dataSources, updatedAt } = await readAdminConfig();
   const snapshotKey = `teams:v4:world-cup:${updatedAt}`;
   const persisted = await readSnapshotCache<Team[]>(snapshotKey);
-  if (persisted?.payload.length) {
+  if (shouldUseSnapshot(persisted, (payload) => payload.length > 0, options)) {
     return {
       teams: persisted.payload,
       source: "cache",
-      diagnostics: [snapshotDiagnostic(snapshotKey, "team-content", persisted.computedAt)],
+      diagnostics: [snapshotDiagnostic(snapshotKey, "team-content", persisted)],
     };
+  }
+
+  if (isCacheFirst(options)) {
+    const stale = await readSnapshotCache<Team[]>(snapshotKey, { allowStale: true });
+    if (stale) {
+      return {
+        teams: stale.payload,
+        source: "cache",
+        diagnostics: [snapshotDiagnostic(snapshotKey, "team-content", stale, true)],
+      };
+    }
+  }
+
+  if (isCacheOnly(options)) {
+    return { teams: [], source: "fallback", diagnostics: [] };
   }
 
   const diagnostics: SourceDiagnostic[] = [];
@@ -1264,14 +1842,14 @@ export async function getAggregatedTeams(): Promise<{
       source: "cache",
       diagnostics: [
         ...diagnostics,
-        snapshotDiagnostic(snapshotKey, "team-content", stale.computedAt, true),
+        snapshotDiagnostic(snapshotKey, "team-content", stale, true),
       ],
     };
   }
   return { teams: [], source: "fallback", diagnostics };
 }
 
-export async function getAggregatedMatches(dateKey: ScheduleDateKey): Promise<{
+export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: AggregationReadOptions = {}): Promise<{
   matches: Match[];
   source: "remote" | "fallback" | "cache";
   diagnostics: SourceDiagnostic[];
@@ -1279,11 +1857,33 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey): Promise<{
   const { dataSources, updatedAt } = await readAdminConfig();
   const snapshotKey = `matches:v4:${dateKey}:${dateKeyToSourceDate[dateKey]}:${updatedAt}`;
   const persisted = await readSnapshotCache<Match[]>(snapshotKey);
-  if (persisted?.payload.length) {
+  if (shouldUseSnapshot(persisted, (payload) => payload.length > 0, options)) {
     return {
       matches: persisted.payload,
       source: "cache",
-      diagnostics: [snapshotDiagnostic(snapshotKey, "schedule", persisted.computedAt)],
+      diagnostics: [snapshotDiagnostic(snapshotKey, "schedule", persisted)],
+    };
+  }
+
+  if (isCacheFirst(options)) {
+    const stale = await readSnapshotCache<Match[]>(snapshotKey, { allowStale: true });
+    if (stale) {
+      return {
+        matches: stale.payload,
+        source: "cache",
+        diagnostics: [snapshotDiagnostic(snapshotKey, "schedule", stale, true)],
+      };
+    }
+  }
+
+  if (isCacheOnly(options)) {
+    const storedOfficialMatches = (
+      await getStoredOfficialMatches<FifaScheduleRecord>(scheduleDateMeta[dateKey].date)
+    ).map(fifaRecordToMatch);
+    return {
+      matches: storedOfficialMatches.length ? storedOfficialMatches : matchesByDate[dateKey],
+      source: storedOfficialMatches.length ? "cache" : "fallback",
+      diagnostics: [],
     };
   }
 
@@ -1315,7 +1915,7 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey): Promise<{
       }
       if (!matches.length) continue;
 
-      const oddsResult = await getAggregatedOdds();
+      const oddsResult = await getAggregatedOdds(options);
       const enrichedMatches = mergeOddsIntoMatches(matches, oddsResult.oddsMatches);
       const combinedDiagnostics = [...diagnostics, ...oddsResult.diagnostics];
       await upsertSnapshotCache({
@@ -1342,7 +1942,7 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey): Promise<{
       diagnostics.push(diagnostic);
       const matches = transformOpenFootballMatches(data, dateKey);
       if (matches.length > 0) {
-        const oddsResult = await getAggregatedOdds();
+        const oddsResult = await getAggregatedOdds(options);
         const enrichedMatches = mergeOddsIntoMatches(matches, oddsResult.oddsMatches);
         const combinedDiagnostics = [...diagnostics, ...oddsResult.diagnostics];
         await upsertSnapshotCache({
@@ -1372,7 +1972,7 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey): Promise<{
       source: "cache",
       diagnostics: [
         ...diagnostics,
-        snapshotDiagnostic(snapshotKey, "schedule", stale.computedAt, true),
+        snapshotDiagnostic(snapshotKey, "schedule", stale, true),
       ],
     };
   }
@@ -1381,7 +1981,7 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey): Promise<{
     await getStoredOfficialMatches<FifaScheduleRecord>(scheduleDateMeta[dateKey].date)
   ).map(fifaRecordToMatch);
   if (storedOfficialMatches.length > 0) {
-    const oddsResult = await getAggregatedOdds();
+    const oddsResult = await getAggregatedOdds(options);
     const enrichedMatches = mergeOddsIntoMatches(storedOfficialMatches, oddsResult.oddsMatches);
     const databaseDiagnostic: SourceDiagnostic = {
       id: "fifa-official-db",
@@ -1409,7 +2009,7 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey): Promise<{
     };
   }
 
-  const oddsResult = await getAggregatedOdds();
+  const oddsResult = await getAggregatedOdds(options);
   const fallbackMatches = mergeOddsIntoMatches(matchesByDate[dateKey], oddsResult.oddsMatches);
   await upsertSnapshotCache({
     snapshotKey,
@@ -1427,7 +2027,7 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey): Promise<{
   };
 }
 
-export async function getAggregatedRadar(): Promise<{
+export async function getAggregatedRadar(options: AggregationReadOptions = {}): Promise<{
   radarMatches: RadarMatch[];
   source: "remote" | "fallback" | "cache";
   diagnostics: SourceDiagnostic[];
@@ -1435,12 +2035,27 @@ export async function getAggregatedRadar(): Promise<{
   const { dataSources, updatedAt } = await readAdminConfig();
   const snapshotKey = `radar:v3:world-cup:${updatedAt}`;
   const persisted = await readSnapshotCache<RadarMatch[]>(snapshotKey);
-  if (persisted?.payload.length) {
+  if (shouldUseSnapshot(persisted, (payload) => payload.length > 0, options)) {
     return {
       radarMatches: persisted.payload,
       source: "cache",
-      diagnostics: [snapshotDiagnostic(snapshotKey, "prediction-market", persisted.computedAt)],
+      diagnostics: [snapshotDiagnostic(snapshotKey, "prediction-market", persisted)],
     };
+  }
+
+  if (isCacheFirst(options)) {
+    const stale = await readSnapshotCache<RadarMatch[]>(snapshotKey, { allowStale: true });
+    if (stale) {
+      return {
+        radarMatches: stale.payload,
+        source: "cache",
+        diagnostics: [snapshotDiagnostic(snapshotKey, "prediction-market", stale, true)],
+      };
+    }
+  }
+
+  if (isCacheOnly(options)) {
+    return { radarMatches: [], source: "fallback", diagnostics: [] };
   }
 
   const diagnostics: SourceDiagnostic[] = [];
@@ -1479,7 +2094,7 @@ export async function getAggregatedRadar(): Promise<{
       source: "cache",
       diagnostics: [
         ...diagnostics,
-        snapshotDiagnostic(snapshotKey, "prediction-market", stale.computedAt, true),
+        snapshotDiagnostic(snapshotKey, "prediction-market", stale, true),
       ],
     };
   }
@@ -1505,6 +2120,7 @@ export async function getAggregatedNews(options: {
   limit?: number;
   publishedAfter?: Date | string;
   publishedBefore?: Date | string;
+  cacheMode?: AggregationReadOptions["cacheMode"];
 } = {}): Promise<{
   articles: NewsArticle[];
   source: "remote" | "fallback" | "cache";
@@ -1513,7 +2129,7 @@ export async function getAggregatedNews(options: {
   curation?: AiNewsCuration;
 }> {
   const query = options.query?.trim() || defaultNewsQuery;
-  const limit = Math.min(Math.max(options.limit || 12, 1), 30);
+  const limit = Math.min(Math.max(options.limit || MORNING_BRIEF_NEWS_LIMIT, 1), MAX_AGGREGATED_NEWS_LIMIT);
   const publishedAfter = options.publishedAfter ? new Date(options.publishedAfter) : undefined;
   const publishedBefore = options.publishedBefore ? new Date(options.publishedBefore) : undefined;
   const window: NewsFetchWindow = {
@@ -1522,29 +2138,68 @@ export async function getAggregatedNews(options: {
   };
   const { dataSources, aiProviders, primaryAiProviderId, updatedAt } = await readAdminConfig();
   const windowKey = `${window.publishedAfter?.toISOString() || "any"}:${window.publishedBefore?.toISOString() || "any"}`;
-  const snapshotKey = snapshotKeyFor("news:v2", `${query}:${limit}:${windowKey}`, updatedAt);
+  const snapshotKey = snapshotKeyFor("news:v8", `${query}:${limit}:${windowKey}`, updatedAt);
   const persisted = await readSnapshotCache<{
     articles: NewsArticle[];
     aggregation: NewsAggregationMeta;
     curation?: AiNewsCuration;
     diagnostics: SourceDiagnostic[];
   }>(snapshotKey);
-  if (persisted?.payload.articles.length) {
+  if (shouldUseSnapshot(persisted, (payload) => payload.articles.length > 0, options)) {
     return {
       articles: persisted.payload.articles,
       source: "cache",
       diagnostics: [
         ...persisted.payload.diagnostics,
-        snapshotDiagnostic(snapshotKey, "news", persisted.computedAt),
+        snapshotDiagnostic(snapshotKey, "news", persisted),
       ],
       aggregation: persisted.payload.aggregation,
       curation: persisted.payload.curation,
     };
   }
 
+  if (isCacheFirst(options)) {
+    const stale = await readSnapshotCache<{
+      articles: NewsArticle[];
+      aggregation: NewsAggregationMeta;
+      curation?: AiNewsCuration;
+      diagnostics: SourceDiagnostic[];
+    }>(snapshotKey, { allowStale: true });
+    if (stale) {
+      return {
+        articles: stale.payload.articles,
+        source: "cache",
+        diagnostics: [
+          ...stale.payload.diagnostics,
+          snapshotDiagnostic(snapshotKey, "news", stale, true),
+        ],
+        aggregation: stale.payload.aggregation,
+        curation: stale.payload.curation,
+      };
+    }
+  }
+
+  const emptyAggregation: NewsAggregationMeta = {
+    fetchedSourceCount: 0,
+    successfulSourceCount: 0,
+    rawArticleCount: 0,
+    deduplicatedArticleCount: 0,
+    aiUsed: false,
+    aiMessage: "后台任务正在刷新新闻数据。",
+  };
+
+  if (isCacheOnly(options)) {
+    return {
+      articles: [],
+      source: "fallback",
+      diagnostics: [],
+      aggregation: emptyAggregation,
+    };
+  }
+
   const diagnostics: SourceDiagnostic[] = [];
   const newsSources = sortEnabledSources(dataSources, "news");
-  const perSourceLimit = Math.min(Math.max(limit, 8), 20);
+  const perSourceLimit = Math.min(Math.max(limit, 20), MAX_AGGREGATED_NEWS_LIMIT);
   const sourceResults = await Promise.all(
     newsSources.map(async (source) => {
       try {
@@ -1558,7 +2213,7 @@ export async function getAggregatedNews(options: {
     diagnostics.push(result.diagnostic);
     return result.articles;
   });
-  const ruleDeduplicated = mergeNewsArticles(rawArticles, limit);
+  const ruleDeduplicated = await enrichArticlesWithSourceText(mergeNewsArticles(rawArticles, limit));
   const orderedAiProviders = aiProviders
     .slice()
     .sort((left, right) => {
@@ -1567,7 +2222,9 @@ export async function getAggregatedNews(options: {
       return 0;
     });
   const aiResult = await curateNewsWithAi(orderedAiProviders, ruleDeduplicated);
-  const articles = applyAiCuration(ruleDeduplicated, aiResult.curation).slice(0, limit);
+  const articles = applyAiCuration(ruleDeduplicated, aiResult.curation)
+    .map(ensureArticleBody)
+    .slice(0, limit);
   const aggregation: NewsAggregationMeta = {
     fetchedSourceCount: newsSources.length,
     successfulSourceCount: sourceResults.filter((result) => result.articles.length > 0).length,
@@ -1612,7 +2269,7 @@ export async function getAggregatedNews(options: {
       source: "cache",
       diagnostics: [
         ...diagnostics,
-        snapshotDiagnostic(snapshotKey, "news", stale.computedAt, true),
+        snapshotDiagnostic(snapshotKey, "news", stale, true),
       ],
       aggregation: stale.payload.aggregation,
       curation: stale.payload.curation,
@@ -1631,31 +2288,71 @@ export async function getAggregatedNews(options: {
   return { articles: [], source: "fallback", diagnostics, aggregation };
 }
 
-export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey): Promise<{
+export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, options: AggregationReadOptions = {}): Promise<{
   brief: MorningBrief;
   source: "remote" | "fallback" | "cache";
   diagnostics: SourceDiagnostic[];
 }> {
   const { updatedAt } = await readAdminConfig();
-  const snapshotKey = `morning:v3:${dateKey}:${dateKeyToSourceDate[dateKey]}:${updatedAt}`;
+  const snapshotKey = `morning:v15:${dateKey}:${dateKeyToSourceDate[dateKey]}:${updatedAt}`;
   const persisted = await readSnapshotCache<MorningBrief>(snapshotKey);
-  if (persisted?.payload) {
+  if (persisted?.payload && options.cacheMode !== "refresh") {
     return {
       brief: persisted.payload,
       source: "cache",
-      diagnostics: [snapshotDiagnostic(snapshotKey, "news", persisted.computedAt)],
+      diagnostics: [snapshotDiagnostic(snapshotKey, "news", persisted)],
     };
   }
 
-  const matchesResult = await getAggregatedMatches(dateKey);
+  if (isCacheFirst(options)) {
+    const stale = await readSnapshotCache<MorningBrief>(snapshotKey, { allowStale: true });
+    if (stale?.payload) {
+      return {
+        brief: stale.payload,
+        source: "cache",
+        diagnostics: [snapshotDiagnostic(snapshotKey, "news", stale, true)],
+      };
+    }
+  }
+
+  if (isCacheOnly(options)) {
+    const fallbackBrief = buildMorningBrief({
+      matches: [],
+      news: [],
+      sourceLabel: "后台任务正在刷新",
+      dateKey,
+      aggregation: {
+        fetchedSourceCount: 0,
+        successfulSourceCount: 0,
+        rawArticleCount: 0,
+        deduplicatedArticleCount: 0,
+        aiUsed: false,
+        aiMessage: "后台任务正在刷新早报数据。",
+      },
+    });
+    return {
+      brief: fallbackBrief,
+      source: "fallback",
+      diagnostics: [],
+    };
+  }
+
+  const matchesResult = await getAggregatedMatches(dateKey, options);
   const teamsInMatches = matchesResult.matches
     .flatMap((match) => [match.homeTeam, match.awayTeam])
     .filter((team) => team && team !== "待定")
     .slice(0, 6);
   const query = teamsInMatches.length
-    ? `"World Cup 2026" (${teamsInMatches.join(" OR ")})`
+    ? `${defaultNewsQuery} OR (${teamsInMatches.join(" OR ")})`
     : defaultNewsQuery;
-  const newsResult = await getAggregatedNews({ query, limit: 8 });
+  const newsWindow = beijingDayWindow(dateKeyToSourceDate[dateKey]);
+  const newsResult = await getAggregatedNews({
+    query,
+    limit: MORNING_BRIEF_NEWS_LIMIT,
+    publishedAfter: newsWindow.start,
+    publishedBefore: newsWindow.end,
+    cacheMode: options.cacheMode,
+  });
   const successfulNewsSources = newsResult.diagnostics
     .filter((diagnostic) => diagnostic.ok)
     .map((diagnostic) => diagnostic.name);

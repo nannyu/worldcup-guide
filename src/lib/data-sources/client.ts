@@ -15,6 +15,7 @@ export interface SourceDiagnostic {
   type: DataSourceType;
   ok: boolean;
   fromCache: boolean;
+  cacheStorage?: "database" | "file";
   status?: number;
   message: string;
   updatedAt: string;
@@ -197,8 +198,9 @@ export async function fetchJsonFromSource<T>(
         type: source.type,
         ok: true,
         fromCache: true,
+        cacheStorage: persisted.storage,
         status: persisted.statusCode || 200,
-        message: "database cache hit",
+        message: persisted.storage === "database" ? "database cache hit" : "runtime file cache hit",
         updatedAt: persisted.fetchedAt?.toISOString() || new Date().toISOString(),
       },
     };
@@ -318,8 +320,9 @@ export async function fetchTextFromSource(
         type: source.type,
         ok: true,
         fromCache: true,
+        cacheStorage: persisted.storage,
         status: persisted.statusCode || 200,
-        message: "database cache hit",
+        message: persisted.storage === "database" ? "database cache hit" : "runtime file cache hit",
         updatedAt: persisted.fetchedAt?.toISOString() || new Date().toISOString(),
       },
     };

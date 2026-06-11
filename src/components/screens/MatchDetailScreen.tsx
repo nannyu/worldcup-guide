@@ -3,13 +3,17 @@
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { allMatches, type Match } from "@/lib/wc-data";
+import { useTranslation } from "react-i18next";
+import { allMatches, matchIdentityKey, mergeMatchWithOfficialSource, type Match } from "@/lib/wc-data";
+import { groupLabel, roundLabel, teamName, tr } from "@/lib/i18n/content";
 
 function getMatch(id: string): Match | undefined {
   return allMatches.find((m) => m.id === id);
 }
 
 export function MatchDetailScreen() {
+  const { i18n } = useTranslation();
+  const locale = i18n.resolvedLanguage || i18n.language;
   const params = useParams();
   const router = useRouter();
   const matchId = params.id as string;
@@ -21,24 +25,21 @@ export function MatchDetailScreen() {
     let cancelled = false;
     async function loadMatch() {
       const localMatch = getMatch(matchId);
-      if (localMatch) {
-        setMatch(localMatch);
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
+      if (!localMatch) setLoading(true);
       const dateKeys = ["yesterday", "today", "tomorrow"] as const;
       const responses = await Promise.all(
         dateKeys.map(async (dateKey) => {
-          const response = await fetch(`/api/data/matches?dateKey=${dateKey}`, { cache: "no-store" });
+          const response = await fetch(`/api/data/matches?dateKey=${dateKey}`);
           if (!response.ok) return [];
           const data = (await response.json()) as { matches?: Match[] };
           return data.matches || [];
         }),
       );
       if (cancelled) return;
-      setMatch(responses.flat().find((item) => item.id === matchId));
+      const liveMatches = responses.flat();
+      const liveMatch = liveMatches.find((item) => item.id === matchId)
+        || (localMatch ? liveMatches.find((item) => matchIdentityKey(item) === matchIdentityKey(localMatch)) : undefined);
+      setMatch(localMatch ? mergeMatchWithOfficialSource(localMatch, liveMatch) : liveMatch);
       setLoading(false);
     }
 
@@ -51,7 +52,7 @@ export function MatchDetailScreen() {
   if (loading) {
     return (
       <div className="flex min-h-svh items-center justify-center bg-[#F5F1E8] p-8">
-        <p className="text-sm text-[#9E948C]">正在读取比赛数据...</p>
+        <p className="text-sm text-[#9E948C]">{tr(locale, "正在读取比赛数据...", "Loading match data...")}</p>
       </div>
     );
   }
@@ -59,13 +60,13 @@ export function MatchDetailScreen() {
   if (!match) {
     return (
       <div className="flex flex-col min-h-svh bg-[#F5F1E8] items-center justify-center p-8">
-        <p className="text-[#9E948C] text-sm">比赛数据未找到</p>
+        <p className="text-[#9E948C] text-sm">{tr(locale, "比赛数据未找到", "Match data not found")}</p>
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={() => router.back()}
           className="mt-4 px-4 py-2 border-2 border-[#241A14] text-xs font-bold bg-[#FAF7F0]"
         >
-          ← 返回
+          {tr(locale, "← 返回", "← Back")}
         </motion.button>
       </div>
     );
@@ -89,15 +90,15 @@ export function MatchDetailScreen() {
           onClick={() => router.back()}
           className="px-2.5 py-1 border border-[#241A14] text-xs font-bold bg-[#FAF7F0] hover:bg-[#D36E52] hover:text-white transition-colors"
         >
-          ← 返回赛程
+          {tr(locale, "← 返回赛程", "← Back to schedule")}
         </motion.button>
         <span
           className="font-black text-sm text-[#241A14]"
           style={{ fontFamily: "var(--font-heading)" }}
         >
-          深度装杯分析
+          {tr(locale, "深度装杯分析", "Match Analysis")}
         </span>
-        <span className="text-[10px] text-[#D36E52] font-bold uppercase tracking-widest">独家情报</span>
+        <span className="text-[10px] text-[#D36E52] font-bold uppercase tracking-widest">{tr(locale, "独家情报", "Insights")}</span>
       </div>
 
       {/* Scrollable content */}
@@ -111,7 +112,7 @@ export function MatchDetailScreen() {
             className="text-[9px] font-black uppercase text-[#D36E52] tracking-widest mb-2"
             style={{ fontFamily: "var(--font-heading)" }}
           >
-            {match.group} · {match.round}
+            {groupLabel(match.group, locale)} · {roundLabel(match.round, locale)}
           </div>
 
           <div className="flex justify-center items-center gap-6 my-3">
@@ -122,7 +123,7 @@ export function MatchDetailScreen() {
                 className="font-black text-base mt-1 text-[#241A14]"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
-                {match.homeTeam}
+                {teamName(match.homeTeam, locale)}
               </div>
               {match.status !== "upcoming" && (
                 <div className="text-2xl font-black text-[#D36E52] mt-1">{match.homeScore}</div>
@@ -135,20 +136,20 @@ export function MatchDetailScreen() {
                 <>
                   {match.homeWinProb > 0 || match.awayWinProb > 0 ? (
                     <>
-                      <div className="font-serif text-xs text-[#9E948C] font-bold">市场概率</div>
+                      <div className="font-serif text-xs text-[#9E948C] font-bold">{tr(locale, "市场概率", "Market probability")}</div>
                       <div className="font-mono text-lg font-black text-[#D36E52] mt-1">
                         {match.homeWinProb}% - {match.awayWinProb}%
                       </div>
                     </>
                   ) : match.oddsImpliedHome > 0 ? (
                     <>
-                      <div className="font-serif text-xs text-[#9E948C] font-bold">赔率隐含概率</div>
+                      <div className="font-serif text-xs text-[#9E948C] font-bold">{tr(locale, "赔率隐含概率", "Implied odds")}</div>
                       <div className="font-mono text-sm font-black text-[#D36E52] mt-1">
                         {match.oddsImpliedHome}% / {match.oddsImpliedDraw}% / {match.oddsImpliedAway}%
                       </div>
                     </>
                   ) : (
-                    <div className="font-serif text-xs text-[#9E948C] font-bold">暂无概率数据</div>
+                    <div className="font-serif text-xs text-[#9E948C] font-bold">{tr(locale, "暂无概率数据", "No probability data")}</div>
                   )}
                 </>
               ) : (
@@ -165,7 +166,7 @@ export function MatchDetailScreen() {
                 className="font-black text-base mt-1 text-[#241A14]"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
-                {match.awayTeam}
+                {teamName(match.awayTeam, locale)}
               </div>
               {match.status !== "upcoming" && (
                 <div className="text-2xl font-black text-[#D36E52] mt-1">{match.awayScore}</div>
@@ -174,7 +175,7 @@ export function MatchDetailScreen() {
           </div>
 
           <div className="text-[11px] text-[#9E948C] font-serif">
-            {match.status === "upcoming" ? `开赛时间：${match.kickoffBj}（北京时间）` : "已完赛"}
+            {match.status === "upcoming" ? tr(locale, `开赛时间：${match.kickoffBj}（北京时间）`, `Kickoff: ${match.kickoffBj} Beijing time`) : tr(locale, "已完赛", "Finished")}
             {match.venue && ` · ${match.venue}`}
           </div>
         </div>
@@ -193,7 +194,7 @@ export function MatchDetailScreen() {
             className="font-bold text-sm tracking-wider text-[#241A14]"
             style={{ fontFamily: "var(--font-heading)" }}
           >
-            比赛分析
+            {tr(locale, "比赛分析", "Match Analysis")}
           </h4>
         </div>
 
@@ -226,29 +227,29 @@ export function MatchDetailScreen() {
           ))
         ) : (
           <div className="border-2 border-dashed border-[#241A14] p-8 text-center">
-            <p className="text-sm font-bold text-[#241A14]">暂无比赛分析</p>
-            <p className="mt-1 text-[11px] text-[#9E948C]">统计、新闻或分析数据源返回内容后会自动显示。</p>
+            <p className="text-sm font-bold text-[#241A14]">{tr(locale, "暂无比赛分析", "No match analysis")}</p>
+            <p className="mt-1 text-[11px] text-[#9E948C]">{tr(locale, "统计、新闻或分析数据源返回内容后会自动显示。", "Stats, news, or analysis will appear once a data source returns content.")}</p>
           </div>
         )}
 
         {/* Highlights link */}
         {match.highlights && (
           <div className="border border-[#241A14] p-3 flex justify-between items-center bg-[#FAF7F0]">
-            <span className="text-xs text-[#5C524C]">官方集锦已出，快去看看</span>
+            <span className="text-xs text-[#5C524C]">{tr(locale, "官方集锦已出，快去看看", "Official highlights are available.")}</span>
             <a
               href={match.highlights}
               target="_blank"
               rel="noopener noreferrer"
               className="px-3 py-1 bg-[#9CB48A] text-white text-xs font-bold border border-[#241A14] hover:bg-[#241A14] transition-colors"
             >
-              → 看集锦
+              {tr(locale, "→ 看集锦", "→ Highlights")}
             </a>
           </div>
         )}
 
         {/* Disclaimer */}
         <p className="text-[10px] text-[#9E948C] text-center py-2">
-          * 页面只展示已接入数据源返回的内容，不构成投注建议。
+          {tr(locale, "* 页面只展示已接入数据源返回的内容，不构成投注建议。", "* This page only shows connected source data and is not betting advice.")}
         </p>
       </div>
     </div>

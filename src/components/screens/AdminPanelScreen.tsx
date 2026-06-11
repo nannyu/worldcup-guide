@@ -69,6 +69,7 @@ function createDataSource(): DataSourceConfig {
     baseUrl: "",
     endpointPath: "",
     apiKey: "",
+    apiKeyEnvName: "",
     apiKeyPlacement: "none",
     apiKeyParamName: "",
     apiKeyHeaderName: "",
@@ -89,6 +90,7 @@ function createAiProvider(): AiProviderConfig {
     provider: "custom",
     baseUrl: "",
     apiKey: "",
+    apiKeyEnvName: "",
     defaultModel: "",
     enabled: false,
     notes: "",
@@ -321,8 +323,19 @@ function DataSourceCard({
         <Field label="认证方式">
           <SelectInput value={source.apiKeyPlacement} options={apiKeyPlacements} onChange={(apiKeyPlacement) => onChange({ ...source, apiKeyPlacement })} />
         </Field>
-        <Field label="API Key / Token">
-          <TextInput type="password" value={source.apiKey} onChange={(event) => onChange({ ...source, apiKey: event.target.value })} placeholder="可为空" />
+        <Field label="API Key 环境变量">
+          <TextInput
+            value={source.apiKeyEnvName || ""}
+            onChange={(event) => onChange({ ...source, apiKey: "", apiKeyEnvName: event.target.value })}
+            placeholder="DATA_SOURCE_EXAMPLE_API_KEY"
+          />
+          <span className={`block text-[10px] ${source.apiKeyConfigured ? "text-[#6F8F5F]" : "text-[#9E948C]"}`}>
+            {source.apiKeyPlacement === "none"
+              ? "该数据源不需要 API Key"
+              : source.apiKeyConfigured
+                ? "已在服务端环境变量中检测到"
+                : "未检测到，请写入 .env 后重启服务"}
+          </span>
         </Field>
         <Field label="Key 参数名">
           <TextInput value={source.apiKeyParamName} onChange={(event) => onChange({ ...source, apiKeyParamName: event.target.value })} placeholder="key / api_key" />
@@ -375,8 +388,15 @@ function AiProviderCard({
         <Field label="默认模型">
           <TextInput value={provider.defaultModel} onChange={(event) => onChange({ ...provider, defaultModel: event.target.value })} placeholder="例如 gpt-4.1-mini" />
         </Field>
-        <Field label="API Key">
-          <TextInput type="password" value={provider.apiKey} onChange={(event) => onChange({ ...provider, apiKey: event.target.value })} placeholder="sk-..." />
+        <Field label="API Key 环境变量">
+          <TextInput
+            value={provider.apiKeyEnvName || ""}
+            onChange={(event) => onChange({ ...provider, apiKey: "", apiKeyEnvName: event.target.value })}
+            placeholder="AI_PROVIDER_EXAMPLE_API_KEY"
+          />
+          <span className={`block text-[10px] ${provider.apiKeyConfigured ? "text-[#6F8F5F]" : "text-[#9E948C]"}`}>
+            {provider.apiKeyConfigured ? "已在服务端环境变量中检测到" : "未检测到，请写入 .env 后重启服务"}
+          </span>
         </Field>
         <Field label="备注">
           <TextInput value={provider.notes} onChange={(event) => onChange({ ...provider, notes: event.target.value })} />
@@ -511,7 +531,7 @@ export function AdminPanelScreen() {
         <section className="space-y-4 border-2 border-[#241A14] bg-[#FAF7F0] p-4" style={{ boxShadow: "4px 4px 0 0 #241A14" }}>
           <SectionHeader
             title="数据源配置"
-            desc="管理赛程、比分、预测市场、赔率、集锦和球队内容来源。API Key 会写入本地忽略文件，不提交到 Git。"
+            desc="管理赛程、比分、预测市场、赔率、集锦和球队内容来源。API Key 只从 .env 环境变量读取，不写入配置 JSON。"
             action={
               <button type="button" onClick={() => setConfig({ ...config, dataSources: [...config.dataSources, createDataSource()] })} className="shrink-0 border border-[#241A14] bg-[#241A14] px-3 py-1 text-xs font-bold text-white hover:bg-[#D36E52]">
                 添加数据源
@@ -537,7 +557,7 @@ export function AdminPanelScreen() {
         <section className="space-y-4 border-2 border-[#241A14] bg-[#FAF7F0] p-4" style={{ boxShadow: "4px 4px 0 0 #241A14" }}>
           <SectionHeader
             title="AI 大模型接入"
-            desc="支持 OpenAI、Gemini、DeepSeek、小米 MiMo、Kimi Coding、BigModel/智谱，以及 OpenAI-compatible 自定义 Provider。"
+            desc="支持 OpenAI、Gemini、DeepSeek、小米 MiMo、Kimi Coding、BigModel/智谱，以及 OpenAI-compatible 自定义 Provider。Provider API Key 同样只从 .env 环境变量读取，不写入配置 JSON。"
             action={
               <button type="button" onClick={() => setConfig({ ...config, aiProviders: [...config.aiProviders, createAiProvider()] })} className="shrink-0 border border-[#241A14] bg-[#241A14] px-3 py-1 text-xs font-bold text-white hover:bg-[#D36E52]">
                 添加 Provider

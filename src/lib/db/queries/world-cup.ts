@@ -1,11 +1,11 @@
 import { asc, eq } from "drizzle-orm";
-import { db, isDatabaseConfigured } from "../client";
+import { getDb, isDatabaseConfigured } from "../client";
 import { matches } from "../schema/world-cup";
 
 export async function getStoredOfficialMatches<T>(easternDate: string): Promise<T[]> {
   if (!isDatabaseConfigured) return [];
   try {
-    const rows = await db
+    const rows = await getDb()
       .select({ raw: matches.raw })
       .from(matches)
       .where(eq(matches.easternDate, easternDate))

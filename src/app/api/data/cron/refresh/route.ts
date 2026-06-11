@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { enqueueFullDataRefresh, getBackgroundTaskStates } from "@/lib/background/tasks";
 import { runDataRefresh } from "@/lib/data-sources/refresh-runner";
 
 export async function GET(request: NextRequest) {
@@ -9,6 +10,17 @@ export async function GET(request: NextRequest) {
   }
 
   const mode = request.nextUrl.searchParams.get("mode") === "initialize" ? "initialize" : "scheduled";
-  const result = await runDataRefresh(mode);
-  return NextResponse.json({ ok: true, ...result });
+  const isVercelCron = request.headers.get("user-agent")?.includes("vercel-cron/1.0");
+  if (isVercelCron || request.nextUrl.searchParams.get("wait") === "1") {
+    const result = await runDataRefresh(mode);
+    return NextResponse.json({ ok: true, async: false, ...result });
+  }
+
+  const backgroundTask = await enqueueFullDataRefresh(mode);
+  return NextResponse.json({
+    ok: true,
+    async: true,
+    backgroundTask,
+    tasks: await getBackgroundTaskStates(),
+  }, { status: 202 });
 }

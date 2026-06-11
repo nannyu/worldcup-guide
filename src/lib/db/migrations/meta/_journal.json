@@ -15,6 +15,13 @@
       "when": 1781080000000,
       "tag": "0001_data_source_usage_events",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781167000000,
+      "tag": "0002_background_jobs",
+      "breakpoints": true
     }
   ]
 }

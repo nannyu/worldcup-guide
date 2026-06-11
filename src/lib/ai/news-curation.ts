@@ -1,6 +1,8 @@
 import type { AiProviderConfig } from "@/lib/admin/config";
 import type { NewsArticle } from "@/lib/wc-data";
 
+const NEWS_AI_ANALYSIS_LIMIT = 20;
+
 export interface AiNewsCuration {
   title: string;
   summary: string;
@@ -10,6 +12,16 @@ export interface AiNewsCuration {
     relatedArticleIds: string[];
     summary: string;
     keyPoints: string[];
+    score?: number;
+    comment?: string;
+    titleZh?: string;
+    titleEn?: string;
+    summaryZh?: string;
+    summaryEn?: string;
+    keyPointsZh?: string[];
+    keyPointsEn?: string[];
+    commentZh?: string;
+    commentEn?: string;
   }>;
   providerName: string;
 }
@@ -51,6 +63,22 @@ function normalizeCuration(value: unknown, providerName: string): AiNewsCuration
           keyPoints: Array.isArray(item.keyPoints)
             ? item.keyPoints.filter((point): point is string => typeof point === "string").slice(0, 4)
             : [],
+          score: typeof item.score === "number" && Number.isFinite(item.score)
+            ? Math.max(0, Math.min(100, Math.round(item.score)))
+            : undefined,
+          comment: typeof item.comment === "string" ? item.comment.slice(0, 90) : undefined,
+          titleZh: typeof item.titleZh === "string" ? item.titleZh.slice(0, 140) : undefined,
+          titleEn: typeof item.titleEn === "string" ? item.titleEn.slice(0, 180) : undefined,
+          summaryZh: typeof item.summaryZh === "string" ? item.summaryZh.slice(0, 180) : undefined,
+          summaryEn: typeof item.summaryEn === "string" ? item.summaryEn.slice(0, 240) : undefined,
+          keyPointsZh: Array.isArray(item.keyPointsZh)
+            ? item.keyPointsZh.filter((point): point is string => typeof point === "string").slice(0, 4)
+            : undefined,
+          keyPointsEn: Array.isArray(item.keyPointsEn)
+            ? item.keyPointsEn.filter((point): point is string => typeof point === "string").slice(0, 4)
+            : undefined,
+          commentZh: typeof item.commentZh === "string" ? item.commentZh.slice(0, 90) : undefined,
+          commentEn: typeof item.commentEn === "string" ? item.commentEn.slice(0, 140) : undefined,
         }))
     : [];
   const result = {
@@ -67,7 +95,7 @@ function normalizeCuration(value: unknown, providerName: string): AiNewsCuration
 }
 
 function buildPrompt(articles: NewsArticle[]): string {
-  const records = articles.slice(0, 24).map((article) => ({
+  const records = articles.slice(0, NEWS_AI_ANALYSIS_LIMIT).map((article) => ({
     id: article.id,
     title: article.title,
     summary: article.summary,
@@ -77,11 +105,12 @@ function buildPrompt(articles: NewsArticle[]): string {
   }));
   return [
     "你是世界杯新闻编辑。只基于输入事实工作，不补充未提供的信息。",
-    "任务：识别仍然重复或描述同一事件的条目，选择一个主条目；生成简洁中文摘要和要点；再生成整期标题、总摘要和可复制短句。",
+    "任务：识别仍然重复或描述同一事件的条目，选择一个主条目；给每条主条目按新闻价值打 0-100 分；同时生成中英文标题、摘要、要点和点评；再生成整期中文标题、总摘要和可复制短句。",
+    "commentZh/commentEn 是一句点评：辛辣幽默、略毒舌，但只能基于输入事实，不得添加新事实或推断。",
     "返回严格 JSON，不要 Markdown：",
-    '{"title":"","summary":"","quote":"","items":[{"articleId":"","relatedArticleIds":[],"summary":"","keyPoints":[]}]}',
-    "必须保留并准确使用以上字段名：title、summary、quote、items、articleId、relatedArticleIds、keyPoints。",
-    "relatedArticleIds 只能使用输入中的 id；不确定时不要合并。summary 不超过 90 字，keyPoints 每项不超过 35 字。",
+    '{"title":"","summary":"","quote":"","items":[{"articleId":"","relatedArticleIds":[],"summary":"","keyPoints":[],"score":0,"comment":"","titleZh":"","titleEn":"","summaryZh":"","summaryEn":"","keyPointsZh":[],"keyPointsEn":[],"commentZh":"","commentEn":""}]}',
+    "必须保留并准确使用以上字段名。summary/keyPoints/comment 保持中文兼容旧字段；titleZh/titleEn 等字段必须分别使用对应语言。",
+    "relatedArticleIds 只能使用输入中的 id；不确定时不要合并。summary 不超过 90 字，keyPoints 每项不超过 35 字。不要生成正文翻译，正文翻译由免费翻译接口处理。",
     JSON.stringify(records),
   ].join("\n");
 }

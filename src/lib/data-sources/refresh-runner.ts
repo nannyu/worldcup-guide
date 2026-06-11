@@ -7,8 +7,11 @@ import {
   getAggregatedRadar,
   getAggregatedTeams,
   getDataSourceStatus,
+  MORNING_BRIEF_NEWS_LIMIT,
+  NEWS_TRANSLATION_LIMIT,
 } from "@/lib/data-sources/aggregate";
 import { getWorldCupActivity } from "@/lib/data-sources/rate-policy";
+import { morningBriefTranslationArticle, translateArticleAndCache } from "@/lib/translation/article-translation";
 import type { ScheduleDateKey } from "@/lib/wc-data";
 
 export interface RefreshTaskResult {
@@ -49,7 +52,7 @@ function dayWindow(daysAgo: number, now = new Date()) {
 }
 
 async function refreshMatches(dateKey: ScheduleDateKey): Promise<RefreshTaskResult> {
-  const result = await getAggregatedMatches(dateKey);
+  const result = await getAggregatedMatches(dateKey, { cacheMode: "refresh" });
   return {
     name: `matches:${dateKey}`,
     ok: true,
@@ -59,7 +62,11 @@ async function refreshMatches(dateKey: ScheduleDateKey): Promise<RefreshTaskResu
 }
 
 async function refreshMorning(dateKey: ScheduleDateKey): Promise<RefreshTaskResult> {
-  const result = await getAggregatedMorningBrief(dateKey);
+  const result = await getAggregatedMorningBrief(dateKey, { cacheMode: "refresh" });
+  await translateArticleAndCache(morningBriefTranslationArticle(result.brief));
+  for (const article of result.brief.news.slice(0, NEWS_TRANSLATION_LIMIT)) {
+    await translateArticleAndCache(article);
+  }
   return {
     name: `morning:${dateKey}`,
     ok: true,
@@ -72,10 +79,14 @@ async function refreshNewsWindow(daysAgo: number): Promise<RefreshTaskResult> {
   const { start, end } = dayWindow(daysAgo);
   const result = await getAggregatedNews({
     query: "World Cup 2026 football soccer FIFA",
-    limit: 20,
+    limit: MORNING_BRIEF_NEWS_LIMIT,
     publishedAfter: start,
     publishedBefore: end,
+    cacheMode: "refresh",
   });
+  for (const article of result.articles.slice(0, NEWS_TRANSLATION_LIMIT)) {
+    await translateArticleAndCache(article);
+  }
   return {
     name: `news:last-${daysAgo}d`,
     ok: true,
@@ -99,21 +110,21 @@ export async function runDataRefresh(mode: "scheduled" | "initialize" = "schedul
 
   if (mode === "initialize" || enabledTypes.has("team-content")) {
     tasks.push(await task("teams", async () => {
-      const result = await getAggregatedTeams();
+      const result = await getAggregatedTeams({ cacheMode: "refresh" });
       return { name: "teams", ok: true, source: result.source, count: result.teams.length };
     }));
   }
 
   if (mode === "initialize" || enabledTypes.has("odds")) {
     tasks.push(await task("odds", async () => {
-      const result = await getAggregatedOdds();
+      const result = await getAggregatedOdds({ cacheMode: "refresh" });
       return { name: "odds", ok: true, source: result.source, count: result.oddsMatches.length };
     }));
   }
 
   if (mode === "initialize" || enabledTypes.has("prediction-market")) {
     tasks.push(await task("radar", async () => {
-      const result = await getAggregatedRadar();
+      const result = await getAggregatedRadar({ cacheMode: "refresh" });
       return { name: "radar", ok: true, source: result.source, count: result.radarMatches.length };
     }));
   }
@@ -137,7 +148,10 @@ export async function runDataRefresh(mode: "scheduled" | "initialize" = "schedul
     }
   } else if (enabledTypes.has("news")) {
     tasks.push(await task("news:current", async () => {
-      const result = await getAggregatedNews({ limit: activity.mode === "match-window" ? 20 : 12 });
+      const result = await getAggregatedNews({ limit: MORNING_BRIEF_NEWS_LIMIT, cacheMode: "refresh" });
+      for (const article of result.articles.slice(0, NEWS_TRANSLATION_LIMIT)) {
+        await translateArticleAndCache(article);
+      }
       return {
         name: "news:current",
         ok: true,

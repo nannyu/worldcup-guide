@@ -7,5 +7,5 @@ export function getRequestLocale(request: NextRequest): LocaleCode {
 
   const acceptLanguage = request.headers.get("accept-language");
   const preferred = acceptLanguage?.split(",")[0]?.split(";")[0]?.trim();
-  return normalizeLocale(preferred) ?? "en-US";
+  return normalizeLocale(preferred) ?? "zh-CN";
 }

@@ -1,7 +1,7 @@
 import { config } from "dotenv";
 import fifaScheduleData from "@/data/fifa-schedule.json";
 import type { FifaScheduleRecord } from "@/lib/wc-data";
-import { closeDatabase, db, isDatabaseConfigured } from "./client";
+import { closeDatabase, getDb, isDatabaseConfigured } from "./client";
 import { competitions, matches, teams, venues } from "./schema/world-cup";
 
 config({ path: ".env" });
@@ -22,7 +22,7 @@ function countryCodeForCity(city: string): string {
   return "USA";
 }
 
-async function seed() {
+export async function seedFifaSchedule() {
   if (!isDatabaseConfigured) {
     throw new Error("DATABASE_URL is required to seed the FIFA schedule.");
   }
@@ -34,7 +34,7 @@ async function seed() {
   const now = new Date();
   const sourceUpdatedAt = new Date(schedule.source.extractedAt);
 
-  await db.transaction(async (tx) => {
+  await getDb().transaction(async (tx) => {
     await tx
       .insert(competitions)
       .values({
@@ -164,11 +164,16 @@ async function seed() {
   console.log(`Seeded ${schedule.matches.length} FIFA World Cup matches.`);
 }
 
-seed()
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await closeDatabase();
-  });
+const isDirectRun = process.argv[1]?.endsWith("seed-fifa-schedule.ts")
+  || process.argv[1]?.endsWith("seed-fifa-schedule.js");
+
+if (isDirectRun) {
+  seedFifaSchedule()
+    .catch((error) => {
+      console.error(error);
+      process.exitCode = 1;
+    })
+    .finally(async () => {
+      await closeDatabase();
+    });
+}

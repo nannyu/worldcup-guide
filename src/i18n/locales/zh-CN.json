@@ -24,6 +24,24 @@
     "enUS": "English",
     "zhCN": "中文"
   },
+  "theme": {
+    "dark": "切换深色模式",
+    "light": "切换浅色模式"
+  },
+  "nav": {
+    "morning": "早报",
+    "schedule": "赛程",
+    "teams": "球队",
+    "radar": "盘口",
+    "tools": "工具"
+  },
+  "layout": {
+    "eyebrow": "2026 FIFA WORLD CUP",
+    "title": "世界杯装杯指南",
+    "subtitle": "专为普通球迷打造",
+    "sources": "数据来源：football-data.org · The Odds API · FIFA",
+    "disclaimer": "仅供参考，非投注建议"
+  },
   "errors": {
     "notFound": {
       "code": "404",

@@ -6,7 +6,7 @@ import {
 } from "@/lib/i18n/preference";
 import type { LocaleCode } from "@/lib/i18n/locale";
 
-/** Resolved locale for SSR (cookie → default en-US). */
+/** Resolved locale for SSR (cookie → default zh-CN). */
 export async function getServerLocale(): Promise<LocaleCode> {
   const cookieStore = await cookies();
   const raw = cookieStore.get(LOCALE_STORAGE_KEY)?.value;
@@ -14,7 +14,7 @@ export async function getServerLocale(): Promise<LocaleCode> {
     raw ? decodeURIComponent(raw) : null,
   );
   if (preference === "system") {
-    return "en-US";
+    return "zh-CN";
   }
   return resolveLocalePreference(preference);
 }

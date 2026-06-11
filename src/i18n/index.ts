@@ -30,8 +30,8 @@ const resources = {
 // Fixed default for SSR — user preference is applied client-side after mount.
 void i18n.use(initReactI18next).init({
   resources,
-  lng: "en-US",
-  fallbackLng: "en-US",
+  lng: "zh-CN",
+  fallbackLng: "zh-CN",
   supportedLngs: [...localeCodes],
   interpolation: { escapeValue: false },
 });
@@ -60,7 +60,7 @@ export const changeLocale = async (preference: LocalePreference) => {
 };
 
 export function getResolvedLocale(): LocaleCode {
-  return normalizeLocale(i18n.resolvedLanguage || i18n.language) ?? "en-US";
+  return normalizeLocale(i18n.resolvedLanguage || i18n.language) ?? "zh-CN";
 }
 
 /** Apply stored preference after hydration (call once from I18nProvider). */
