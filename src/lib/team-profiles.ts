@@ -11,6 +11,7 @@ interface BuiltInTeamProfile {
   nameEn: string;
   rank: number;
   coach: string;
+  coachZh?: string;
   formation: string;
   stars: string[];
   style: string;
@@ -45,6 +46,7 @@ export function applyBuiltInTeamProfile(team: Team): Team {
     nameEn: profile.nameEn || team.nameEn,
     rank: profile.rank || team.rank,
     coach: profile.coach || team.coach,
+    coachZh: profile.coachZh || team.coachZh,
     formation: profile.formation || team.formation,
     stars: profile.stars.length ? profile.stars : team.stars,
     style: profile.style || team.style,

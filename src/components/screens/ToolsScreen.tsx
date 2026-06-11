@@ -6,10 +6,36 @@ import { useTranslation } from "react-i18next";
 import type { OddsMatch } from "@/lib/wc-data";
 import { teamName, tr } from "@/lib/i18n/content";
 
+type OutcomeKey = "home" | "draw" | "away";
+type OddsInputs = Record<OutcomeKey, string>;
+
+const emptyOddsInputs: OddsInputs = {
+  home: "",
+  draw: "",
+  away: "",
+};
+
 function toImpliedPercent(value: string): number | null {
   const odds = Number.parseFloat(value);
   if (!Number.isFinite(odds) || odds <= 1) return null;
   return Math.round((1 / odds) * 100);
+}
+
+function formatOdds(value?: number): string {
+  return typeof value === "number" && Number.isFinite(value) ? value.toFixed(2) : "";
+}
+
+function getOutcomeProbability(match: OddsMatch | undefined, outcome: OutcomeKey): number | undefined {
+  if (!match) return undefined;
+  if (outcome === "home") return match.homeProbability;
+  if (outcome === "draw") return match.drawProbability;
+  return match.awayProbability;
+}
+
+function getOutcomeLabel(match: OddsMatch | undefined, outcome: OutcomeKey, locale: string): string {
+  if (outcome === "home") return match ? teamName(match.homeTeam, locale) : tr(locale, "主胜", "Home");
+  if (outcome === "draw") return tr(locale, "平局", "Draw");
+  return match ? teamName(match.awayTeam, locale) : tr(locale, "客胜", "Away");
 }
 
 function FieldShell({
@@ -50,44 +76,28 @@ function NumberInput({
   );
 }
 
-function OddsConverter({ locale }: { locale: string }) {
-  const [homeOdds, setHomeOdds] = useState("");
-  const [drawOdds, setDrawOdds] = useState("");
-  const [awayOdds, setAwayOdds] = useState("");
-  const [matches, setMatches] = useState<OddsMatch[]>([]);
-  const [selectedMatchId, setSelectedMatchId] = useState("");
-  const selectedMatch = matches.find((match) => match.id === selectedMatchId);
-
-  const home = toImpliedPercent(homeOdds);
-  const draw = toImpliedPercent(drawOdds);
-  const away = toImpliedPercent(awayOdds);
+function OddsConverter({
+  locale,
+  matches,
+  selectedMatch,
+  selectedMatchId,
+  oddsInputs,
+  onSelectMatch,
+  onOddsChange,
+}: {
+  locale: string;
+  matches: OddsMatch[];
+  selectedMatch: OddsMatch | undefined;
+  selectedMatchId: string;
+  oddsInputs: OddsInputs;
+  onSelectMatch: (matchId: string) => void;
+  onOddsChange: (outcome: OutcomeKey, value: string) => void;
+}) {
+  const home = toImpliedPercent(oddsInputs.home);
+  const draw = toImpliedPercent(oddsInputs.draw);
+  const away = toImpliedPercent(oddsInputs.away);
   const hasResult = home !== null && draw !== null && away !== null;
   const total = hasResult ? home + draw + away : null;
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadOdds() {
-      const response = await fetch("/api/data/odds");
-      if (!response.ok) return;
-      const data = (await response.json()) as { oddsMatches?: OddsMatch[] };
-      if (cancelled) return;
-      setMatches((data.oddsMatches || []).filter((match) => match.homeOdds && match.drawOdds && match.awayOdds));
-    }
-
-    void loadOdds();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  function selectMatch(matchId: string) {
-    setSelectedMatchId(matchId);
-    const match = matches.find((item) => item.id === matchId);
-    if (!match) return;
-    setHomeOdds(match.homeOdds?.toFixed(2) || "");
-    setDrawOdds(match.drawOdds?.toFixed(2) || "");
-    setAwayOdds(match.awayOdds?.toFixed(2) || "");
-  }
 
   return (
     <section className="border border-[#241A14] bg-[#FAF7F0] p-3 space-y-3" style={{ boxShadow: "3px 3px 0 0 #241A14" }}>
@@ -106,7 +116,7 @@ function OddsConverter({ locale }: { locale: string }) {
       <FieldShell label={tr(locale, "赛事选择", "Match")}>
         <select
           value={selectedMatchId}
-          onChange={(event) => selectMatch(event.target.value)}
+          onChange={(event) => onSelectMatch(event.target.value)}
           className="w-full border-2 border-[#241A14] bg-[#F5F1E8] px-2 py-1.5 text-xs text-[#241A14] focus:border-[#D36E52] focus:outline-none"
         >
           <option value="">
@@ -127,15 +137,15 @@ function OddsConverter({ locale }: { locale: string }) {
 
       <div className="grid grid-cols-3 gap-2">
         <FieldShell label={tr(locale, "主胜", "Home")}>
-          <NumberInput value={homeOdds} onChange={setHomeOdds} placeholder="1.85" />
+          <NumberInput value={oddsInputs.home} onChange={(value) => onOddsChange("home", value)} placeholder="1.85" />
           <span className="block h-4 text-[11px] font-bold text-[#D36E52]">{home !== null ? `${home}%` : "-"}</span>
         </FieldShell>
         <FieldShell label={tr(locale, "平局", "Draw")}>
-          <NumberInput value={drawOdds} onChange={setDrawOdds} placeholder="3.40" />
+          <NumberInput value={oddsInputs.draw} onChange={(value) => onOddsChange("draw", value)} placeholder="3.40" />
           <span className="block h-4 text-[11px] font-bold text-[#D36E52]">{draw !== null ? `${draw}%` : "-"}</span>
         </FieldShell>
         <FieldShell label={tr(locale, "客胜", "Away")}>
-          <NumberInput value={awayOdds} onChange={setAwayOdds} placeholder="4.20" />
+          <NumberInput value={oddsInputs.away} onChange={(value) => onOddsChange("away", value)} placeholder="4.20" />
           <span className="block h-4 text-[11px] font-bold text-[#D36E52]">{away !== null ? `${away}%` : "-"}</span>
         </FieldShell>
       </div>
@@ -174,10 +184,28 @@ function OddsConverter({ locale }: { locale: string }) {
   );
 }
 
-function ExpectationCalculator({ locale }: { locale: string }) {
-  const [odds, setOdds] = useState("");
-  const [hitRate, setHitRate] = useState("");
+function ExpectationCalculator({
+  locale,
+  selectedMatch,
+  selectedOutcome,
+  oddsInputs,
+  onOutcomeChange,
+  onOddsChange,
+}: {
+  locale: string;
+  selectedMatch: OddsMatch | undefined;
+  selectedOutcome: OutcomeKey;
+  oddsInputs: OddsInputs;
+  onOutcomeChange: (outcome: OutcomeKey) => void;
+  onOddsChange: (outcome: OutcomeKey, value: string) => void;
+}) {
+  const [hitRateOverride, setHitRateOverride] = useState<{ key: string; value: string } | null>(null);
   const [stake, setStake] = useState("");
+  const importedOdds = oddsInputs[selectedOutcome];
+  const importedHitRate = getOutcomeProbability(selectedMatch, selectedOutcome)?.toString() || "";
+  const hitRateKey = `${selectedMatch?.id || "custom"}:${selectedOutcome}:${importedHitRate}`;
+  const odds = importedOdds;
+  const hitRate = hitRateOverride?.key === hitRateKey ? hitRateOverride.value : importedHitRate;
 
   const result = useMemo(() => {
     const oddsValue = Number.parseFloat(odds);
@@ -219,12 +247,49 @@ function ExpectationCalculator({ locale }: { locale: string }) {
         </p>
       </div>
 
+      <div className="grid grid-cols-[1.2fr_0.8fr] gap-2">
+        <FieldShell label={tr(locale, "联动赛事", "Linked match")}>
+          <div className="min-h-8 border-2 border-[#241A14] bg-[#F5F1E8] px-2 py-1.5 text-xs text-[#241A14]">
+            {selectedMatch
+              ? `${selectedMatch.kickoffBj} ${teamName(selectedMatch.homeTeam, locale)} vs ${teamName(selectedMatch.awayTeam, locale)}`
+              : tr(locale, "先在上方选择赛事", "Pick a match above first")}
+          </div>
+          {selectedMatch && (
+            <span className="block text-[10px] text-[#9E948C]">
+              {selectedMatch.source} · {selectedMatch.bookmakerCount} {tr(locale, "家机构去水概率", "bookmaker de-vig probability")}
+            </span>
+          )}
+        </FieldShell>
+        <FieldShell label={tr(locale, "结果方向", "Outcome")}>
+          <select
+            value={selectedOutcome}
+            disabled={!selectedMatch}
+            onChange={(event) => onOutcomeChange(event.target.value as OutcomeKey)}
+            className="w-full border-2 border-[#241A14] bg-[#F5F1E8] px-2 py-1.5 text-xs text-[#241A14] disabled:text-[#9E948C] focus:border-[#D36E52] focus:outline-none"
+          >
+            <option value="home">{getOutcomeLabel(selectedMatch, "home", locale)}</option>
+            <option value="draw">{getOutcomeLabel(selectedMatch, "draw", locale)}</option>
+            <option value="away">{getOutcomeLabel(selectedMatch, "away", locale)}</option>
+          </select>
+        </FieldShell>
+      </div>
+
       <div className="grid grid-cols-3 gap-2">
         <FieldShell label={tr(locale, "欧赔", "Decimal odds")}>
-          <NumberInput value={odds} onChange={setOdds} placeholder="2.00" />
+          <NumberInput
+            value={odds}
+            onChange={(value) => {
+              onOddsChange(selectedOutcome, value);
+            }}
+            placeholder="2.00"
+          />
         </FieldShell>
         <FieldShell label={tr(locale, "估计命中率", "Hit rate")}>
-          <NumberInput value={hitRate} onChange={setHitRate} placeholder="50" />
+          <NumberInput
+            value={hitRate}
+            onChange={(value) => setHitRateOverride({ key: hitRateKey, value })}
+            placeholder="50"
+          />
         </FieldShell>
         <FieldShell label={tr(locale, "投入金额", "Stake")}>
           <NumberInput value={stake} onChange={setStake} placeholder="100" />
@@ -303,6 +368,50 @@ const glossaryEn: Record<string, { title: string; desc: string }> = {
 export function ToolsScreen() {
   const { i18n } = useTranslation();
   const locale = i18n.resolvedLanguage || i18n.language;
+  const [matches, setMatches] = useState<OddsMatch[]>([]);
+  const [selectedMatchId, setSelectedMatchId] = useState("");
+  const [selectedOutcome, setSelectedOutcome] = useState<OutcomeKey>("home");
+  const [oddsInputs, setOddsInputs] = useState<OddsInputs>(emptyOddsInputs);
+  const selectedMatch = matches.find((match) => match.id === selectedMatchId);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadOdds() {
+      const response = await fetch("/api/data/odds");
+      if (!response.ok) return;
+      const data = (await response.json()) as { oddsMatches?: OddsMatch[] };
+      if (cancelled) return;
+      setMatches((data.oddsMatches || []).filter((match) => match.homeOdds && match.drawOdds && match.awayOdds));
+    }
+
+    void loadOdds();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function importMatchOdds(match: OddsMatch) {
+    setOddsInputs({
+      home: formatOdds(match.homeOdds),
+      draw: formatOdds(match.drawOdds),
+      away: formatOdds(match.awayOdds),
+    });
+  }
+
+  function selectMatch(matchId: string) {
+    setSelectedMatchId(matchId);
+    const match = matches.find((item) => item.id === matchId);
+    if (match) {
+      importMatchOdds(match);
+    } else {
+      setOddsInputs(emptyOddsInputs);
+    }
+  }
+
+  function updateOdds(outcome: OutcomeKey, value: string) {
+    setOddsInputs((current) => ({ ...current, [outcome]: value }));
+  }
+
   return (
     <div className="flex min-h-svh flex-col bg-[#F5F1E8]">
       <div className="border-b-2 border-[#241A14] bg-[#FAF7F0] px-4 py-3">
@@ -318,8 +427,23 @@ export function ToolsScreen() {
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-        <OddsConverter locale={locale} />
-        <ExpectationCalculator locale={locale} />
+        <OddsConverter
+          locale={locale}
+          matches={matches}
+          selectedMatch={selectedMatch}
+          selectedMatchId={selectedMatchId}
+          oddsInputs={oddsInputs}
+          onSelectMatch={selectMatch}
+          onOddsChange={updateOdds}
+        />
+        <ExpectationCalculator
+          locale={locale}
+          selectedMatch={selectedMatch}
+          selectedOutcome={selectedOutcome}
+          oddsInputs={oddsInputs}
+          onOutcomeChange={setSelectedOutcome}
+          onOddsChange={updateOdds}
+        />
 
         <section className="border border-[#241A14] bg-[#FAF7F0] p-3 space-y-3">
           <div className="flex items-center gap-2">

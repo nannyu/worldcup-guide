@@ -20,6 +20,14 @@ const TEAM_ROAST_RELATED_MATCH_LIMIT = 3;
 const TEAM_ROAST_AI_TIMEOUT_MS = Number(process.env.TEAM_ROAST_AI_TIMEOUT_MS) || 180_000;
 const TEAM_ROAST_AI_PROVIDER_ATTEMPTS = 2;
 const TEAM_ROAST_AI_CONCURRENCY = 4;
+const FORBIDDEN_ROAST_PATTERNS = [
+  /很适合当聊天黑马/,
+  /前提是别把/,
+  /纸面答案很豪华.*世界杯不批改简历/,
+  /剧本不是霸屏，是添堵/,
+  /强队要是轻敌，素材就会自己送上门/,
+  /先看他在本队体系里的任务/,
+];
 
 type TeamRoastReadOptions = {
   cacheMode?: "cache-only" | "cache-first" | "refresh";
@@ -114,6 +122,17 @@ function stableIndex(seed: string, modulo: number): number {
   return Number.parseInt(digest, 16) % modulo;
 }
 
+function roastSignature(input: string): string {
+  return input
+    .replace(/[，。！？；：“”‘’、\s]/g, "")
+    .replace(/[A-Za-z0-9]/g, "")
+    .slice(0, 32);
+}
+
+function isTemplateLikeRoast(input: string): boolean {
+  return FORBIDDEN_ROAST_PATTERNS.some((pattern) => pattern.test(input));
+}
+
 function teamSearchTerms(team: Team): string[] {
   const starNames = team.starPlayers?.flatMap((player) => [player.name, player.nameZh || ""]) || [];
   const rosterNames = team.roster?.slice(0, 8).flatMap((player) => [player.name, player.nameZh || ""]) || [];
@@ -197,7 +216,7 @@ function matchAngle(team: Team, match: Match | undefined): string {
 
 function buildFallbackRoast(context: TeamContext): TeamRoastItem {
   const { team, news, matches } = context;
-  const stars = (team.starPlayers?.map((player) => player.nameZh || player.name) || team.stars).slice(0, 2).join("、");
+  const stars = (team.starPlayers?.map((player) => player.nameZh || player.name) || team.stars).slice(0, 2);
   const firstNews = news[0];
   const firstMatch = matches[0];
   const evidence = [
@@ -210,30 +229,57 @@ function buildFallbackRoast(context: TeamContext): TeamRoastItem {
     : firstMatch
       ? matchAngle(team, firstMatch)
       : `${team.formation} 和 ${team.tags.slice(0, 2).join("、")} 还是纸面卖点`;
-  const core = stars || team.coach || team.tags[0] || team.formation;
+  const coachName = team.coachZh || team.coach;
+  const core = stars.join("、") || coachName || team.tags[0] || team.formation;
   const style = compactText(
     team.style
       .replace(team.name, "")
       .replace(/[。.!！?？]+$/g, ""),
     34,
   ) || `${team.group}组的基本盘还得现场验货`;
-  const templates = [
-    `${team.name}现在最怕的不是没人聊，而是${newsAngle}。${core}之外如果没人接活，热闹很快就会变成压力测试。`,
-    `${newsAngle}，${team.name}别急着把${team.tags[0] || "标签"}当护身符；${style}，但世界杯专治只会写简介的队。`,
-    `${team.name}的卖点写得挺满：${core}、${team.formation}、${team.tags.slice(0, 2).join("、")}。问题是${newsAngle}，简历再漂亮也得下场交税。`,
-    `${team.name}这张牌不缺聊天入口，缺的是把${style}踢成证据。${newsAngle}，再吹就容易从懂球变成念稿。`,
+  const lead = stars[0] || coachName || team.name;
+  const support = stars[1] || team.tags[1] || team.formation;
+  const tags = team.tags.slice(0, 2).join("、") || team.formation;
+  const angles = [
+    `${team.name}的卖点不是一句${tags}就能盖章；${lead}要是被迫单机，${newsAngle}会立刻变成压力清单。`,
+    `${coachName || team.name}把${team.formation}摆出来，听着像说明书；可${style}，少一次补位都够被对手写进复盘。`,
+    `${lead}和${support}能把话题撑起来，但${team.name}真正怕的是中后场断电；${newsAngle}，热搜不会替他们防反击。`,
+    `${team.name}这套${team.formation}最忌半吊子执行：${tags}只是入口，${style}，踢不出来就只剩标签好看。`,
+    `${newsAngle}，${team.name}别把${core}当免死金牌；杯赛最会把阵容亮点拧成短板公开课。`,
+    `${team.name}的聊天素材够多，麻烦也够具体：${style}。${lead}能抬上限，但下限还得靠全队别漏风。`,
   ];
   return {
     teamCode: team.code,
     teamName: team.name,
     teamNameEn: team.nameEn,
-    roast: templates[stableIndex(`${team.code || team.name}:${firstNews?.id || firstMatch?.id || team.style}`, templates.length)],
+    roast: angles[stableIndex(`${team.code || team.name}:${firstNews?.id || firstMatch?.id || team.style}`, angles.length)],
     evidence,
     articleIds: news.map((article) => article.id),
     matchIds: matches.map((match) => match.id),
     updatedAt: new Date().toISOString(),
     source: "rules",
   };
+}
+
+function enforceUniqueRoasts(items: TeamRoastItem[], contexts: TeamContext[]): TeamRoastItem[] {
+  const seen = new Set<string>();
+  const contextByCode = new Map(contexts.map((context) => [context.team.code, context]));
+  return items.map((item) => {
+    const signature = roastSignature(item.roast);
+    const context = contextByCode.get(item.teamCode);
+    if (context && (isTemplateLikeRoast(item.roast) || seen.has(signature))) {
+      const fallback = buildFallbackRoast(context);
+      seen.add(roastSignature(fallback.roast));
+      return {
+        ...fallback,
+        evidence: item.evidence?.length ? item.evidence : fallback.evidence,
+        articleIds: item.articleIds?.length ? item.articleIds : fallback.articleIds,
+        matchIds: item.matchIds?.length ? item.matchIds : fallback.matchIds,
+      };
+    }
+    seen.add(signature);
+    return item;
+  });
 }
 
 function buildTeamContexts(teams: Team[], articles: NewsArticle[], matches: Match[]): TeamContext[] {
@@ -252,6 +298,7 @@ function buildPrompt(context: TeamContext): string {
     teamNameEn: team.nameEn,
     group: team.group,
     coach: team.coach,
+    coachZh: team.coachZh,
     formation: team.formation,
     tags: team.tags,
     style: compactText(team.style, 100),
@@ -410,7 +457,7 @@ async function generateAiRoasts(
   });
   const providerNames = Array.from(new Set(queue.results.flatMap((result) => result.providerName || [])));
   return {
-    items: queue.results.map((result) => result.value),
+    items: enforceUniqueRoasts(queue.results.map((result) => result.value), contexts),
     providerName: providerNames.join(" + ") || undefined,
     aiUsed: queue.aiCount > 0,
     message: queue.message,

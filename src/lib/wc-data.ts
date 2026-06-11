@@ -204,6 +204,7 @@ export interface Team {
   group: string;
   rank: number;
   coach: string;
+  coachZh?: string;
   formation: string;
   stars: string[];
   style: string;
@@ -249,6 +250,34 @@ export interface TeamRoastSnapshot {
   newsCount: number;
   matchCount: number;
   items: TeamRoastItem[];
+}
+
+export interface PlayerRoastItem {
+  teamCode?: string;
+  teamName: string;
+  teamNameEn?: string;
+  playerId: string;
+  playerName: string;
+  playerNameZh?: string;
+  position: string;
+  roast: string;
+  evidence?: string[];
+  articleIds?: string[];
+  matchIds?: string[];
+  updatedAt: string;
+  source: "ai" | "rules";
+  aiProvider?: string;
+}
+
+export interface PlayerRoastSnapshot {
+  generatedAt: string;
+  refreshDate: string;
+  aiUsed: boolean;
+  aiProvider?: string;
+  message: string;
+  newsCount: number;
+  matchCount: number;
+  items: PlayerRoastItem[];
 }
 
 export interface TeamStarPlayer {

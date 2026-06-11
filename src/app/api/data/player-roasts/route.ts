@@ -1,0 +1,26 @@
+import { type NextRequest, NextResponse } from "next/server";
+import { getPlayerRoastSnapshot } from "@/lib/ai/player-roasts";
+import { teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
+
+export async function GET(request: NextRequest) {
+  const refreshRequested = request.nextUrl.searchParams.get("refresh") === "1";
+  const teams = teamsWithBuiltInProfilesFromOfficialSchedule();
+  const snapshot = await getPlayerRoastSnapshot(teams, {
+    cacheMode: refreshRequested ? "refresh" : "cache-only",
+  });
+
+  return NextResponse.json(
+    {
+      ok: true,
+      cacheMode: refreshRequested ? "refresh" : "cache-only",
+      snapshot,
+      items: snapshot?.items || [],
+      message: snapshot?.message || "球员毒舌快照尚未生成，等待定时刷新任务写入。",
+    },
+    {
+      headers: {
+        "Cache-Control": "s-maxage=300, stale-while-revalidate=1800",
+      },
+    },
+  );
+}

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
-import { type PlayerProfile, type Team, type TeamRoastItem } from "@/lib/wc-data";
+import { type PlayerProfile, type PlayerRoastItem, type Team, type TeamRoastItem } from "@/lib/wc-data";
 import { groupLabel, isZh, teamName, tr } from "@/lib/i18n/content";
 
 type Filter = "all" | "hot" | "dark" | "classic";
@@ -95,8 +95,21 @@ function applyTeamRoastItems(teams: Team[], roasts: TeamRoastItem[]): Team[] {
   });
 }
 
+function applyPlayerRoastItems(teams: Team[], roasts: PlayerRoastItem[]): Team[] {
+  if (!roasts.length) return teams;
+  const roastByPlayerId = new Map(roasts.map((roast) => [roast.playerId, roast]));
+  return teams.map((team) => ({
+    ...team,
+    roster: team.roster?.map((player) => {
+      const roast = roastByPlayerId.get(player.id);
+      return roast ? { ...player, roast: roast.roast } : player;
+    }),
+  }));
+}
+
 function TeamCard({ team, onClick, locale }: { team: Team; onClick: () => void; locale: string }) {
   const badgeLabel = teamBadgeLabel(team, locale);
+  const coachName = localizedCoachName(team, locale);
   const starPlayers = team.starPlayers?.length
     ? team.starPlayers.map((player) => starPlayerLabel(team, player, locale))
     : team.stars;
@@ -128,7 +141,7 @@ function TeamCard({ team, onClick, locale }: { team: Team; onClick: () => void; 
           </h3>
           {(team.coach || team.formation || team.group) && (
             <p className="text-[10px] text-[#9E948C] mt-0.5">
-              {[team.coach ? `${tr(locale, "主帅：", "Coach: ")}${team.coach}` : tr(locale, "主帅：待数据源", "Coach: pending data"), team.formation, groupLabel(team.group, locale)]
+              {[coachName ? `${tr(locale, "主帅：", "Coach: ")}${coachName}` : tr(locale, "主帅：待数据源", "Coach: pending data"), team.formation, groupLabel(team.group, locale)]
                 .filter(Boolean)
                 .join(" · ")}
             </p>
@@ -255,6 +268,7 @@ function TeamDetailModal({
   onPlayerClick: (player: PlayerProfile) => void;
   locale: string;
 }) {
+  const coachName = localizedCoachName(team, locale);
   const stats = [
     team.rank > 0 ? { label: "FIFA 排名", value: `#${team.rank}` } : null,
     team.formation ? { label: "阵型", value: team.formation } : null,
@@ -331,7 +345,7 @@ function TeamDetailModal({
             <div className="border border-[#241A14] p-3 space-y-2">
             {team.coach && <div className="text-xs">
               <strong className="text-[#241A14]">{tr(locale, "主帅：", "Coach:")}</strong>
-              <span className="text-[#5C524C]">{team.coach}</span>
+              <span className="text-[#5C524C]">{coachName}</span>
             </div>}
             {starPlayers.length > 0 && <div className="text-xs">
               <strong className="text-[#241A14]">{tr(locale, "主力球星：", "Key players:")}</strong>
@@ -439,9 +453,13 @@ export function TeamCardsScreen() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [teamRoasts, setTeamRoasts] = useState<TeamRoastItem[]>([]);
+  const [playerRoasts, setPlayerRoasts] = useState<PlayerRoastItem[]>([]);
   const [selected, setSelected] = useState<Team | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerProfile | null>(null);
-  const displayItems = useMemo(() => applyTeamRoastItems(items, teamRoasts), [items, teamRoasts]);
+  const displayItems = useMemo(
+    () => applyPlayerRoastItems(applyTeamRoastItems(items, teamRoasts), playerRoasts),
+    [items, teamRoasts, playerRoasts],
+  );
 
   const filters: { key: Filter; label: string }[] = [
     { key: "all", label: tr(locale, `${items.length} 队`, `${items.length} teams`) },
@@ -465,6 +483,7 @@ export function TeamCardsScreen() {
             teamName(t.name, locale),
             t.nameEn,
             t.coach,
+            t.coachZh || "",
             t.formation,
             t.style,
             ...t.tags,
@@ -516,6 +535,21 @@ export function TeamCardsScreen() {
     }
 
     void loadTeams();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadPlayerRoasts() {
+      const response = await fetch("/api/data/player-roasts", { cache: "no-store" });
+      if (!response.ok) return;
+      const data = (await response.json()) as { items?: PlayerRoastItem[] };
+      if (!cancelled) setPlayerRoasts(data.items || []);
+    }
+
+    void loadPlayerRoasts();
     return () => {
       cancelled = true;
     };
@@ -657,6 +691,10 @@ function teamKey(input?: string): string {
     .replace(/[^a-z0-9\u4e00-\u9fff]+/g, "");
 }
 
+function localizedCoachName(team: Team, locale: string): string {
+  return locale.startsWith("zh") ? (team.coachZh || team.coach) : team.coach;
+}
+
 function enrichTeamsWithOfficialGroups(receivedTeams: Team[], officialTeams: Team[]): Team[] {
   const byName = new Map<string, Team>();
   for (const team of officialTeams) {
@@ -686,6 +724,7 @@ function mergeTeamProfile(team: Team, official: Team): Team {
     flag: team.flag || official.flag,
     rank: team.rank > 0 ? team.rank : official.rank,
     coach: team.coach || official.coach,
+    coachZh: team.coachZh || official.coachZh,
     formation: team.formation || official.formation,
     stars: team.stars.length ? team.stars : official.stars,
     style: team.style || official.style,

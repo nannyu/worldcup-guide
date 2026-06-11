@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { BarChart3, Brackets, CalendarDays, ChevronRight, Info, Table2, Trophy } from "lucide-react";
+import { BarChart3, Brackets, CalendarDays, ChevronRight, Clock3, Info, LineChart, ListFilter, Table2, Trophy } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
@@ -24,8 +24,8 @@ type LocalizedText = {
 };
 
 type TabKey = "games" | "props" | "groups" | "bracket";
-type GameDetailTabKey = "markets" | "halftime" | "corners" | "goals" | "assists" | "shots";
-type GameInfoTabKey = "rules" | "background";
+type MarketCategoryKey = NonNullable<RadarMatch["category"]>;
+type MarketFilterKey = "all" | MarketCategoryKey;
 type DataSourceMode = "remote" | "fallback" | "cache";
 
 type Outcome = {
@@ -83,29 +83,37 @@ type BracketRound = {
   matches: Match[];
 };
 
+type LineMarketGroup = {
+  id: string;
+  title: string;
+  category?: RadarMatch["category"];
+  markets: RadarMatch[];
+};
+
 const beijingTimeZone = "Asia/Shanghai";
 const dateKeys = ["yesterday", "today", "tomorrow"] as const;
 
 const tabDefinitions: Array<{ key: TabKey; label: LocalizedText; Icon: LucideIcon }> = [
   { key: "games", label: { zh: "比赛", en: "Games" }, Icon: CalendarDays },
   { key: "props", label: { zh: "玩法", en: "Props" }, Icon: Trophy },
-  { key: "groups", label: { zh: "Groups", en: "Groups" }, Icon: Table2 },
   { key: "bracket", label: { zh: "对阵图", en: "Bracket" }, Icon: Brackets },
+  { key: "groups", label: { zh: "小组", en: "Groups" }, Icon: Table2 },
 ];
 
-const gameDetailTabs: Array<{ key: GameDetailTabKey; label: LocalizedText }> = [
-  { key: "markets", label: { zh: "比赛盘口", en: "Game lines" } },
+const marketFilterDefinitions: Array<{ key: MarketFilterKey; label: LocalizedText }> = [
+  { key: "all", label: { zh: "全部", en: "All" } },
+  { key: "moneyline", label: { zh: "胜负", en: "Moneyline" } },
+  { key: "spread", label: { zh: "让分", en: "Spread" } },
+  { key: "total", label: { zh: "总进球", en: "Total" } },
   { key: "halftime", label: { zh: "半场", en: "Halftime" } },
   { key: "corners", label: { zh: "角球", en: "Corners" } },
   { key: "goals", label: { zh: "进球", en: "Goals" } },
   { key: "assists", label: { zh: "助攻", en: "Assists" } },
   { key: "shots", label: { zh: "射门", en: "Shots" } },
+  { key: "prop", label: { zh: "特别玩法", en: "Props" } },
 ];
 
-const gameInfoTabs: Array<{ key: GameInfoTabKey; label: LocalizedText }> = [
-  { key: "rules", label: { zh: "规则", en: "Rules" } },
-  { key: "background", label: { zh: "盘口背景", en: "Market background" } },
-];
+const marketCategoryOrder: MarketCategoryKey[] = ["moneyline", "spread", "total", "halftime", "corners", "goals", "assists", "shots", "prop"];
 
 function localize(locale: string, text: LocalizedText): string {
   return tr(locale, text.zh, text.en);
@@ -321,8 +329,136 @@ function radarHint(market: RadarMatch): LocalizedText {
   };
 }
 
+function categoryRank(category: RadarMatch["category"]) {
+  if (!category) return marketCategoryOrder.length + 1;
+  const index = marketCategoryOrder.indexOf(category);
+  return index === -1 ? marketCategoryOrder.length : index;
+}
+
+function marketCategoryLabel(category: RadarMatch["category"], locale: string) {
+  const definition = marketFilterDefinitions.find((item) => item.key === category);
+  return definition ? localize(locale, definition.label) : tr(locale, "其他", "Other");
+}
+
+function sortRadarMarketsForGame(markets: RadarMatch[]) {
+  return markets.slice().sort((left, right) =>
+    categoryRank(left.category) - categoryRank(right.category)
+    || volumeValue(right) - volumeValue(left)
+    || String(left.title || left.marketLabel || "").localeCompare(String(right.title || right.marketLabel || "")),
+  );
+}
+
+function marketTitle(market: RadarMatch, locale: string) {
+  const title = market.title || market.eventTitle || market.marketLabel || tr(locale, "Polymarket 市场", "Polymarket market");
+  return title.replace(/\s+/g, " ").trim();
+}
+
+function marketFiltersFor(markets: RadarMatch[]) {
+  const counts = new Map<MarketFilterKey, number>();
+  counts.set("all", markets.length);
+  for (const market of markets) {
+    if (!market.category) continue;
+    counts.set(market.category, (counts.get(market.category) || 0) + 1);
+  }
+
+  return marketFilterDefinitions
+    .filter((definition) => definition.key === "all" || (counts.get(definition.key) || 0) > 0)
+    .map((definition) => ({ ...definition, count: counts.get(definition.key) || 0 }));
+}
+
+function marketsForFilter(markets: RadarMatch[], filter: MarketFilterKey) {
+  if (filter === "all") return markets;
+  return markets.filter((market) => market.category === filter);
+}
+
+function formatLineValue(value: number | undefined) {
+  if (value === undefined) return "";
+  return Number.isInteger(value) ? String(value) : value.toFixed(1).replace(/\.0$/, "");
+}
+
+function cleanLineMarketTitle(input: string) {
+  return input
+    .replace(/\b(?:O\/U|over\/under)\s+[+-]?\d+(?:\.\d+)?/gi, "")
+    .replace(/\(([+-]?\d+(?:\.\d+)?)\)/g, "")
+    .replace(/\s+[-–—]\s*$/g, "")
+    .replace(/\s+:\s*$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function lineMarketGroupTitle(market: RadarMatch, locale: string) {
+  const cleaned = cleanLineMarketTitle(marketTitle(market, locale));
+  return cleaned || marketTitle(market, locale);
+}
+
+function lineMarketGroupKey(market: RadarMatch) {
+  const rawTitle = market.title || market.eventTitle || market.marketLabel || `${market.homeTeam}-${market.awayTeam}`;
+  const cleaned = canonicalName(cleanLineMarketTitle(rawTitle));
+  const fallback = canonicalName(rawTitle) || market.id;
+  return `${market.category || "market"}:${cleaned || fallback || market.id}`;
+}
+
+function groupLineMarkets(markets: RadarMatch[], locale: string): { lineGroups: LineMarketGroup[]; directMarkets: RadarMatch[] } {
+  const groups = new Map<string, LineMarketGroup>();
+  const directMarkets: RadarMatch[] = [];
+
+  for (const market of markets) {
+    const line = lineNumber(market.line);
+    if (line === undefined) {
+      directMarkets.push(market);
+      continue;
+    }
+
+    const id = lineMarketGroupKey(market);
+    const existing = groups.get(id);
+    if (existing) {
+      existing.markets.push(market);
+    } else {
+      groups.set(id, {
+        id,
+        title: lineMarketGroupTitle(market, locale),
+        category: market.category,
+        markets: [market],
+      });
+    }
+  }
+
+  const lineGroups = Array.from(groups.values()).map((group) => {
+    const byLine = new Map<string, RadarMatch>();
+    for (const market of group.markets.slice().sort((left, right) => volumeValue(right) - volumeValue(left))) {
+      const line = lineNumber(market.line);
+      if (line === undefined) continue;
+      const key = formatLineValue(line);
+      if (!byLine.has(key)) byLine.set(key, market);
+    }
+
+    return {
+      ...group,
+      markets: Array.from(byLine.values()).sort((left, right) => (lineNumber(left.line) || 0) - (lineNumber(right.line) || 0)),
+    };
+  });
+
+  return {
+    lineGroups: lineGroups.sort((left, right) =>
+      categoryRank(left.category) - categoryRank(right.category)
+      || volumeValue(right.markets[0]) - volumeValue(left.markets[0])
+      || left.title.localeCompare(right.title),
+    ),
+    directMarkets: sortRadarMarketsForGame(directMarkets),
+  };
+}
+
 function outcomeProbability(market: RadarMatch, index = 0) {
   return Math.max(0, Math.min(100, Math.round(market.outcomes?.[index]?.probability ?? (index === 0 ? market.homeMarketProb : market.awayMarketProb))));
+}
+
+function marketOutcomes(market: RadarMatch) {
+  return market.outcomes?.length
+    ? market.outcomes
+    : [
+      { label: market.homeTeam, probability: market.homeMarketProb },
+      { label: market.awayTeam, probability: market.awayMarketProb },
+    ];
 }
 
 function moneylineMarketLabel(market: RadarMatch) {
@@ -433,7 +569,7 @@ function marketsFromMatch(match: Match, radarMarkets: RadarMatch[]): MatchMarket
 }
 
 function toGameMatch(match: Match, radarMatches: RadarMatch[]): GameMatch {
-  const matchRadarMarkets = findRadarMarketsForMatch(match, radarMatches);
+  const matchRadarMarkets = sortRadarMarketsForGame(findRadarMarketsForMatch(match, radarMatches));
   const radarMatch = matchRadarMarkets[0];
   return {
     id: match.id,
@@ -586,7 +722,7 @@ export function RadarEyeScreen() {
     () => groupGameMatches(mergedMatches, sortedRadarItems, locale),
     [mergedMatches, sortedRadarItems, locale],
   );
-  const propMarkets = useMemo(() => sortedRadarItems.slice(0, 12).map(liveMarketFromRadar), [sortedRadarItems]);
+  const propMarkets = useMemo(() => sortedRadarItems.filter((item) => item.category === "prop").slice(0, 12).map(liveMarketFromRadar), [sortedRadarItems]);
   const standings = useMemo(() => getGroupStandings(mergedMatches), [mergedMatches]);
   const bracketRounds = useMemo(() => bracketRoundsFromMatches(mergedMatches), [mergedMatches]);
   const matchSequence = useMemo(() => createMatchSequenceLookup(mergedMatches), [mergedMatches]);
@@ -711,38 +847,40 @@ function GamesTab({ locale, days, sourceLabel, marketSourceLabel }: { locale: st
       <SectionLead
         locale={locale}
         label={{ zh: "比赛", en: "Games" }}
-        title={{ zh: "按日期展开比赛盘口", en: "Game markets by date" }}
+        title={{ zh: "世界杯比赛盘口", en: "World Cup game lines" }}
         copy={{
-          zh: `赛程和比分来自数据源：${sourceLabel}；胜负线、让分、总分来自：${marketSourceLabel}。未接入的盘口列显示待接入，不使用固定价格。`,
-          en: `Fixtures and scores come from data sources: ${sourceLabel}; moneyline, spread and totals come from: ${marketSourceLabel}. Missing market columns show pending instead of fixed prices.`,
+          zh: `按日期展示比赛，列表只放胜负、让分、总进球三个核心盘口；展开后查看本场 Polymarket 已返回的全部市场。赛程：${sourceLabel}；市场：${marketSourceLabel}。`,
+          en: `Games are grouped by date. The list keeps moneyline, spread and total up front; expand a game to see every matched Polymarket market. Fixtures: ${sourceLabel}; markets: ${marketSourceLabel}.`,
         }}
       />
 
-      {days.map((day) => (
-        <section key={day.key} className="border-2 border-[#241A14] bg-[#FAF7F0]">
-          <div className="flex items-center gap-2 border-b-2 border-[#241A14] bg-[#EDE9E0] px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-[#241A14]">
-            <CalendarDays className="size-4 text-[#D36E52]" strokeWidth={2.4} />
-            {day.label}
-          </div>
+      {days.length === 0 ? (
+        <EmptyState
+          locale={locale}
+          title={{ zh: "暂无比赛数据", en: "No games yet" }}
+          copy={{ zh: "赛程源返回比赛后会自动显示。", en: "Games will appear once fixture sources return records." }}
+        />
+      ) : (
+        days.map((day) => (
+          <section key={day.key} className="border-2 border-[#241A14] bg-[#FAF7F0]">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-[#241A14] bg-[#EDE9E0] px-3 py-2">
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-[#241A14]">
+                <CalendarDays className="size-4 text-[#D36E52]" strokeWidth={2.4} />
+                {day.label}
+              </div>
+              <span className="text-[10px] font-black text-[#9E948C]">
+                {day.matches.length} {tr(locale, "场比赛", "games")}
+              </span>
+            </div>
 
-          <div className="divide-y divide-[#241A14]/25">
-            {day.matches.map((match, index) => (
-              <CompactGameCard key={match.id} match={match} locale={locale} index={index} timeZone={beijingTimeZone} />
-            ))}
-          </div>
-        </section>
-      ))}
-    </div>
-  );
-}
-
-function MarketColumnHeaderRow({ locale }: { locale: string }) {
-  return (
-    <div className="grid grid-cols-[minmax(11rem,1.25fr)_repeat(3,minmax(0,0.75fr))] gap-1.5 text-[9px] font-black uppercase tracking-[0.08em] text-[#9E948C] md:grid-cols-[minmax(14rem,1.35fr)_repeat(3,minmax(0,0.8fr))] md:gap-2 md:text-[10px] lg:grid-cols-[360px_repeat(3,minmax(0,1fr))] lg:gap-3 lg:tracking-[0.16em]">
-      <span aria-hidden="true" />
-      <span className="text-center">{tr(locale, "胜负线", "Moneyline")}</span>
-      <span className="text-center">{tr(locale, "让分", "Spread")}</span>
-      <span className="text-center">{tr(locale, "总分", "Total")}</span>
+            <div className="divide-y divide-[#241A14]/25">
+              {day.matches.map((match, index) => (
+                <CompactGameCard key={match.id} match={match} locale={locale} index={index} timeZone={beijingTimeZone} />
+              ))}
+            </div>
+          </section>
+        ))
+      )}
     </div>
   );
 }
@@ -759,10 +897,9 @@ function CompactGameCard({
   timeZone: string;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [detailTab, setDetailTab] = useState<GameDetailTabKey>("markets");
-  const [infoTab, setInfoTab] = useState<GameInfoTabKey>("rules");
   const kickoff = formatKickoff(match, timeZone, locale);
   const volumeLabel = formatVolumeLabel(match.volume, match.volumeUsd, locale);
+  const marketCount = match.radarMarkets.length;
 
   return (
     <motion.article
@@ -771,31 +908,18 @@ function CompactGameCard({
       transition={{ duration: 0.25, delay: index * 0.03 }}
       className="bg-[#FAF7F0]"
     >
-      <div className="space-y-3 p-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="grid gap-3 p-3 xl:grid-cols-[minmax(0,1.05fr)_minmax(24rem,1.25fr)] xl:items-stretch">
+        <div className="min-w-0 space-y-3">
           <div className="flex flex-wrap items-center gap-2 text-[10px] font-black text-[#9E948C]">
-            <span className="border border-[#241A14] bg-[#F5F1E8] px-2 py-1 text-xs text-[#241A14]">{kickoff.time}</span>
+            <span className="inline-flex min-h-7 items-center gap-1.5 border border-[#241A14] bg-[#F5F1E8] px-2 text-xs text-[#241A14]">
+              <Clock3 className="size-3.5 text-[#D36E52]" strokeWidth={2.5} />
+              {kickoff.time}
+            </span>
             <span className="uppercase tracking-[0.12em]">{kickoff.zone}</span>
-            <span className="text-xs">{volumeLabel} {match.volume || match.volumeUsd ? tr(locale, "Polymarket 交易量", "Polymarket volume") : ""}</span>
+            <span>{groupLabel(match.sourceMatch.group, locale)} · {roundLabel(match.sourceMatch.round, locale)}</span>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setExpanded((value) => !value)}
-            className={`inline-flex min-h-8 items-center gap-1.5 border border-[#241A14] px-2.5 text-[11px] font-black transition-colors ${
-              expanded ? "bg-[#D36E52] text-white" : "bg-[#EDE9E0] text-[#241A14] hover:bg-[#D36E52] hover:text-white"
-            }`}
-            aria-expanded={expanded}
-          >
-            {tr(locale, "比赛视图", "Match view")}
-            <ChevronRight className={`size-3.5 transition-transform ${expanded ? "rotate-90" : ""}`} />
-          </button>
-        </div>
-
-        <MarketColumnHeaderRow locale={locale} />
-
-        <div className="grid grid-cols-[minmax(11rem,1.25fr)_repeat(3,minmax(0,0.75fr))] items-stretch gap-1.5 md:grid-cols-[minmax(14rem,1.35fr)_repeat(3,minmax(0,0.8fr))] md:gap-2 lg:grid-cols-[360px_repeat(3,minmax(0,1fr))] lg:gap-3">
-          <div className="self-center space-y-1.5">
+          <div className="space-y-1.5">
             <TeamScoreLine
               flag={match.homeFlag}
               name={teamName(match.home, locale)}
@@ -810,22 +934,40 @@ function CompactGameCard({
             />
           </div>
 
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold text-[#9E948C]">
+            <span className="truncate">{match.sourceMatch.venue || tr(locale, "场馆待接入", "Venue pending")}</span>
+            <span>{marketCount ? `${marketCount} ${tr(locale, "个市场", "markets")}` : tr(locale, "本场盘口待接入", "Markets pending")}</span>
+            <span>{volumeLabel}</span>
+          </div>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-3 xl:self-center">
           {match.markets.map((market) => (
             <CompactMarketColumn key={market.title.en} locale={locale} market={market} />
           ))}
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#241A14]/20 px-3 py-2">
+        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-[#9E948C]">
+          <ListFilter className="size-3.5 text-[#D36E52]" strokeWidth={2.4} />
+          {tr(locale, "Polymarket 市场", "Polymarket markets")}
+        </div>
+        <button
+          type="button"
+          onClick={() => setExpanded((value) => !value)}
+          className={`inline-flex min-h-8 items-center gap-1.5 border border-[#241A14] px-2.5 text-[11px] font-black transition-colors ${
+            expanded ? "bg-[#D36E52] text-white" : "bg-[#EDE9E0] text-[#241A14] hover:bg-[#D36E52] hover:text-white"
+          }`}
+          aria-expanded={expanded}
+        >
+          {expanded ? tr(locale, "收起市场", "Hide markets") : tr(locale, "查看市场", "View markets")}
+          <ChevronRight className={`size-3.5 transition-transform ${expanded ? "rotate-90" : ""}`} />
+        </button>
+      </div>
+
       {expanded && (
-        <GameDetailView
-          match={match}
-          locale={locale}
-          detailTab={detailTab}
-          onDetailTabChange={setDetailTab}
-          infoTab={infoTab}
-          onInfoTabChange={setInfoTab}
-          kickoffLabel={kickoff.full}
-        />
+        <GameMarketDrawer match={match} locale={locale} kickoffLabel={kickoff.full} />
       )}
     </motion.article>
   );
@@ -845,10 +987,13 @@ function TeamScoreLine({ flag, name, code, score }: { flag: string; name: string
 }
 
 function CompactMarketColumn({ locale, market }: { locale: string; market: MatchMarket }) {
+  const title = localize(locale, market.title);
+
   if (market.outcomes.length === 0) {
     return (
-      <div className="min-w-0 self-stretch">
-        <div className="flex h-full min-h-8 items-center justify-center border border-dashed border-[#241A14]/50 bg-[#EDE9E0]/60 px-1.5 py-1 text-center text-[9px] font-black text-[#9E948C] sm:text-[10px] lg:min-h-10">
+      <div className="min-w-0 border border-dashed border-[#241A14]/50 bg-[#EDE9E0]/60 p-2">
+        <div className="mb-1 text-[10px] font-black uppercase tracking-[0.12em] text-[#9E948C]">{title}</div>
+        <div className="flex min-h-10 items-center justify-center px-1.5 py-1 text-center text-[10px] font-black text-[#9E948C]">
           {tr(locale, "待接入", "Pending")}
         </div>
       </div>
@@ -857,8 +1002,9 @@ function CompactMarketColumn({ locale, market }: { locale: string; market: Match
 
   const isTwoOutcomeMarket = market.outcomes.length === 2;
   return (
-    <div className="min-w-0 self-stretch">
-      <div className={isTwoOutcomeMarket ? "flex h-full flex-col gap-1" : "grid h-full grid-rows-3 gap-1"}>
+    <div className="min-w-0 border border-[#241A14] bg-[#F5F1E8] p-2">
+      <div className="mb-1 text-[10px] font-black uppercase tracking-[0.12em] text-[#9E948C]">{title}</div>
+      <div className={isTwoOutcomeMarket ? "flex flex-col gap-1" : "grid gap-1"}>
         {market.outcomes.map((outcome) => (
           <CompactPriceButton key={outcome.value} outcome={outcome} locale={locale} fill={isTwoOutcomeMarket} />
         ))}
@@ -896,23 +1042,100 @@ function CompactPriceButton({ outcome, locale, fill = false }: { outcome: Outcom
   );
 }
 
-function GameDetailView({
-  match,
-  locale,
-  detailTab,
-  onDetailTabChange,
-  infoTab,
-  onInfoTabChange,
-  kickoffLabel,
-}: {
-  match: GameMatch;
-  locale: string;
-  detailTab: GameDetailTabKey;
-  onDetailTabChange: (tab: GameDetailTabKey) => void;
-  infoTab: GameInfoTabKey;
-  onInfoTabChange: (tab: GameInfoTabKey) => void;
-  kickoffLabel: string;
-}) {
+function defaultLineMarketIndex(markets: RadarMatch[]) {
+  if (markets.length <= 1) return 0;
+  return markets.reduce((bestIndex, market, index) => (
+    volumeValue(market) > volumeValue(markets[bestIndex]) ? index : bestIndex
+  ), 0);
+}
+
+function LineMarketCard({ group, locale }: { group: LineMarketGroup; locale: string }) {
+  const defaultIndex = defaultLineMarketIndex(group.markets);
+  const [selectedIndex, setSelectedIndex] = useState(defaultIndex);
+  const boundedSelectedIndex = Math.min(selectedIndex, Math.max(0, group.markets.length - 1));
+  const selectedMarket = group.markets[boundedSelectedIndex];
+  if (!selectedMarket) return null;
+
+  const selectedLine = formatLineValue(lineNumber(selectedMarket.line));
+  const firstLine = formatLineValue(lineNumber(group.markets[0]?.line));
+  const lastLine = formatLineValue(lineNumber(group.markets[group.markets.length - 1]?.line));
+  const outcomes = marketOutcomes(selectedMarket);
+  const hasMultipleLines = group.markets.length > 1;
+  const handleLineInput = (event: FormEvent<HTMLInputElement>) => {
+    const nextIndex = Number(event.currentTarget.value);
+    if (Number.isFinite(nextIndex)) setSelectedIndex(nextIndex);
+  };
+
+  return (
+    <article className="border border-[#241A14] bg-[#FAF7F0]">
+      <div className="border-b border-[#241A14]/25 p-2.5">
+        <div className="mb-1 flex flex-wrap items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.12em] text-[#9E948C]">
+          <span className="border border-[#241A14]/40 bg-[#F5F1E8] px-1.5 py-0.5 text-[#5C524C]">
+            {marketCategoryLabel(group.category, locale)}
+          </span>
+          <span>{group.markets.length} {tr(locale, "条盘口线", "lines")}</span>
+          <span>{formatVolumeLabel(selectedMarket.volume, selectedMarket.volumeUsd, locale)}</span>
+        </div>
+        <h4 className="line-clamp-2 text-sm font-black leading-snug text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
+          {group.title}
+        </h4>
+      </div>
+
+      <div className="space-y-2 border-b border-[#241A14]/20 bg-[#F5F1E8] p-2.5">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[10px] font-black uppercase tracking-[0.16em] text-[#9E948C]">
+            {tr(locale, "盘口线", "Line")}
+          </span>
+          <span className="border border-[#241A14] bg-[#D36E52] px-2 py-1 text-xs font-black text-white">
+            {selectedLine}
+          </span>
+        </div>
+
+        <input
+          type="range"
+          min={0}
+          max={Math.max(0, group.markets.length - 1)}
+          step={1}
+          value={boundedSelectedIndex}
+          disabled={!hasMultipleLines}
+          aria-label={tr(locale, "调整盘口线", "Adjust line")}
+          onInput={handleLineInput}
+          onChange={handleLineInput}
+          className="h-8 w-full cursor-pointer accent-[#D36E52] disabled:cursor-default disabled:opacity-60"
+        />
+
+        <div className="flex items-center justify-between text-[10px] font-black text-[#9E948C]">
+          <span>{firstLine}</span>
+          <span>{tr(locale, "滑动调整盘口线", "Slide to adjust line")}</span>
+          <span>{lastLine}</span>
+        </div>
+      </div>
+
+      <div className="divide-y divide-[#241A14]/15">
+        {outcomes.map((outcome, index) => (
+          <button
+            key={`${selectedMarket.id}-${outcome.label}-${index}`}
+            type="button"
+            className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-2.5 py-2 text-left transition-colors hover:bg-[#EDE9E0]"
+          >
+            <span className="min-w-0 truncate text-xs font-black text-[#241A14]">{outcome.label}</span>
+            <span className="border border-[#241A14] bg-[#D36E52]/12 px-2 py-1 text-[11px] font-black text-[#241A14]">
+              {probabilityPrice(outcome.probability)}
+            </span>
+          </button>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+function GameMarketDrawer({ match, locale, kickoffLabel }: { match: GameMatch; locale: string; kickoffLabel: string }) {
+  const [activeFilter, setActiveFilter] = useState<MarketFilterKey>("all");
+  const filters = useMemo(() => marketFiltersFor(match.radarMarkets), [match.radarMarkets]);
+  const visibleMarkets = useMemo(() => marketsForFilter(match.radarMarkets, activeFilter), [match.radarMarkets, activeFilter]);
+  const groupedMarkets = useMemo(() => groupLineMarkets(visibleMarkets, locale), [visibleMarkets, locale]);
+  const hasTrend = (match.radarMatch?.history || []).filter((point) => Number.isFinite(point.market) && Number.isFinite(point.odds)).length >= 2;
+
   return (
     <motion.div
       initial={{ opacity: 0, height: 0 }}
@@ -920,66 +1143,169 @@ function GameDetailView({
       className="overflow-hidden border-t border-[#241A14]/25 bg-[#F5F1E8]"
     >
       <div className="grid gap-3 p-3 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="border border-[#241A14] bg-[#FAF7F0] p-3">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="min-w-0 space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <h3 className="text-sm font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
-                {teamName(match.home, locale)} vs {teamName(match.away, locale)}
+              <h3 className="text-base font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
+                {tr(locale, "本场市场", "Game markets")}
               </h3>
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9E948C]">
-                {tr(locale, "概率走势 · 来源数据", "Probability trend · source data")}
+              <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#9E948C]">
+                {teamName(match.home, locale)} vs {teamName(match.away, locale)}
               </p>
             </div>
             <span className="border border-[#241A14] bg-[#EDE9E0] px-2 py-1 text-[10px] font-black text-[#241A14]">
-              {formatVolumeLabel(match.volume, match.volumeUsd, locale)}
+              {match.radarMarkets.length ? `${match.radarMarkets.length} ${tr(locale, "个已匹配市场", "matched markets")}` : tr(locale, "待接入", "Pending")}
             </span>
           </div>
 
-          <ProbabilityTrendChart match={match} locale={locale} />
-
-          <div className="mt-3 overflow-x-auto">
-            <div className="inline-flex min-w-full border border-[#241A14] bg-[#F5F1E8] p-1 sm:min-w-0">
-              {gameDetailTabs.map((tab) => (
-                <button
-                  key={tab.key}
-                  type="button"
-                  onClick={() => onDetailTabChange(tab.key)}
-                  className={`min-h-8 flex-1 whitespace-nowrap border px-2 text-[10px] font-black transition-colors ${
-                    detailTab === tab.key
-                      ? "border-[#241A14] bg-[#D36E52] text-white"
-                      : "border-transparent text-[#5C524C] hover:bg-[#EDE9E0]"
-                  }`}
-                >
-                  {localize(locale, tab.label)}
-                </button>
-              ))}
+          {match.radarMarkets.length === 0 ? (
+            <div className="border-2 border-dashed border-[#241A14] bg-[#FAF7F0] p-6 text-center">
+              <p className="text-sm font-black text-[#241A14]">{tr(locale, "本场盘口暂未匹配", "No matched markets for this game")}</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-[#9E948C]">
+                {tr(locale, "Polymarket 返回可识别的球队与赛事市场后，这里会按市场类型自动归类。", "When Polymarket returns recognizable team and event markets, they will be grouped here automatically.")}
+              </p>
             </div>
-          </div>
+          ) : (
+            <>
+              <MarketFilterBar filters={filters} active={activeFilter} onChange={setActiveFilter} locale={locale} />
 
-          <MarketDetailPanel match={match} locale={locale} activeTab={detailTab} />
+              {hasTrend && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-[#9E948C]">
+                    <LineChart className="size-3.5 text-[#D36E52]" strokeWidth={2.4} />
+                    {tr(locale, "概率走势", "Probability trend")}
+                  </div>
+                  <ProbabilityTrendChart match={match} locale={locale} />
+                </div>
+              )}
+
+              <div className="grid gap-2 lg:grid-cols-2">
+                {groupedMarkets.lineGroups.map((group) => (
+                  <LineMarketCard key={group.id} group={group} locale={locale} />
+                ))}
+                {groupedMarkets.directMarkets.map((market) => (
+                  <PolymarketMarketCard key={market.id} market={market} locale={locale} />
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
-        <div className="border border-[#241A14] bg-[#FAF7F0] p-3">
-          <div className="grid grid-cols-2 border border-[#241A14] bg-[#F5F1E8] p-1">
-            {gameInfoTabs.map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => onInfoTabChange(tab.key)}
-                className={`min-h-8 border px-2 text-[10px] font-black transition-colors ${
-                  infoTab === tab.key
-                    ? "border-[#241A14] bg-[#D36E52] text-white"
-                    : "border-transparent text-[#5C524C] hover:bg-[#EDE9E0]"
-                }`}
-              >
-                {localize(locale, tab.label)}
-              </button>
-            ))}
-          </div>
-          <InfoPanel match={match} locale={locale} activeTab={infoTab} kickoffLabel={kickoffLabel} />
-        </div>
+        <GameContextPanel match={match} locale={locale} kickoffLabel={kickoffLabel} />
       </div>
     </motion.div>
+  );
+}
+
+function MarketFilterBar({
+  filters,
+  active,
+  onChange,
+  locale,
+}: {
+  filters: Array<{ key: MarketFilterKey; label: LocalizedText; count: number }>;
+  active: MarketFilterKey;
+  onChange: (filter: MarketFilterKey) => void;
+  locale: string;
+}) {
+  return (
+    <div className="overflow-x-auto">
+      <div className="inline-flex min-w-full gap-1 border border-[#241A14] bg-[#FAF7F0] p-1 sm:min-w-0">
+        {filters.map((filter) => (
+          <button
+            key={filter.key}
+            type="button"
+            onClick={() => onChange(filter.key)}
+            className={`inline-flex min-h-8 shrink-0 items-center gap-1.5 border px-2.5 text-[10px] font-black transition-colors ${
+              active === filter.key
+                ? "border-[#241A14] bg-[#D36E52] text-white"
+                : "border-transparent text-[#5C524C] hover:border-[#241A14]/30 hover:bg-[#EDE9E0]"
+            }`}
+          >
+            {localize(locale, filter.label)}
+            <span className={active === filter.key ? "text-white/80" : "text-[#9E948C]"}>{filter.count}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PolymarketMarketCard({ market, locale }: { market: RadarMatch; locale: string }) {
+  const outcomes = marketOutcomes(market);
+  const volume = formatVolumeLabel(market.volume, market.volumeUsd, locale);
+
+  return (
+    <article className="border border-[#241A14] bg-[#FAF7F0]">
+      <div className="border-b border-[#241A14]/25 p-2.5">
+        <div className="mb-1 flex flex-wrap items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.12em] text-[#9E948C]">
+          <span className="border border-[#241A14]/40 bg-[#F5F1E8] px-1.5 py-0.5 text-[#5C524C]">
+            {marketCategoryLabel(market.category, locale)}
+          </span>
+          {market.line && <span>{tr(locale, "盘口线", "Line")} {market.line}</span>}
+          <span>{volume}</span>
+        </div>
+        <h4 className="line-clamp-2 text-sm font-black leading-snug text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
+          {marketTitle(market, locale)}
+        </h4>
+      </div>
+
+      <div className="divide-y divide-[#241A14]/15">
+        {outcomes.map((outcome, index) => (
+          <button
+            key={`${market.id}-${outcome.label}-${index}`}
+            type="button"
+            className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-2.5 py-2 text-left transition-colors hover:bg-[#EDE9E0]"
+          >
+            <span className="min-w-0 truncate text-xs font-black text-[#241A14]">{outcome.label}</span>
+            <span className="border border-[#241A14] bg-[#D36E52]/12 px-2 py-1 text-[11px] font-black text-[#241A14]">
+              {probabilityPrice(outcome.probability)}
+            </span>
+          </button>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+function ContextRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2 border-b border-[#241A14]/15 py-2 text-xs last:border-b-0">
+      <span className="font-black text-[#9E948C]">{label}</span>
+      <span className="min-w-0 text-[#241A14]">{value}</span>
+    </div>
+  );
+}
+
+function GameContextPanel({ match, locale, kickoffLabel }: { match: GameMatch; locale: string; kickoffLabel: string }) {
+  return (
+    <aside className="border border-[#241A14] bg-[#FAF7F0] p-3">
+      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-[#9E948C]">
+        <Info className="size-3.5 text-[#D36E52]" strokeWidth={2.4} />
+        {tr(locale, "比赛信息", "Game info")}
+      </div>
+
+      <div className="mt-2">
+        <ContextRow label={tr(locale, "开赛", "Kickoff")} value={kickoffLabel} />
+        <ContextRow label={tr(locale, "场馆", "Venue")} value={match.sourceMatch.venue || tr(locale, "待接入", "Pending")} />
+        <ContextRow label={tr(locale, "赛程源", "Fixture")} value={match.sourceMatch.updatedAt || tr(locale, "数据源", "Data source")} />
+        <ContextRow label={tr(locale, "市场", "Markets")} value={match.radarMarkets.length ? `${match.radarMarkets.length} Polymarket` : tr(locale, "暂未匹配", "No match")} />
+        <ContextRow label={tr(locale, "交易量", "Volume")} value={formatVolumeLabel(match.volume, match.volumeUsd, locale)} />
+      </div>
+
+      <div className="mt-3 border-t border-[#241A14] pt-3 text-xs leading-relaxed text-[#5C524C]">
+        <p>
+          {tr(
+            locale,
+            "胜负、让分、总进球和其他细分市场只展示 Polymarket 返回的 outcomePrices；未返回的市场不会用固定价格或估算值填充。",
+            "Moneyline, spread, total and specialty markets only display outcomePrices returned by Polymarket; missing markets are not filled with fixed or estimated prices.",
+          )}
+        </p>
+        <p className="mt-2 font-bold text-[#241A14]">
+          {tr(locale, "本页只做信息展示，不提供交易能力，也不构成投注建议。", "This page is informational only and does not provide trading or betting advice.")}
+        </p>
+      </div>
+    </aside>
   );
 }
 
@@ -1036,105 +1362,6 @@ function ProbabilityTrendChart({ match, locale }: { match: GameMatch; locale: st
       </g>
     </svg>
   );
-}
-
-function MarketDetailPanel({ match, locale, activeTab }: { match: GameMatch; locale: string; activeTab: GameDetailTabKey }) {
-  const detailItems = detailItemsFor(match, locale, activeTab);
-
-  return (
-    <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-      {detailItems.map((item) => (
-        <div key={item.title} className="border border-[#241A14] bg-[#F5F1E8] p-2">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-black text-[#241A14]">{item.title}</span>
-            <span className="text-[10px] font-black text-[#9E948C]">{item.value}</span>
-          </div>
-          <p className="mt-1 text-[10px] leading-relaxed text-[#5C524C]">{item.copy}</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function InfoPanel({ match, locale, activeTab, kickoffLabel }: { match: GameMatch; locale: string; activeTab: GameInfoTabKey; kickoffLabel: string }) {
-  const isRules = activeTab === "rules";
-  return (
-    <div className="mt-3 space-y-2 text-xs leading-relaxed text-[#5C524C]">
-      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-[#9E948C]">
-        <Info className="size-3.5 text-[#D36E52]" />
-        {isRules ? tr(locale, "结算说明", "Settlement") : tr(locale, "盘口背景", "Market context")}
-      </div>
-      {isRules ? (
-        <>
-          <p>
-            {tr(locale, "胜负线、让分、总分只展示已接入数据源返回的字段；未返回时显示待接入。比分以比分源或官方赛程状态为准，未开赛显示 0-0。", "Moneyline, spread, and total only show fields returned by connected sources; missing fields show pending. Scores follow score feeds or official fixture state, with upcoming matches shown as 0-0.")}
-          </p>
-          <p className="font-bold text-[#241A14]">
-            {tr(locale, "本页只做信息展示，不提供交易能力，也不构成投注建议。", "This page is informational only and does not provide trading or betting advice.")}
-          </p>
-        </>
-      ) : (
-        <>
-          <p>
-            {teamName(match.home, locale)} vs {teamName(match.away, locale)} · {kickoffLabel}
-          </p>
-          <p>
-            {match.radarMarkets.length
-              ? tr(
-                locale,
-                `赛程来源：${match.sourceMatch.updatedAt || "数据源"}。本场已匹配 ${match.radarMarkets.length} 个 Polymarket 市场；胜负线、让分、总分等盘口均来自预测市场价格。`,
-                `Fixture source: ${match.sourceMatch.updatedAt || "data source"}. This match has ${match.radarMarkets.length} matched Polymarket markets; moneyline, spread, totals and related lines all use prediction-market prices.`,
-              )
-              : tr(locale, `赛程来源：${match.sourceMatch.updatedAt || "数据源"}。Polymarket 暂未返回本场可匹配盘口。`, `Fixture source: ${match.sourceMatch.updatedAt || "data source"}. Polymarket has not returned matched markets for this game yet.`)}
-          </p>
-        </>
-      )}
-    </div>
-  );
-}
-
-function pendingDetail(locale: string, title: string) {
-  return {
-    title,
-    value: tr(locale, "待接入", "Pending"),
-    copy: tr(locale, "对应数据源暂未返回该字段，页面不会用固定值或估算值填充。", "The connected source has not returned this field, so the page does not fill it with fixed or estimated values."),
-  };
-}
-
-function detailItemsFor(match: GameMatch, locale: string, activeTab: GameDetailTabKey) {
-  if (activeTab === "markets") {
-    const rows = match.markets.flatMap((market) =>
-      market.outcomes.map((outcome) => ({
-        title: localize(locale, outcome.label),
-        value: localize(locale, market.title),
-        copy: outcome.hint ? localize(locale, outcome.hint) : tr(locale, "该价格来自已接入盘口或市场数据源。", "This price comes from a connected odds or market source."),
-      })),
-    );
-    return rows.length ? rows : [pendingDetail(locale, tr(locale, "比赛盘口", "Game lines"))];
-  }
-
-  const categoryRows = match.radarMarkets
-    .filter((market) => market.category === activeTab)
-    .slice(0, 12)
-    .flatMap((market) =>
-      (market.outcomes || []).map((outcome) => ({
-        title: `${outcome.label} ${probabilityPrice(outcome.probability)}`,
-        value: market.title || market.eventTitle || "Polymarket",
-        copy: localize(locale, radarHint(market)),
-      })),
-    );
-  if (categoryRows.length) return categoryRows;
-
-  const labels: Record<GameDetailTabKey, string> = {
-    markets: tr(locale, "比赛盘口", "Game lines"),
-    halftime: tr(locale, "半场", "Halftime"),
-    corners: tr(locale, "角球", "Corners"),
-    goals: tr(locale, "进球", "Goals"),
-    assists: tr(locale, "助攻", "Assists"),
-    shots: tr(locale, "射门", "Shots"),
-  };
-
-  return [pendingDetail(locale, labels[activeTab])];
 }
 
 function PropsTab({ locale, markets, sourceLabel }: { locale: string; markets: PropMarket[]; sourceLabel: string }) {

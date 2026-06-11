@@ -1,3 +1,4 @@
+import { getPlayerRoastSnapshot } from "@/lib/ai/player-roasts";
 import { getTeamRoastSnapshot } from "@/lib/ai/team-roasts";
 import { readAdminConfig } from "@/lib/admin/config";
 import {
@@ -111,6 +112,19 @@ async function refreshTeamRoasts(mode: "scheduled" | "initialize"): Promise<Refr
   };
 }
 
+async function refreshPlayerRoasts(mode: "scheduled" | "initialize"): Promise<RefreshTaskResult> {
+  const snapshot = await getPlayerRoastSnapshot(teamsWithBuiltInProfilesFromOfficialSchedule(), {
+    cacheMode: mode === "initialize" ? "refresh" : "cache-first",
+  });
+  return {
+    name: "player-roasts",
+    ok: Boolean(snapshot),
+    source: snapshot?.aiUsed ? snapshot.aiProvider || "ai" : "rules",
+    count: snapshot?.items.length || 0,
+    message: snapshot?.message,
+  };
+}
+
 export async function runDataRefresh(mode: "scheduled" | "initialize" = "scheduled"): Promise<RefreshRunResult> {
   const startedAt = new Date();
   const activity = getWorldCupActivity(startedAt);
@@ -179,6 +193,7 @@ export async function runDataRefresh(mode: "scheduled" | "initialize" = "schedul
   }
 
   tasks.push(await task("team-roasts", () => refreshTeamRoasts(mode)));
+  tasks.push(await task("player-roasts", () => refreshPlayerRoasts(mode)));
 
   return {
     mode,
