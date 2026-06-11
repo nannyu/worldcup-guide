@@ -8,7 +8,7 @@ import {
   type SourceDiagnostic,
 } from "@/lib/data-sources/client";
 import { getEffectiveRefreshSeconds, getSourceRefreshPlan } from "@/lib/data-sources/rate-policy";
-import { readSnapshotCache, upsertSnapshotCache } from "@/lib/db/queries/data-cache";
+import { readLatestSnapshotCache, readSnapshotCache, upsertSnapshotCache } from "@/lib/db/queries/data-cache";
 import { getStoredOfficialMatches } from "@/lib/db/queries/world-cup";
 import {
   fifaRecordToMatch,
@@ -45,12 +45,20 @@ interface PolymarketEvent {
   id?: string;
   title?: string;
   slug?: string;
+  volume?: string | number;
+  volume24hr?: string | number;
   markets?: Array<{
     id?: string;
     question?: string;
     outcomes?: string;
     outcomePrices?: string;
     volume?: string;
+    groupItemTitle?: string;
+    bestBid?: number;
+    bestAsk?: number;
+    lastTradePrice?: number;
+    active?: boolean;
+    closed?: boolean;
   }>;
 }
 
@@ -286,21 +294,36 @@ export const MAX_AGGREGATED_NEWS_LIMIT = 60;
 export const MORNING_BRIEF_NEWS_LIMIT = 60;
 export const NEWS_TRANSLATION_LIMIT = 30;
 
+type NewsSnapshotPayload = {
+  articles: NewsArticle[];
+  aggregation: NewsAggregationMeta;
+  curation?: AiNewsCuration;
+  diagnostics: SourceDiagnostic[];
+};
+
 const dateKeyToSourceDate: Record<ScheduleDateKey, string> = {
   yesterday: scheduleDateMeta.yesterday.date,
   today: scheduleDateMeta.today.date,
   tomorrow: scheduleDateMeta.tomorrow.date,
 };
 
-function beijingDayWindow(date: string): { start: Date; end: Date } {
-  const start = new Date(`${date}T00:00:00+08:00`);
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + 1);
-  return { start, end };
+const MORNING_NEWS_WINDOW_HOURS = 24;
+const MORNING_NEWS_WINDOW_BUCKET_MINUTES = 15;
+const POLYMARKET_WORLD_CUP_TAG_ID = 102232;
+
+function rollingRecentNewsWindow(now = new Date()): { start: Date; cacheKey: string } {
+  const bucketMs = MORNING_NEWS_WINDOW_BUCKET_MINUTES * 60 * 1000;
+  const bucketedNowMs = Math.floor(now.getTime() / bucketMs) * bucketMs;
+  const start = new Date(bucketedNowMs - MORNING_NEWS_WINDOW_HOURS * 60 * 60 * 1000);
+  return {
+    start,
+    cacheKey: `last${MORNING_NEWS_WINDOW_HOURS}h:${start.toISOString()}`,
+  };
 }
 
 export interface AggregationReadOptions {
   cacheMode?: "cache-first" | "cache-only" | "refresh";
+  useAi?: boolean;
 }
 
 function isCacheFirst(options: AggregationReadOptions | undefined): boolean {
@@ -784,9 +807,74 @@ function parseMarketVolume(input: string | undefined): number {
   return Number.isFinite(value) ? value : 0;
 }
 
+function parsePolymarketVolume(input: string | number | undefined): number {
+  const value = typeof input === "number" ? input : Number(String(input || "").replace(/[$,\s]/g, ""));
+  return Number.isFinite(value) ? value : 0;
+}
+
+function isYesNo(outcomes: string[]) {
+  return outcomes.length >= 2
+    && outcomes[0]?.toLowerCase() === "yes"
+    && outcomes[1]?.toLowerCase() === "no";
+}
+
+function normalizePolymarketOutcomeLabel(market: NonNullable<PolymarketEvent["markets"]>[number], outcome: string, index: number) {
+  if (isYesNo(parseStringArray(market.outcomes)) && index === 0 && market.groupItemTitle) {
+    const title = market.groupItemTitle.replace(/^Draw\s*\(.+\)$/i, "Draw");
+    return title || outcome;
+  }
+  return outcome;
+}
+
+function classifyPolymarketMarket(eventTitle: string, marketTitle: string): NonNullable<RadarMatch["category"]> {
+  const text = `${eventTitle} ${marketTitle}`.toLowerCase();
+  if (/half[-\s]?time|halftime/.test(text)) return "halftime";
+  if (/corner/.test(text)) return "corners";
+  if (/assist/.test(text)) return "assists";
+  if (/shot/.test(text)) return "shots";
+  if (/player to score|to score|goalscorer|golden boot/.test(text)) return "goals";
+  if (/spread/.test(text)) return "spread";
+  if (/\bo\/u\b|over\/under|total goals|total score/.test(text)) return "total";
+  if (/\bvs\.?\b/.test(eventTitle) && (/ win on \d{4}-\d{2}-\d{2}/.test(text) || /end in a draw/.test(text))) {
+    return "moneyline";
+  }
+  return "prop";
+}
+
+function parseEventTeams(eventTitle: string | undefined): [string, string] | undefined {
+  const match = String(eventTitle || "").match(/^(.+?)\s+vs\.?\s+(.+?)(?:\s+-\s+.+)?$/i);
+  if (!match) return undefined;
+  return [match[1].trim(), match[2].trim()];
+}
+
+function extractMarketLine(marketTitle: string, groupItemTitle: string | undefined): string | undefined {
+  const text = `${groupItemTitle || ""} ${marketTitle}`;
+  const spread = text.match(/\(([+-]?\d+(?:\.\d+)?)\)/);
+  if (spread) return spread[1];
+  const total = text.match(/\b(?:O\/U|over\/under)\s+(\d+(?:\.\d+)?)/i);
+  if (total) return total[1];
+  return undefined;
+}
+
+function isWorldCupPolymarketEvent(event: PolymarketEvent): boolean {
+  const text = [
+    event.title,
+    event.slug,
+    ...(event.markets || []).flatMap((market) => [market.question, market.groupItemTitle]),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return /\bfifwc\b|fifa world cup|world cup|世界杯/.test(text);
+}
+
 function transformPolymarketEvents(data: PolymarketEvent[]): RadarMatch[] {
-  return data.flatMap((event, eventIndex) =>
-    (event.markets || []).flatMap((market, marketIndex) => {
+  return data.filter(isWorldCupPolymarketEvent).flatMap((event, eventIndex) => {
+    const eventTitle = event.title || "World Cup prediction";
+    const eventTeams = parseEventTeams(eventTitle);
+    const eventVolume = parsePolymarketVolume(event.volume);
+    return (event.markets || []).flatMap((market, marketIndex) => {
+      if (market.active === false || market.closed === true) return [];
       const outcomes = parseStringArray(market.outcomes);
       const prices = parseStringArray(market.outcomePrices).map((price) => Number(price));
       const yes = prices[0];
@@ -794,14 +882,25 @@ function transformPolymarketEvents(data: PolymarketEvent[]): RadarMatch[] {
       if (!Number.isFinite(yes) || outcomes.length < 2) return [];
       const yesProb = Math.round(yes * 100);
       const noProb = Number.isFinite(no) ? Math.round(no * 100) : Math.max(0, 100 - yesProb);
-      const volumeUsd = parseMarketVolume(market.volume);
-      const title = market.question || event.title || "World Cup prediction";
+      const volumeUsd = parseMarketVolume(market.volume) || eventVolume;
+      const title = market.question || eventTitle;
+      const category = classifyPolymarketMarket(eventTitle, title);
+      const normalizedOutcomes = outcomes.map((outcome, index) => ({
+        label: normalizePolymarketOutcomeLabel(market, outcome, index),
+        probability: Math.max(0, Math.min(100, Math.round((prices[index] || 0) * 100))),
+      }));
+      const primaryLabel = normalizedOutcomes[0]?.label || outcomes[0] || "Yes";
+      const secondaryLabel = normalizedOutcomes[1]?.label || outcomes[1] || "No";
       return [{
         id: `polymarket-${market.id || event.id || `${eventIndex}-${marketIndex}`}`,
         title,
-        marketLabel: outcomes.join(" / "),
-        homeTeam: outcomes[0] || "Yes",
-        awayTeam: outcomes[1] || "No",
+        eventTitle,
+        eventSlug: event.slug,
+        category,
+        line: extractMarketLine(title, market.groupItemTitle),
+        marketLabel: normalizedOutcomes.map((outcome) => outcome.label).join(" / "),
+        homeTeam: eventTeams?.[0] || primaryLabel,
+        awayTeam: eventTeams?.[1] || secondaryLabel,
         homeFlag: "▴",
         awayFlag: "▾",
         homeMarketProb: yesProb,
@@ -817,10 +916,11 @@ function transformPolymarketEvents(data: PolymarketEvent[]): RadarMatch[] {
         updatedAt: "Polymarket",
         volume: market.volume,
         volumeUsd,
+        outcomes: normalizedOutcomes,
         history: [],
       }];
-    }),
-  ).sort((left, right) => (right.volumeUsd || 0) - (left.volumeUsd || 0));
+    });
+  }).sort((left, right) => (right.volumeUsd || 0) - (left.volumeUsd || 0));
 }
 
 function snapshotKeyFor(prefix: string, value: string, updatedAt: string): string {
@@ -2033,7 +2133,7 @@ export async function getAggregatedRadar(options: AggregationReadOptions = {}): 
   diagnostics: SourceDiagnostic[];
 }> {
   const { dataSources, updatedAt } = await readAdminConfig();
-  const snapshotKey = `radar:v3:world-cup:${updatedAt}`;
+  const snapshotKey = `radar:v4:world-cup:${updatedAt}`;
   const persisted = await readSnapshotCache<RadarMatch[]>(snapshotKey);
   if (shouldUseSnapshot(persisted, (payload) => payload.length > 0, options)) {
     return {
@@ -2065,8 +2165,13 @@ export async function getAggregatedRadar(options: AggregationReadOptions = {}): 
     try {
       if (source.adapter !== "polymarket-gamma") continue;
       const { data, diagnostic } = await fetchJsonFromSource<PolymarketEvent[]>(source, {
-        limit: 50,
-        search: "World Cup",
+        tag_id: POLYMARKET_WORLD_CUP_TAG_ID,
+        related_tags: "true",
+        active: "true",
+        closed: "false",
+        limit: 100,
+        order: "volume24hr",
+        ascending: "false",
       });
       diagnostics.push(diagnostic);
       const transformed = transformPolymarketEvents(data);
@@ -2121,6 +2226,7 @@ export async function getAggregatedNews(options: {
   publishedAfter?: Date | string;
   publishedBefore?: Date | string;
   cacheMode?: AggregationReadOptions["cacheMode"];
+  useAi?: boolean;
 } = {}): Promise<{
   articles: NewsArticle[];
   source: "remote" | "fallback" | "cache";
@@ -2139,12 +2245,7 @@ export async function getAggregatedNews(options: {
   const { dataSources, aiProviders, primaryAiProviderId, updatedAt } = await readAdminConfig();
   const windowKey = `${window.publishedAfter?.toISOString() || "any"}:${window.publishedBefore?.toISOString() || "any"}`;
   const snapshotKey = snapshotKeyFor("news:v8", `${query}:${limit}:${windowKey}`, updatedAt);
-  const persisted = await readSnapshotCache<{
-    articles: NewsArticle[];
-    aggregation: NewsAggregationMeta;
-    curation?: AiNewsCuration;
-    diagnostics: SourceDiagnostic[];
-  }>(snapshotKey);
+  const persisted = await readSnapshotCache<NewsSnapshotPayload>(snapshotKey);
   if (shouldUseSnapshot(persisted, (payload) => payload.articles.length > 0, options)) {
     return {
       articles: persisted.payload.articles,
@@ -2159,12 +2260,7 @@ export async function getAggregatedNews(options: {
   }
 
   if (isCacheFirst(options)) {
-    const stale = await readSnapshotCache<{
-      articles: NewsArticle[];
-      aggregation: NewsAggregationMeta;
-      curation?: AiNewsCuration;
-      diagnostics: SourceDiagnostic[];
-    }>(snapshotKey, { allowStale: true });
+    const stale = await readSnapshotCache<NewsSnapshotPayload>(snapshotKey, { allowStale: true });
     if (stale) {
       return {
         articles: stale.payload.articles,
@@ -2221,7 +2317,9 @@ export async function getAggregatedNews(options: {
       if (right.id === primaryAiProviderId) return 1;
       return 0;
     });
-  const aiResult = await curateNewsWithAi(orderedAiProviders, ruleDeduplicated);
+  const aiResult = options.useAi === false
+    ? { message: "前台快速刷新使用规则热度排序，AI 评分未阻塞本次返回。" }
+    : await curateNewsWithAi(orderedAiProviders, ruleDeduplicated);
   const articles = applyAiCuration(ruleDeduplicated, aiResult.curation)
     .map(ensureArticleBody)
     .slice(0, limit);
@@ -2257,12 +2355,7 @@ export async function getAggregatedNews(options: {
     };
   }
 
-  const stale = await readSnapshotCache<{
-    articles: NewsArticle[];
-    aggregation: NewsAggregationMeta;
-    curation?: AiNewsCuration;
-    diagnostics: SourceDiagnostic[];
-  }>(snapshotKey, { allowStale: true });
+  const stale = await readSnapshotCache<NewsSnapshotPayload>(snapshotKey, { allowStale: true });
   if (stale?.payload.articles.length) {
     return {
       articles: stale.payload.articles,
@@ -2288,13 +2381,35 @@ export async function getAggregatedNews(options: {
   return { articles: [], source: "fallback", diagnostics, aggregation };
 }
 
+async function getCachedMorningNewsFallback(): Promise<{
+  articles: NewsArticle[];
+  source: "cache";
+  diagnostics: SourceDiagnostic[];
+  aggregation: NewsAggregationMeta;
+  curation?: AiNewsCuration;
+} | undefined> {
+  const latest = await readLatestSnapshotCache<NewsSnapshotPayload>("news", { allowStale: true });
+  if (!latest?.payload.articles.length) return undefined;
+  return {
+    articles: latest.payload.articles,
+    source: "cache",
+    diagnostics: [
+      ...latest.payload.diagnostics,
+      snapshotDiagnostic(latest.snapshotKey, "news", latest, true),
+    ],
+    aggregation: latest.payload.aggregation,
+    curation: latest.payload.curation,
+  };
+}
+
 export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, options: AggregationReadOptions = {}): Promise<{
   brief: MorningBrief;
   source: "remote" | "fallback" | "cache";
   diagnostics: SourceDiagnostic[];
 }> {
   const { updatedAt } = await readAdminConfig();
-  const snapshotKey = `morning:v15:${dateKey}:${dateKeyToSourceDate[dateKey]}:${updatedAt}`;
+  const newsWindow = rollingRecentNewsWindow();
+  const snapshotKey = `morning:v16:${dateKey}:${dateKeyToSourceDate[dateKey]}:${newsWindow.cacheKey}:${updatedAt}`;
   const persisted = await readSnapshotCache<MorningBrief>(snapshotKey);
   if (persisted?.payload && options.cacheMode !== "refresh") {
     return {
@@ -2316,24 +2431,50 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
   }
 
   if (isCacheOnly(options)) {
+    const matchesResult = await getAggregatedMatches(dateKey, { cacheMode: "cache-only" });
+    const teamsInMatches = matchesResult.matches
+      .flatMap((match) => [match.homeTeam, match.awayTeam])
+      .filter((team) => team && team !== "待定")
+      .slice(0, 6);
+    const query = teamsInMatches.length
+      ? `${defaultNewsQuery} OR (${teamsInMatches.join(" OR ")})`
+      : defaultNewsQuery;
+    let newsResult = await getAggregatedNews({
+      query,
+      limit: MORNING_BRIEF_NEWS_LIMIT,
+      publishedAfter: newsWindow.start,
+      cacheMode: "cache-only",
+    });
+    if (!newsResult.articles.length) {
+      newsResult = await getAggregatedNews({
+        query: defaultNewsQuery,
+        limit: MORNING_BRIEF_NEWS_LIMIT,
+        cacheMode: "cache-only",
+      });
+    }
+    if (!newsResult.articles.length) {
+      newsResult = await getCachedMorningNewsFallback() || newsResult;
+    }
+    const successfulNewsSources = newsResult.diagnostics
+      .filter((diagnostic) => diagnostic.ok)
+      .map((diagnostic) => diagnostic.name);
+    const sourceLabel = successfulNewsSources.length
+      ? `${successfulNewsSources.join(" + ")} · 多源聚合`
+      : matchesResult.matches.length
+        ? "本地赛程 · 新闻后台刷新"
+        : "后台任务正在刷新";
     const fallbackBrief = buildMorningBrief({
-      matches: [],
-      news: [],
-      sourceLabel: "后台任务正在刷新",
+      matches: matchesResult.matches,
+      news: newsResult.articles,
+      sourceLabel,
       dateKey,
-      aggregation: {
-        fetchedSourceCount: 0,
-        successfulSourceCount: 0,
-        rawArticleCount: 0,
-        deduplicatedArticleCount: 0,
-        aiUsed: false,
-        aiMessage: "后台任务正在刷新早报数据。",
-      },
+      aggregation: newsResult.aggregation,
+      curation: newsResult.curation,
     });
     return {
       brief: fallbackBrief,
-      source: "fallback",
-      diagnostics: [],
+      source: newsResult.source === "cache" || matchesResult.source === "cache" ? "cache" : "fallback",
+      diagnostics: [...matchesResult.diagnostics, ...newsResult.diagnostics],
     };
   }
 
@@ -2345,12 +2486,11 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
   const query = teamsInMatches.length
     ? `${defaultNewsQuery} OR (${teamsInMatches.join(" OR ")})`
     : defaultNewsQuery;
-  const newsWindow = beijingDayWindow(dateKeyToSourceDate[dateKey]);
   const newsResult = await getAggregatedNews({
     query,
     limit: MORNING_BRIEF_NEWS_LIMIT,
     publishedAfter: newsWindow.start,
-    publishedBefore: newsWindow.end,
+    useAi: options.useAi,
     cacheMode: options.cacheMode,
   });
   const successfulNewsSources = newsResult.diagnostics

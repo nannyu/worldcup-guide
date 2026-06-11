@@ -1,3 +1,4 @@
+import { getTeamRoastSnapshot } from "@/lib/ai/team-roasts";
 import { readAdminConfig } from "@/lib/admin/config";
 import {
   getAggregatedMatches,
@@ -11,6 +12,7 @@ import {
   NEWS_TRANSLATION_LIMIT,
 } from "@/lib/data-sources/aggregate";
 import { getWorldCupActivity } from "@/lib/data-sources/rate-policy";
+import { teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
 import { morningBriefTranslationArticle, translateArticleAndCache } from "@/lib/translation/article-translation";
 import type { ScheduleDateKey } from "@/lib/wc-data";
 
@@ -96,6 +98,19 @@ async function refreshNewsWindow(daysAgo: number): Promise<RefreshTaskResult> {
   };
 }
 
+async function refreshTeamRoasts(mode: "scheduled" | "initialize"): Promise<RefreshTaskResult> {
+  const snapshot = await getTeamRoastSnapshot(teamsWithBuiltInProfilesFromOfficialSchedule(), {
+    cacheMode: mode === "initialize" ? "refresh" : "cache-first",
+  });
+  return {
+    name: "team-roasts",
+    ok: Boolean(snapshot),
+    source: snapshot?.aiUsed ? snapshot.aiProvider || "ai" : "rules",
+    count: snapshot?.items.length || 0,
+    message: snapshot?.message,
+  };
+}
+
 export async function runDataRefresh(mode: "scheduled" | "initialize" = "scheduled"): Promise<RefreshRunResult> {
   const startedAt = new Date();
   const activity = getWorldCupActivity(startedAt);
@@ -162,6 +177,8 @@ export async function runDataRefresh(mode: "scheduled" | "initialize" = "schedul
     }));
     tasks.push(await task("morning:today", () => refreshMorning("today")));
   }
+
+  tasks.push(await task("team-roasts", () => refreshTeamRoasts(mode)));
 
   return {
     mode,

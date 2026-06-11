@@ -45,8 +45,18 @@ function formatBrowserEdition(date: Date, locale: string): string {
 }
 
 function matchDigest(match: Match, locale: string): string {
-  if (match.status === "finished" && match.homeScore !== null && match.awayScore !== null) {
+  const hasScore = match.homeScore !== null && match.awayScore !== null;
+  if (match.status === "finished" && hasScore) {
     return `${teamName(match.homeTeam, locale)} ${match.homeScore}:${match.awayScore} ${teamName(match.awayTeam, locale)}.`;
+  }
+  if (match.status === "live") {
+    return hasScore
+      ? tr(
+          locale,
+          `比赛进行中：${teamName(match.homeTeam, locale)} ${match.homeScore}:${match.awayScore} ${teamName(match.awayTeam, locale)}，事件时间线随比分源更新。`,
+          `Live: ${teamName(match.homeTeam, locale)} ${match.homeScore}:${match.awayScore} ${teamName(match.awayTeam, locale)}. Event timeline updates with the score feed.`,
+        )
+      : tr(locale, "比赛进行中，比分和事件等待比分源更新。", "The match is live. Score and events are waiting for the score feed.");
   }
   return tr(
     locale,
@@ -55,13 +65,104 @@ function matchDigest(match: Match, locale: string): string {
   );
 }
 
-function MatchResultCard({ match, locale }: { match: Match; locale: string }) {
+function matchKickoffDate(match: Match): Date | undefined {
+  if (match.kickoffAt) {
+    const parsed = new Date(match.kickoffAt);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  const [, month, day, hour, minute] =
+    match.kickoffBj.match(/^(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/) || [];
+  if (!month || !day || !hour || !minute) return undefined;
+  const parsed = new Date(`2026-${month}-${day}T${hour}:${minute}:00+08:00`);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+}
+
+function hasMatchStarted(match: Match, now: Date): boolean {
+  if (match.status === "live" || match.status === "finished") return true;
+  const kickoff = matchKickoffDate(match);
+  return kickoff ? now.getTime() >= kickoff.getTime() : false;
+}
+
+function probabilityPreview(match: Match, locale: string): string | undefined {
+  if (match.homeWinProb > 0 || match.drawProb > 0 || match.awayWinProb > 0) {
+    const sourceNote = tr(
+      locale,
+      " 来源：预测市场聚合；非确定性判断。",
+      " Source: prediction-market aggregate; not a deterministic forecast.",
+    );
+    return tr(
+      locale,
+      `市场概率暂看 ${teamName(match.homeTeam, locale)} ${match.homeWinProb}%、平局 ${match.drawProb}%、${teamName(match.awayTeam, locale)} ${match.awayWinProb}%。${sourceNote}`,
+      `Market probability: ${teamName(match.homeTeam, locale)} ${match.homeWinProb}%, draw ${match.drawProb}%, ${teamName(match.awayTeam, locale)} ${match.awayWinProb}%.${sourceNote}`,
+    );
+  }
+  if (match.oddsImpliedHome > 0 || match.oddsImpliedDraw > 0 || match.oddsImpliedAway > 0) {
+    const bookmakerCount = match.updatedAt.match(/The Odds API\s+(\d+)\s+家均值/i)?.[1];
+    const sourceNote = bookmakerCount
+      ? tr(
+          locale,
+          ` 来源：The Odds API ${bookmakerCount} 家均值；非实时秒级盘口。`,
+          ` Source: The Odds API average across ${bookmakerCount} bookmakers; not second-by-second live odds.`,
+        )
+      : tr(
+          locale,
+          " 来源：The Odds API 赔率聚合；非实时秒级盘口。",
+          " Source: The Odds API odds aggregate; not second-by-second live odds.",
+        );
+    return tr(
+      locale,
+      `赔率隐含概率为主胜 ${match.oddsImpliedHome}%、平局 ${match.oddsImpliedDraw}%、客胜 ${match.oddsImpliedAway}%。${sourceNote}`,
+      `Implied odds: home ${match.oddsImpliedHome}%, draw ${match.oddsImpliedDraw}%, away ${match.oddsImpliedAway}%.${sourceNote}`,
+    );
+  }
+  return undefined;
+}
+
+function preMatchAnalysis(match: Match, locale: string): Array<{ label: string; text: string }> {
+  const marketText = probabilityPreview(match, locale);
+  return [
+    {
+      label: tr(locale, "赛前基线", "Preview baseline"),
+      text: match.previewText || tr(
+        locale,
+        `${teamName(match.homeTeam, locale)}对阵${teamName(match.awayTeam, locale)}，开赛前先关注阵容、节奏和定位球攻防。`,
+        `${teamName(match.homeTeam, locale)} face ${teamName(match.awayTeam, locale)}. Before kickoff, watch team shape, tempo, and set-piece defending.`,
+      ),
+    },
+    {
+      label: tr(locale, "现场变量", "Match context"),
+      text: tr(
+        locale,
+        `${match.kickoffBj} 北京时间开赛，地点：${match.venue || "待确认"}。`,
+        `${match.kickoffBj} Beijing time. Venue: ${match.venue || "TBC"}.`,
+      ),
+    },
+    marketText
+      ? {
+          label: tr(locale, "市场信号", "Market signal"),
+          text: marketText,
+        }
+      : undefined,
+  ].filter((item): item is { label: string; text: string } => Boolean(item?.text));
+}
+
+function MatchResultCard({ match, locale, now = new Date() }: { match: Match; locale: string; now?: Date }) {
   const [expanded, setExpanded] = useState(false);
+  const inActualPhase = hasMatchStarted(match, now);
   const tags = [
-    match.status === "finished" ? tr(locale, "已完赛", "Finished") : match.status === "live" ? tr(locale, "直播中", "Live") : tr(locale, "赛程", "Fixture"),
+    match.status === "finished"
+      ? tr(locale, "已完赛", "Finished")
+      : match.status === "live"
+        ? tr(locale, "直播中", "Live")
+        : inActualPhase
+          ? tr(locale, "赛况更新中", "Updating")
+          : tr(locale, "赛前", "Preview"),
     match.group,
   ];
-  const hasScore = match.homeScore !== null && match.awayScore !== null;
+  const displayHomeScore = match.homeScore ?? 0;
+  const displayAwayScore = match.awayScore ?? 0;
+  const eventCount = match.events?.length || 0;
+  const analysisItems = preMatchAnalysis(match, locale);
 
   return (
     <motion.div
@@ -95,7 +196,7 @@ function MatchResultCard({ match, locale }: { match: Match; locale: string }) {
           <span className="text-[10px] text-[#9E948C]">{tr(locale, "主场", "Home")}</span>
         </div>
         <div className="px-4 py-1 bg-[#241A14] text-white font-mono font-black text-xl tracking-widest">
-          {hasScore ? `${match.homeScore} : ${match.awayScore}` : "VS"}
+          {displayHomeScore} : {displayAwayScore}
         </div>
         <div className="flex flex-col items-center gap-1 flex-1">
           <span className="text-3xl">{match.awayFlag}</span>
@@ -112,17 +213,48 @@ function MatchResultCard({ match, locale }: { match: Match; locale: string }) {
       {/* 30s digest */}
       <div className="mx-3 mb-3 bg-[#EDE9E0] border-l-2 border-[#D36E52] p-2.5 text-xs text-[#5C524C]">
         <strong className="text-[#241A14]">{tr(locale, "30秒看懂：", "30-second read:")}</strong>
-        {matchDigest(match, locale)}
+        {inActualPhase && match.status === "upcoming"
+          ? tr(
+              locale,
+              "比赛已到开赛时间，正在等待比分源推送比分、事件和赛果。",
+              "Kickoff time has arrived. Waiting for the score feed to push score, events, and result.",
+            )
+          : matchDigest(match, locale)}
       </div>
 
-      {/* Timeline toggle */}
+      {!inActualPhase && (
+        <div className="px-3 pb-3">
+          <div className="border-t border-dashed border-[#241A14]/30 pt-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-bold text-[#5C524C]">{tr(locale, "赛事前瞻分析", "Match preview")}</span>
+              <span className="shrink-0 text-[10px] font-bold text-[#9E948C]">{tr(locale, "开赛前", "Pre-kickoff")}</span>
+            </div>
+            <div className="mt-2 space-y-1.5">
+              {analysisItems.map((item) => (
+                <div key={item.label} className="grid grid-cols-[68px_1fr] gap-2 text-xs leading-5">
+                  <span className="font-bold text-[#241A14]">{item.label}</span>
+                  <span className="text-[#5C524C]">{item.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Live state toggle */}
+      {inActualPhase && (
       <div className="px-3 pb-2">
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={() => setExpanded(!expanded)}
           className="w-full flex items-center justify-between py-1.5 text-xs font-bold text-[#5C524C] border-t border-dashed border-[#241A14]/30"
         >
-          <span>{tr(locale, "进球时间线", "Goal timeline")}</span>
+          <span>{tr(locale, "实际战况", "Live state")}</span>
+          <span className="ml-auto mr-2 text-[10px] font-normal text-[#9E948C]">
+            {eventCount > 0
+              ? tr(locale, `${eventCount} 个事件`, `${eventCount} events`)
+              : tr(locale, "等待比分源", "Waiting for feed")}
+          </span>
           <motion.span animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M6 9l6 6 6-6"/>
@@ -130,14 +262,14 @@ function MatchResultCard({ match, locale }: { match: Match; locale: string }) {
           </motion.span>
         </motion.button>
 
-        {expanded && match.events && match.events.length > 0 && (
+        {expanded && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             className="pt-2 space-y-1.5 overflow-hidden"
           >
-            {match.events.map((ev, i) => {
+            {eventCount > 0 ? match.events?.map((ev, i) => {
               const tag = tagLabels[ev.type] || tagLabels.goal;
               return (
                 <div key={i} className="flex items-center gap-2 text-xs">
@@ -149,23 +281,22 @@ function MatchResultCard({ match, locale }: { match: Match; locale: string }) {
                   </span>
                 </div>
               );
-            })}
+            }) : (
+              <div className="border border-dashed border-[#241A14]/25 bg-[#EDE9E0] px-2.5 py-2 text-xs leading-5 text-[#5C524C]">
+                {tr(
+                  locale,
+                  "实况阶段已开启。比分源返回进球、红黄牌、换人或完赛结果后，这里会替换为真实时间线。",
+                  "Live phase is active. Goals, cards, substitutions, and final result will replace this placeholder once the score feed returns them.",
+                )}
+              </div>
+            )}
           </motion.div>
         )}
       </div>
+      )}
 
       {/* Action row */}
-      <div className="border-t border-[#241A14]/30 px-3 py-2 flex justify-between items-center">
-        <Link
-          href={match.highlights || "#"}
-          className="text-xs text-[#9CB48A] font-bold flex items-center gap-0.5 hover:underline"
-          target="_blank"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="5 3 19 12 5 21 5 3"/>
-          </svg>
-          {tr(locale, "看集锦", "Highlights")}
-        </Link>
+      <div className="border-t border-[#241A14]/30 px-3 py-2 flex justify-end">
         <Link
           href={`/match/${match.id}`}
           className="text-xs font-bold text-[#D36E52] hover:underline"
@@ -289,16 +420,107 @@ function NewsCard({ item, locale }: { item: NewsArticle; locale: string }) {
   );
 }
 
+function numericArticleMetric(article: NewsArticle, keys: string[]): number | undefined {
+  const record = article as unknown as Record<string, unknown>;
+  for (const key of keys) {
+    const value = record[key];
+    const numeric = typeof value === "number" ? value : typeof value === "string" ? Number(value.replace(/,/g, "")) : NaN;
+    if (Number.isFinite(numeric) && numeric >= 0) return numeric;
+  }
+  return undefined;
+}
+
+function articleSourceWeight(article: NewsArticle): number {
+  const sourceText = `${article.source} ${article.domain || ""} ${article.url}`.toLowerCase();
+  if (sourceText.includes("espn")) return 500;
+  if (sourceText.includes("bbc")) return 450;
+  if (sourceText.includes("fifa")) return 430;
+  if (sourceText.includes("chinanews") || sourceText.includes("中新网")) return 360;
+  if (sourceText.includes("newsapi")) return 260;
+  if (sourceText.includes("gdelt")) return 220;
+  return 180;
+}
+
+function articleHeatScore(article: NewsArticle, index: number): number {
+  const explicitViews = numericArticleMetric(article, ["viewCount", "views", "pageviews", "readCount", "traffic", "popularity"]);
+  const published = new Date(article.publishedAt).getTime();
+  const recency = Number.isFinite(published) ? Math.max(0, 240 - (Date.now() - published) / 3_600_000) : 0;
+  if (explicitViews !== undefined) return explicitViews * 1_000_000 + recency - index / 1000;
+  const sourceCount = article.sourceCount || article.relatedSources?.length || 1;
+  const aiScore = article.aiScore || 0;
+  const bodyWeight = article.bodySource === "original-page" ? 30 : article.bodySource === "source-api" ? 12 : 0;
+  return sourceCount * 1000 + aiScore * 10 + articleSourceWeight(article) + bodyWeight + recency - index / 1000;
+}
+
+function normalizeNewsTitleKey(title: string): string {
+  return title
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/（[^）]*摘要）|\([^)]*summary\)/gi, "")
+    .replace(/[^a-z0-9\u4e00-\u9fff]+/g, "")
+    .trim();
+}
+
+function dedupeNewsByDisplayedTitle(news: NewsArticle[], locale: string): NewsArticle[] {
+  const bestByTitle = new Map<string, { article: NewsArticle; index: number; score: number }>();
+  news.forEach((article, index) => {
+    const key = normalizeNewsTitleKey(articleTitle(article, locale)) || article.id;
+    const score = articleHeatScore(article, index);
+    const existing = bestByTitle.get(key);
+    if (!existing || score > existing.score) {
+      bestByTitle.set(key, { article, index, score });
+    }
+  });
+  return [...bestByTitle.values()]
+    .sort((left, right) => left.index - right.index)
+    .map((item) => item.article);
+}
+
 function sortTopNews(news: NewsArticle[]): NewsArticle[] {
   return news
     .map((article, index) => ({ article, index }))
     .sort((left, right) => {
       const leftScore = left.article.aiScore ?? -1;
       const rightScore = right.article.aiScore ?? -1;
-      return rightScore - leftScore || left.index - right.index;
+      return rightScore - leftScore
+        || articleHeatScore(right.article, right.index) - articleHeatScore(left.article, left.index)
+        || left.index - right.index;
     })
     .slice(0, 5)
     .map((item) => item.article);
+}
+
+function sortNewsByPublishedDesc(news: NewsArticle[]): NewsArticle[] {
+  return news
+    .map((article, index) => ({
+      article,
+      index,
+      published: new Date(article.publishedAt).getTime(),
+    }))
+    .sort((left, right) => {
+      const leftPublished = Number.isFinite(left.published) ? left.published : 0;
+      const rightPublished = Number.isFinite(right.published) ? right.published : 0;
+      return rightPublished - leftPublished || left.index - right.index;
+    })
+    .map((item) => item.article);
+}
+
+function rankingStatusLabel(
+  aggregation: MorningBrief["aggregation"] | undefined,
+  locale: string,
+): string {
+  if (aggregation?.aiUsed) {
+    return tr(locale, "AI 评分筛选", "Ranked by AI score");
+  }
+  const message = aggregation?.aiMessage || "";
+  if (/timeout|aborted|超时/i.test(message)) {
+    return tr(locale, "AI 超时 · 热度排序", "AI timed out · ranked by heat");
+  }
+  if (/未配置|no available|Provider 调用失败|AI Provider/i.test(message)) {
+    return tr(locale, "规则热度排序", "Ranked by rule heat");
+  }
+  return tr(locale, "热度排序", "Ranked by heat");
 }
 
 export function MorningBriefScreen() {
@@ -308,7 +530,9 @@ export function MorningBriefScreen() {
   const [browserNow, setBrowserNow] = useState(() => new Date());
   const [copied, setCopied] = useState(false);
   const quote = brief.quote;
-  const topNews = useMemo(() => sortTopNews(brief.news), [brief.news]);
+  const visibleNews = useMemo(() => dedupeNewsByDisplayedTitle(brief.news, locale), [brief.news, locale]);
+  const topNews = useMemo(() => sortTopNews(visibleNews), [visibleNews]);
+  const newsColumnItems = useMemo(() => sortNewsByPublishedDesc(visibleNews), [visibleNews]);
 
   useEffect(() => {
     let cancelled = false;
@@ -347,12 +571,6 @@ export function MorningBriefScreen() {
   const briefTitle = isChineseLocale(locale) && looksEnglish(brief.title) && brief.titleZh
     ? brief.titleZh
     : tr(locale, brief.title || "世界杯早报", "World Cup Morning Brief");
-  const briefSummary = isChineseLocale(locale) && looksEnglish(brief.summary) && brief.summaryZh
-    ? brief.summaryZh
-    : tr(locale, brief.summary || "暂无可用原始信息。", brief.summary || "No source information available yet.");
-  const sourceLabel = isChineseLocale(locale)
-    ? brief.sourceLabel.replaceAll("World Cup", "世界杯").replaceAll("Football RSS", "足球 RSS")
-    : brief.sourceLabel === "等待数据源" ? "Waiting for data source" : brief.sourceLabel;
   const quoteText = isChineseLocale(locale) && looksEnglish(quote) && brief.quoteZh
     ? brief.quoteZh
     : quote;
@@ -377,18 +595,6 @@ export function MorningBriefScreen() {
         >
           {briefTitle}
         </h2>
-        <div className="border-t border-[#241A14] mt-2 pt-2 text-xs text-[#5C524C]">
-          <strong>{tr(locale, "头版摘要：", "Lead summary:")}</strong> {briefSummary}
-          {isChineseLocale(locale) && looksEnglish(brief.summary) && (
-            <span className="mt-1 block border-l border-[#241A14]/30 pl-2 text-[11px] leading-5 text-[#8A8078]">
-              {brief.summary}
-            </span>
-          )}
-          <span className="block mt-1 text-[10px] text-[#9E948C]">
-            {tr(locale, "来源：", "Source: ")}
-            {sourceLabel}
-          </span>
-        </div>
       </div>
 
       {/* Scrollable content */}
@@ -403,7 +609,7 @@ export function MorningBriefScreen() {
                 {tr(locale, "重点新闻", "Key Headlines")}
               </h3>
               <span className="text-[10px] text-[#9E948C]">
-                {brief.aggregation?.aiUsed ? tr(locale, "AI 评分筛选", "Ranked by AI score") : tr(locale, "后台等待 AI 评分", "Waiting for background AI scores")}
+                {rankingStatusLabel(brief.aggregation, locale)}
               </span>
             </div>
             <div className="space-y-1.5">
@@ -481,7 +687,7 @@ export function MorningBriefScreen() {
 
         {/* Match cards */}
         {brief.matches.length > 0 ? (
-          brief.matches.map((m) => <MatchResultCard key={m.id} match={m} locale={locale} />)
+          brief.matches.map((m) => <MatchResultCard key={m.id} match={m} locale={locale} now={browserNow} />)
         ) : (
           <div className="border-2 border-dashed border-[#241A14] p-8 text-center">
             <p className="text-sm font-bold text-[#241A14]">{tr(locale, "暂无比赛信息", "No match information")}</p>
@@ -490,7 +696,7 @@ export function MorningBriefScreen() {
         )}
 
         {/* News source section */}
-        {brief.news.length > 0 && (
+        {newsColumnItems.length > 0 && (
           <>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-[#9CB48A] rounded-full flex-shrink-0" />
@@ -498,15 +704,15 @@ export function MorningBriefScreen() {
                 className="font-bold text-xs tracking-wider uppercase text-[#241A14]"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
-                {tr(locale, "多源新闻整理", "Multi-source News")}
+                {tr(locale, "新闻栏目", "News Column")}
               </span>
               <span className="shrink-0 text-[10px] font-bold text-[#9E948C]">
-                {brief.news.length} {tr(locale, "条", "items")}
+                {tr(locale, "多源新闻整理", "Multi-source")} · {newsColumnItems.length} {tr(locale, "条", "items")}
               </span>
               <div className="flex-grow border-b border-double border-[#241A14]/30" />
             </div>
 
-            {brief.news.map((article) => (
+            {newsColumnItems.map((article) => (
               <NewsCard key={article.id} item={article} locale={locale} />
             ))}
           </>

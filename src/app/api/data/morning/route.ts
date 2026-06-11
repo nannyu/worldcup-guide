@@ -15,10 +15,11 @@ export async function GET(request: NextRequest) {
   let cacheMode: "cache-only" | "refresh" = "cache-only";
   let result = await getAggregatedMorningBrief(dateKey, { cacheMode });
   let isStale = result.diagnostics.some((item) => item.message?.includes("stale"));
-  const hasContent = () => result.brief.news.length > 0 || result.brief.matches.length > 0;
-  if (refreshRequested || result.source === "fallback" || isStale || !hasContent()) {
+  const hasNews = () => result.brief.news.length > 0;
+  const hasContent = () => hasNews() || result.brief.matches.length > 0;
+  if (refreshRequested || !hasNews()) {
     try {
-      const refreshed = await getAggregatedMorningBrief(dateKey, { cacheMode: "refresh" });
+      const refreshed = await getAggregatedMorningBrief(dateKey, { cacheMode: "refresh", useAi: false });
       if (refreshed.brief.news.length > 0 || refreshed.brief.matches.length > 0) {
         result = refreshed;
         cacheMode = "refresh";
@@ -38,7 +39,9 @@ export async function GET(request: NextRequest) {
     }
   }
   const brief = await applyCachedMorningBriefTranslations(result.brief);
-  const backgroundTask = result.source === "fallback" || isStale || !hasContent() ? await enqueueMorningRefresh(dateKey) : undefined;
+  const backgroundTask = result.source === "fallback" || isStale || !hasNews() || !hasContent()
+    ? await enqueueMorningRefresh(dateKey)
+    : undefined;
   return NextResponse.json(
     { ok: true, dateKey, cacheMode, backgroundTask, ...result, brief },
     {

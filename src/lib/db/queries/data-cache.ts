@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { and, count, eq, gt, gte } from "drizzle-orm";
+import { and, count, desc, eq, gt, gte } from "drizzle-orm";
 import { getDb, isDatabaseConfigured } from "../client";
 import { dataSnapshots, dataSourceFetches, dataSourceUsageEvents } from "../schema/data-cache";
 
@@ -14,6 +14,10 @@ export interface StoredCache<T> {
   sourceMode?: string;
   sourceId?: string | null;
   diagnostics?: unknown;
+}
+
+export interface LatestSnapshotCache<T> extends StoredCache<T> {
+  snapshotKey: string;
 }
 
 function logDbCacheError(operation: string, error: unknown) {
@@ -31,6 +35,7 @@ type FileRawFetch = {
 };
 
 type FileSnapshot = {
+  feature?: string;
   payload: unknown;
   expiresAt: string;
   computedAt: string;
@@ -167,10 +172,37 @@ async function readSnapshotFile<T>(
   const row = cache.snapshots[snapshotKey];
   if (!row) return undefined;
   if (!options.allowStale && new Date(row.expiresAt) <= new Date()) return undefined;
-    return {
-      payload: row.payload as T,
-      storage: "file",
-      expiresAt: new Date(row.expiresAt),
+  return {
+    payload: row.payload as T,
+    storage: "file",
+    expiresAt: new Date(row.expiresAt),
+    computedAt: new Date(row.computedAt),
+    sourceMode: row.sourceMode,
+    sourceId: row.sourceId,
+    diagnostics: row.diagnostics,
+  };
+}
+
+async function readLatestSnapshotFile<T>(
+  feature: string,
+  options: { allowStale?: boolean } = {},
+): Promise<LatestSnapshotCache<T> | undefined> {
+  const cache = await readRuntimeCache();
+  const now = new Date();
+  const rows = Object.entries(cache.snapshots)
+    .filter(([snapshotKey, row]) => {
+      const featureMatches = row.feature === feature || snapshotKey.startsWith(`${feature}:`);
+      if (!featureMatches) return false;
+      return options.allowStale || new Date(row.expiresAt) > now;
+    })
+    .sort(([, left], [, right]) => new Date(right.computedAt).getTime() - new Date(left.computedAt).getTime());
+  const [snapshotKey, row] = rows[0] || [];
+  if (!snapshotKey || !row) return undefined;
+  return {
+    snapshotKey,
+    payload: row.payload as T,
+    storage: "file",
+    expiresAt: new Date(row.expiresAt),
     computedAt: new Date(row.computedAt),
     sourceMode: row.sourceMode,
     sourceId: row.sourceId,
@@ -182,6 +214,7 @@ async function upsertSnapshotFile(input: SnapshotCacheInput): Promise<void> {
   const now = new Date();
   const cache = pruneRuntimeCache(await readRuntimeCache(), now);
   cache.snapshots[input.snapshotKey] = {
+    feature: input.feature,
     payload: input.payload,
     diagnostics: input.diagnostics,
     sourceMode: input.sourceMode,
@@ -318,6 +351,42 @@ export async function readSnapshotCache<T>(
   } catch (error) {
     logDbCacheError("read snapshot cache", error);
     return readSnapshotFile<T>(snapshotKey, options);
+  }
+}
+
+export async function readLatestSnapshotCache<T>(
+  feature: string,
+  options: { allowStale?: boolean } = {},
+): Promise<LatestSnapshotCache<T> | undefined> {
+  if (!isDatabaseConfigured) {
+    assertRuntimeCacheAllowed("read latest snapshot cache");
+    return readLatestSnapshotFile<T>(feature, options);
+  }
+  try {
+    const where = options.allowStale
+      ? eq(dataSnapshots.feature, feature)
+      : and(eq(dataSnapshots.feature, feature), gt(dataSnapshots.expiresAt, new Date()));
+    const rows = await getDb()
+      .select()
+      .from(dataSnapshots)
+      .where(where)
+      .orderBy(desc(dataSnapshots.computedAt))
+      .limit(1);
+    const row = rows[0];
+    if (!row) return undefined;
+    return {
+      snapshotKey: row.snapshotKey,
+      payload: row.payload as T,
+      storage: "database",
+      expiresAt: row.expiresAt,
+      computedAt: row.computedAt,
+      sourceMode: row.sourceMode,
+      sourceId: row.sourceId,
+      diagnostics: row.diagnostics,
+    };
+  } catch (error) {
+    logDbCacheError("read latest snapshot cache", error);
+    return readLatestSnapshotFile<T>(feature, options);
   }
 }
 

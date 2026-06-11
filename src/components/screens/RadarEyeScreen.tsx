@@ -31,6 +31,7 @@ type DataSourceMode = "remote" | "fallback" | "cache";
 type Outcome = {
   label: LocalizedText;
   value: string;
+  hint?: LocalizedText;
   tone?: "primary" | "neutral" | "success";
 };
 
@@ -54,6 +55,7 @@ type GameMatch = {
   awayFlag: string;
   sourceMatch: Match;
   radarMatch?: RadarMatch;
+  radarMarkets: RadarMatch[];
   markets: MatchMarket[];
 };
 
@@ -226,12 +228,26 @@ function formatKickoff(match: GameMatch, timeZone: string, locale: string) {
 }
 
 function canonicalName(input: string | undefined) {
-  return String(input || "")
+  const normalized = String(input || "")
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/&/g, "and")
     .replace(/[^a-z0-9\u4e00-\u9fff]+/g, "");
+  const aliases: Record<string, string> = {
+    korearepublic: "southkorea",
+    caboverde: "capeverde",
+    drcongo: "congodr",
+    democraticrepublicofcongo: "congodr",
+    iriran: "iran",
+    turkiye: "turkey",
+    unitedstates: "usa",
+  };
+  return aliases[normalized] || normalized;
+}
+
+function canonicalTeamName(input: string | undefined) {
+  return canonicalName(teamName(String(input || ""), "en-US"));
 }
 
 function teamCode(name: string, code?: string) {
@@ -283,11 +299,11 @@ function mergeLiveMatches(liveMatches: Match[]) {
   return merged;
 }
 
-function findRadarForMatch(match: Match, radarMatches: RadarMatch[]) {
-  const home = canonicalName(match.homeTeam);
-  const away = canonicalName(match.awayTeam);
-  return radarMatches.find((item) => {
-    const fields = [item.homeTeam, item.awayTeam, item.title, item.marketLabel].map(canonicalName);
+function findRadarMarketsForMatch(match: Match, radarMatches: RadarMatch[]) {
+  const home = canonicalTeamName(match.homeTeam);
+  const away = canonicalTeamName(match.awayTeam);
+  return radarMatches.filter((item) => {
+    const fields = [item.homeTeam, item.awayTeam, item.title, item.eventTitle, item.marketLabel].map(canonicalName);
     return fields.some((field) => field.includes(home)) && fields.some((field) => field.includes(away));
   });
 }
@@ -296,41 +312,129 @@ function probabilityPrice(value: number) {
   return `${Math.max(0, Math.min(100, Math.round(value)))}¢`;
 }
 
-function moneylineOutcomes(match: Match): Outcome[] {
-  const home = match.homeWinProb || match.oddsImpliedHome;
-  const draw = match.drawProb || match.oddsImpliedDraw;
-  const away = match.awayWinProb || match.oddsImpliedAway;
-  if (![home, draw, away].some((value) => value > 0)) return [];
-
-  return [
-    {
-      label: { zh: `${teamCode(match.homeTeam, match.homeCode)} ${probabilityPrice(home)}`, en: `${teamCode(match.homeTeam, match.homeCode)} ${probabilityPrice(home)}` },
-      value: `${teamCode(match.homeTeam, match.homeCode)} ${probabilityPrice(home)}`,
-      tone: "primary",
-    },
-    {
-      label: { zh: `DRAW ${probabilityPrice(draw)}`, en: `DRAW ${probabilityPrice(draw)}` },
-      value: `DRAW ${probabilityPrice(draw)}`,
-      tone: "neutral",
-    },
-    {
-      label: { zh: `${teamCode(match.awayTeam, match.awayCode)} ${probabilityPrice(away)}`, en: `${teamCode(match.awayTeam, match.awayCode)} ${probabilityPrice(away)}` },
-      value: `${teamCode(match.awayTeam, match.awayCode)} ${probabilityPrice(away)}`,
-      tone: "success",
-    },
-  ];
+function radarHint(market: RadarMatch): LocalizedText {
+  const title = market.title || market.eventTitle || "Polymarket";
+  const volume = market.volumeUsd ? `$${Math.round(market.volumeUsd).toLocaleString()}` : market.volume;
+  return {
+    zh: `Polymarket：${title}${volume ? `；交易量 ${volume}` : ""}。`,
+    en: `Polymarket: ${title}${volume ? `; volume ${volume}` : ""}.`,
+  };
 }
 
-function marketsFromMatch(match: Match): MatchMarket[] {
+function outcomeProbability(market: RadarMatch, index = 0) {
+  return Math.max(0, Math.min(100, Math.round(market.outcomes?.[index]?.probability ?? (index === 0 ? market.homeMarketProb : market.awayMarketProb))));
+}
+
+function moneylineMarketLabel(market: RadarMatch) {
+  return canonicalName(market.outcomes?.[0]?.label || market.marketLabel || market.title);
+}
+
+function moneylineOutcomes(match: Match, radarMarkets: RadarMatch[]): Outcome[] {
+  const markets = radarMarkets.filter((market) => market.category === "moneyline");
+  const home = canonicalTeamName(match.homeTeam);
+  const away = canonicalTeamName(match.awayTeam);
+  const homeMarket = markets.find((market) => moneylineMarketLabel(market).includes(home));
+  const drawMarket = markets.find((market) => moneylineMarketLabel(market).includes("draw") || canonicalName(market.title).includes("draw"));
+  const awayMarket = markets.find((market) => moneylineMarketLabel(market).includes(away));
+  const entries = [
+    { market: homeMarket, code: teamCode(match.homeTeam, match.homeCode), tone: "primary" as const },
+    { market: drawMarket, code: "DRAW", tone: "neutral" as const },
+    { market: awayMarket, code: teamCode(match.awayTeam, match.awayCode), tone: "success" as const },
+  ];
+
+  return entries.flatMap(({ market, code, tone }) => {
+    if (!market) return [];
+    const price = probabilityPrice(outcomeProbability(market, 0));
+    return [{
+      label: { zh: `${code} ${price}`, en: `${code} ${price}` },
+      value: `${market.id}-${code}-${price}`,
+      hint: radarHint(market),
+      tone,
+    }];
+  });
+}
+
+function lineNumber(value: string | undefined) {
+  const parsed = Number.parseFloat(String(value || ""));
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function lineAbsDistance(market: RadarMatch, target: number) {
+  const line = lineNumber(market.line);
+  return line === undefined ? 10 : Math.abs(Math.abs(line) - target);
+}
+
+function chooseBalancedMarket(markets: RadarMatch[], targetLine?: number) {
+  return markets.slice().sort((left, right) => {
+    const leftPrice = outcomeProbability(left, 0);
+    const rightPrice = outcomeProbability(right, 0);
+    const lineScore = targetLine === undefined ? 0 : lineAbsDistance(left, targetLine) - lineAbsDistance(right, targetLine);
+    if (lineScore !== 0) return lineScore;
+    return Math.abs(leftPrice - 50) - Math.abs(rightPrice - 50) || volumeValue(right) - volumeValue(left);
+  })[0];
+}
+
+function labelForSpreadOutcome(match: Match, market: RadarMatch, index: number) {
+  const outcome = market.outcomes?.[index]?.label || "";
+  const code = canonicalName(outcome).includes(canonicalTeamName(match.homeTeam))
+    ? teamCode(match.homeTeam, match.homeCode)
+    : canonicalName(outcome).includes(canonicalTeamName(match.awayTeam))
+      ? teamCode(match.awayTeam, match.awayCode)
+      : outcome.toUpperCase();
+  const line = lineNumber(market.line);
+  if (line === undefined) return code;
+  const side = canonicalName(outcome).includes(canonicalName(market.outcomes?.[0]?.label)) ? line : -line;
+  return `${code} ${side > 0 ? "+" : ""}${side}`;
+}
+
+function spreadOutcomes(match: Match, radarMarkets: RadarMatch[]): Outcome[] {
+  const market = chooseBalancedMarket(radarMarkets.filter((item) => item.category === "spread"), 1.5);
+  if (!market) return [];
+  return [0, 1].flatMap((index) => {
+    const outcome = market.outcomes?.[index];
+    if (!outcome) return [];
+    const label = `${labelForSpreadOutcome(match, market, index)} ${probabilityPrice(outcomeProbability(market, index))}`;
+    return [{
+      label: { zh: label, en: label },
+      value: `${market.id}-${index}-${label}`,
+      hint: radarHint(market),
+      tone: index === 0 ? "primary" as const : "success" as const,
+    }];
+  });
+}
+
+function totalLineLabel(market: RadarMatch) {
+  return market.line || String(market.title || "").match(/\bO\/U\s+(\d+(?:\.\d+)?)/i)?.[1] || "";
+}
+
+function totalOutcomes(radarMarkets: RadarMatch[]): Outcome[] {
+  const market = chooseBalancedMarket(radarMarkets.filter((item) => item.category === "total"), 2.5);
+  if (!market) return [];
+  const line = totalLineLabel(market);
+  return [0, 1].flatMap((index) => {
+    const outcome = market.outcomes?.[index];
+    if (!outcome) return [];
+    const label = `${outcome.label}${line ? ` ${line}` : ""} ${probabilityPrice(outcomeProbability(market, index))}`.toUpperCase();
+    return [{
+      label: { zh: label, en: label },
+      value: `${market.id}-${index}-${label}`,
+      hint: radarHint(market),
+      tone: index === 0 ? "primary" as const : "neutral" as const,
+    }];
+  });
+}
+
+function marketsFromMatch(match: Match, radarMarkets: RadarMatch[]): MatchMarket[] {
   return [
-    { title: { zh: "胜负线", en: "Moneyline" }, outcomes: moneylineOutcomes(match) },
-    { title: { zh: "让分", en: "Spread" }, outcomes: [] },
-    { title: { zh: "总分", en: "Total" }, outcomes: [] },
+    { title: { zh: "胜负线", en: "Moneyline" }, outcomes: moneylineOutcomes(match, radarMarkets) },
+    { title: { zh: "让分", en: "Spread" }, outcomes: spreadOutcomes(match, radarMarkets) },
+    { title: { zh: "总分", en: "Total" }, outcomes: totalOutcomes(radarMarkets) },
   ];
 }
 
 function toGameMatch(match: Match, radarMatches: RadarMatch[]): GameMatch {
-  const radarMatch = findRadarForMatch(match, radarMatches);
+  const matchRadarMarkets = findRadarMarketsForMatch(match, radarMatches);
+  const radarMatch = matchRadarMarkets[0];
   return {
     id: match.id,
     kickoffBj: match.kickoffBj,
@@ -346,7 +450,8 @@ function toGameMatch(match: Match, radarMatches: RadarMatch[]): GameMatch {
     awayFlag: match.awayFlag,
     sourceMatch: match,
     radarMatch,
-    markets: marketsFromMatch(match),
+    radarMarkets: matchRadarMarkets,
+    markets: marketsFromMatch(match, matchRadarMarkets),
   };
 }
 
@@ -439,15 +544,21 @@ function volumeValue(match: RadarMatch): number {
   return value * multiplier;
 }
 
+function formatVolumeLabel(volume: string | undefined, volumeUsd: number | undefined, locale: string) {
+  const value = typeof volumeUsd === "number" && Number.isFinite(volumeUsd) ? volumeUsd : Number(String(volume || "").replace(/[$,\s]/g, ""));
+  if (Number.isFinite(value) && value > 0) return `$${Math.round(value).toLocaleString()}`;
+  return volume || tr(locale, "盘口待接入", "Markets pending");
+}
+
 function isWorldCupRadarMatch(match: RadarMatch): boolean {
-  const text = [match.title, match.marketLabel, match.homeTeam, match.awayTeam].filter(Boolean).join(" ").toLowerCase();
-  return ["world cup", "世界杯", "fifa"].some((keyword) => text.includes(keyword));
+  const text = [match.title, match.eventTitle, match.eventSlug, match.marketLabel, match.homeTeam, match.awayTeam].filter(Boolean).join(" ").toLowerCase();
+  return ["world cup", "世界杯", "fifa", "fifwc"].some((keyword) => text.includes(keyword));
 }
 
 function sourceLabel(source: DataSourceMode | undefined, diagnostics: Array<{ name: string; ok: boolean }> | undefined, emptyLabel: string) {
   const firstOk = diagnostics?.find((item) => item.ok);
   if (source === "remote" && firstOk) return `${firstOk.name} · 远端数据`;
-  if (source === "cache") return "PostgreSQL · 持久化快照";
+  if (source === "cache") return `${firstOk?.name || "数据快照"} · 快照数据`;
   return emptyLabel;
 }
 
@@ -552,8 +663,8 @@ export function RadarEyeScreen() {
           <p className="mt-2 max-w-2xl text-xs leading-relaxed text-[#5C524C]">
             {tr(
               locale,
-              `比赛结构来自赛程/比分源；盘口、交易量和玩法只展示已接入来源返回的数据。当前赛程：${matchSourceLabel}；市场：${radarSourceLabel}。`,
-              `Fixtures come from schedule/score sources; prices, volume, and props are shown only when connected sources return them. Fixtures: ${matchSourceLabel}; markets: ${radarSourceLabel}.`,
+              `比赛结构来自赛程/比分源；胜负线、让分、总分等盘口来自 Polymarket。当前赛程：${matchSourceLabel}；预测市场：${radarSourceLabel}。`,
+              `Fixtures come from schedule/score sources; moneyline, spread, totals and related lines come from Polymarket. Fixtures: ${matchSourceLabel}; prediction markets: ${radarSourceLabel}.`,
             )}
           </p>
 
@@ -584,7 +695,7 @@ export function RadarEyeScreen() {
 
       <main className="flex-1 px-4 py-4 md:px-6 md:py-6">
         <div className="mx-auto max-w-6xl">
-          {activeTab === "games" && <GamesTab locale={locale} days={displayMatchDays} sourceLabel={matchSourceLabel} />}
+          {activeTab === "games" && <GamesTab locale={locale} days={displayMatchDays} sourceLabel={matchSourceLabel} marketSourceLabel={radarSourceLabel} />}
           {activeTab === "props" && <PropsTab locale={locale} markets={propMarkets} sourceLabel={radarSourceLabel} />}
           {activeTab === "groups" && <GroupsTab locale={locale} standings={standings} />}
           {activeTab === "bracket" && <BracketTab locale={locale} rounds={bracketRounds} matchSequence={matchSequence} />}
@@ -594,7 +705,7 @@ export function RadarEyeScreen() {
   );
 }
 
-function GamesTab({ locale, days, sourceLabel }: { locale: string; days: DisplayMatchDay[]; sourceLabel: string }) {
+function GamesTab({ locale, days, sourceLabel, marketSourceLabel }: { locale: string; days: DisplayMatchDay[]; sourceLabel: string; marketSourceLabel: string }) {
   return (
     <div className="space-y-4">
       <SectionLead
@@ -602,8 +713,8 @@ function GamesTab({ locale, days, sourceLabel }: { locale: string; days: Display
         label={{ zh: "比赛", en: "Games" }}
         title={{ zh: "按日期展开比赛盘口", en: "Game markets by date" }}
         copy={{
-          zh: `赛程和比分来自数据源：${sourceLabel}。未接入的盘口列显示待接入，不使用固定价格。`,
-          en: `Fixtures and scores come from data sources: ${sourceLabel}. Missing market columns show pending instead of fixed prices.`,
+          zh: `赛程和比分来自数据源：${sourceLabel}；胜负线、让分、总分来自：${marketSourceLabel}。未接入的盘口列显示待接入，不使用固定价格。`,
+          en: `Fixtures and scores come from data sources: ${sourceLabel}; moneyline, spread and totals come from: ${marketSourceLabel}. Missing market columns show pending instead of fixed prices.`,
         }}
       />
 
@@ -651,7 +762,7 @@ function CompactGameCard({
   const [detailTab, setDetailTab] = useState<GameDetailTabKey>("markets");
   const [infoTab, setInfoTab] = useState<GameInfoTabKey>("rules");
   const kickoff = formatKickoff(match, timeZone, locale);
-  const volumeLabel = match.volume || tr(locale, "交易量待接入", "Volume pending");
+  const volumeLabel = formatVolumeLabel(match.volume, match.volumeUsd, locale);
 
   return (
     <motion.article
@@ -665,7 +776,7 @@ function CompactGameCard({
           <div className="flex flex-wrap items-center gap-2 text-[10px] font-black text-[#9E948C]">
             <span className="border border-[#241A14] bg-[#F5F1E8] px-2 py-1 text-xs text-[#241A14]">{kickoff.time}</span>
             <span className="uppercase tracking-[0.12em]">{kickoff.zone}</span>
-            <span className="text-xs">{volumeLabel} {match.volume ? tr(locale, "交易量", "Volume") : ""}</span>
+            <span className="text-xs">{volumeLabel} {match.volume || match.volumeUsd ? tr(locale, "Polymarket 交易量", "Polymarket volume") : ""}</span>
           </div>
 
           <button
@@ -758,7 +869,7 @@ function CompactMarketColumn({ locale, market }: { locale: string; market: Match
 
 function CompactPriceButton({ outcome, locale, fill = false }: { outcome: Outcome; locale: string; fill?: boolean }) {
   const displayValue = localize(locale, outcome.label);
-  const match = displayValue.match(/^(.*)\s+(\S+(?:¢|%))$/);
+  const match = displayValue.match(/^(.*)\s+(\S+(?:¢|%|\d(?:\.\d+)?))$/);
   const label = match?.[1] || displayValue;
   const price = match?.[2];
   const toneClass =
@@ -820,7 +931,7 @@ function GameDetailView({
               </p>
             </div>
             <span className="border border-[#241A14] bg-[#EDE9E0] px-2 py-1 text-[10px] font-black text-[#241A14]">
-              {match.volume || tr(locale, "交易量待接入", "Volume pending")}
+              {formatVolumeLabel(match.volume, match.volumeUsd, locale)}
             </span>
           </div>
 
@@ -968,7 +1079,13 @@ function InfoPanel({ match, locale, activeTab, kickoffLabel }: { match: GameMatc
             {teamName(match.home, locale)} vs {teamName(match.away, locale)} · {kickoffLabel}
           </p>
           <p>
-            {tr(locale, `赛程来源：${match.sourceMatch.updatedAt || "数据源"}。盘口历史、让分、总分、半场、角球、进球、助攻和射门等待对应数据源返回。`, `Fixture source: ${match.sourceMatch.updatedAt || "data source"}. Price history, spread, totals, halftime, corners, goals, assists, and shots wait for matching source fields.`)}
+            {match.radarMarkets.length
+              ? tr(
+                locale,
+                `赛程来源：${match.sourceMatch.updatedAt || "数据源"}。本场已匹配 ${match.radarMarkets.length} 个 Polymarket 市场；胜负线、让分、总分等盘口均来自预测市场价格。`,
+                `Fixture source: ${match.sourceMatch.updatedAt || "data source"}. This match has ${match.radarMarkets.length} matched Polymarket markets; moneyline, spread, totals and related lines all use prediction-market prices.`,
+              )
+              : tr(locale, `赛程来源：${match.sourceMatch.updatedAt || "数据源"}。Polymarket 暂未返回本场可匹配盘口。`, `Fixture source: ${match.sourceMatch.updatedAt || "data source"}. Polymarket has not returned matched markets for this game yet.`)}
           </p>
         </>
       )}
@@ -990,11 +1107,23 @@ function detailItemsFor(match: GameMatch, locale: string, activeTab: GameDetailT
       market.outcomes.map((outcome) => ({
         title: localize(locale, outcome.label),
         value: localize(locale, market.title),
-        copy: tr(locale, "该价格来自已接入盘口或市场数据源。", "This price comes from a connected odds or market source."),
+        copy: outcome.hint ? localize(locale, outcome.hint) : tr(locale, "该价格来自已接入盘口或市场数据源。", "This price comes from a connected odds or market source."),
       })),
     );
     return rows.length ? rows : [pendingDetail(locale, tr(locale, "比赛盘口", "Game lines"))];
   }
+
+  const categoryRows = match.radarMarkets
+    .filter((market) => market.category === activeTab)
+    .slice(0, 12)
+    .flatMap((market) =>
+      (market.outcomes || []).map((outcome) => ({
+        title: `${outcome.label} ${probabilityPrice(outcome.probability)}`,
+        value: market.title || market.eventTitle || "Polymarket",
+        copy: localize(locale, radarHint(market)),
+      })),
+    );
+  if (categoryRows.length) return categoryRows;
 
   const labels: Record<GameDetailTabKey, string> = {
     markets: tr(locale, "比赛盘口", "Game lines"),

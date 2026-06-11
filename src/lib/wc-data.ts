@@ -227,14 +227,41 @@ export interface Team {
   championProbability?: number | null;
 }
 
+export interface TeamRoastItem {
+  teamCode?: string;
+  teamName: string;
+  teamNameEn?: string;
+  roast: string;
+  evidence?: string[];
+  articleIds?: string[];
+  matchIds?: string[];
+  updatedAt: string;
+  source: "ai" | "rules";
+  aiProvider?: string;
+}
+
+export interface TeamRoastSnapshot {
+  generatedAt: string;
+  refreshDate: string;
+  aiUsed: boolean;
+  aiProvider?: string;
+  message: string;
+  newsCount: number;
+  matchCount: number;
+  items: TeamRoastItem[];
+}
+
 export interface TeamStarPlayer {
   name: string;
+  nameZh?: string;
   position: string;
 }
 
 export interface PlayerProfile {
   id: string;
   name: string;
+  nameZh?: string;
+  shirtNumber?: number;
   position: string;
   club?: string;
   age?: number;
@@ -319,6 +346,10 @@ export interface MorningBrief {
 export interface RadarMatch {
   id: string;
   title?: string;
+  eventTitle?: string;
+  eventSlug?: string;
+  category?: "moneyline" | "spread" | "total" | "halftime" | "corners" | "goals" | "assists" | "shots" | "prop";
+  line?: string;
   homeTeam: string;
   awayTeam: string;
   homeFlag: string;
@@ -337,6 +368,10 @@ export interface RadarMatch {
   volume?: string;
   volumeUsd?: number;
   marketLabel?: string;
+  outcomes?: Array<{
+    label: string;
+    probability: number;
+  }>;
   history: { time: string; market: number; odds: number }[];
 }
 

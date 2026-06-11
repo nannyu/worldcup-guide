@@ -148,6 +148,39 @@ function articleText(article: NewsArticle): string {
 
 function fallbackArticleTitleZh(article: NewsArticle): string | undefined {
   const text = articleText(article);
+  if (/world cup of more|never been a tournament like this one/i.test(text)) {
+    return "更大规模的世界杯：从未有过这样的赛事";
+  }
+  if (/u\.s\. excited|usmnt expectations|seton hall poll/i.test(text)) {
+    return "2026世界杯民调：美国球迷期待升温，USMNT预期仍克制";
+  }
+  if (/stadium upgrades.*toronto|toronto.*braces for world cup/i.test(text)) {
+    return "多伦多世界杯场馆升级获得正面评价";
+  }
+  if (/messi.*cristiano ronaldo|cristiano ronaldo.*messi|biggest stage/i.test(text)) {
+    return "2026世界杯：梅西和C罗能否终于在最大舞台相遇";
+  }
+  if (/andrea bocelli|tournament anthem|italy.*representative/i.test(text)) {
+    return "安德烈·波切利将代表意大利亮相2026世界杯";
+  }
+  if (/six fifa world cup-defining|african teams|group-stage fixtures/i.test(text)) {
+    return "决定非洲球队命运的六场世界杯小组赛";
+  }
+  if (/mctominay|misses training/i.test(text) && /scotland/i.test(text)) {
+    return "麦克托米奈缺席苏格兰世界杯揭幕战前训练";
+  }
+  if (/scotland.*world cup openers|history tells us about scotland/i.test(text)) {
+    return "苏格兰世界杯揭幕战历史回顾";
+  }
+  if (/world cup daily live|mexico vs\.? south africa pregame|bafana bafana.*mexico/i.test(text)) {
+    return "世界杯日报：墨西哥对南非揭幕战赛前动态";
+  }
+  if (/england at the 2026 world cup|england.*schedule.*how to watch/i.test(text)) {
+    return "2026世界杯英格兰队观赛指南、赛程与赛果入口";
+  }
+  if (/group a at the 2026 world cup|group a.*teams.*records.*stats/i.test(text)) {
+    return "2026世界杯A组巡礼：球队、战绩与关键数据";
+  }
   if (/stadium|venue|host cit/i.test(text) && /england|scotland/i.test(text)) {
     return "2026世界杯英格兰与苏格兰比赛场馆指南";
   }
@@ -172,11 +205,62 @@ function fallbackArticleTitleZh(article: NewsArticle): string | undefined {
   if (/referee|official|var/i.test(text)) {
     return "世界杯裁判安排与赛事执法动态";
   }
+  if (/world cup|fifa/i.test(text)) {
+    if (/schedule|fixture|results?|how to watch|where to watch/i.test(text)) {
+      return "2026世界杯赛程、赛果与观赛信息更新";
+    }
+    if (/stadium|venue|host cit|city|toronto|miami|los angeles|new york|dallas/i.test(text)) {
+      return "2026世界杯场馆与主办城市动态";
+    }
+    if (/squad|roster|lineup|selection|players?|coach|manager|training|injur/i.test(text)) {
+      return "2026世界杯球队阵容与备战动态";
+    }
+    if (/poll|fans?|expectations?|interest/i.test(text)) {
+      return "2026世界杯球迷关注度与舆论动态";
+    }
+    if (/messi|ronaldo|bocelli|star|anthem|celebr/i.test(text)) {
+      return "2026世界杯球星与开幕活动动态";
+    }
+    return "2026世界杯最新动态";
+  }
   return undefined;
 }
 
 function fallbackArticleSummaryZh(article: NewsArticle): string | undefined {
   const text = articleText(article);
+  if (/world cup of more|never been a tournament like this one/i.test(text)) {
+    return "报道概述2026世界杯扩军后规模、声量和赛事体验的变化。";
+  }
+  if (/u\.s\. excited|usmnt expectations|seton hall poll/i.test(text)) {
+    return "民调显示美国球迷对世界杯兴趣升温，但对美国男足成绩仍保持相对克制的期待。";
+  }
+  if (/stadium upgrades.*toronto|toronto.*braces for world cup/i.test(text)) {
+    return "报道关注多伦多为世界杯进行的场馆升级，以及城市迎接赛事的准备情况。";
+  }
+  if (/messi.*cristiano ronaldo|cristiano ronaldo.*messi|biggest stage/i.test(text)) {
+    return "报道讨论梅西和C罗在第六次世界杯征程中是否可能终于迎来正面对话。";
+  }
+  if (/andrea bocelli|tournament anthem|italy.*representative/i.test(text)) {
+    return "报道介绍安德烈·波切利将在墨西哥对南非揭幕战前演唱赛事主题曲。";
+  }
+  if (/six fifa world cup-defining|african teams|group-stage fixtures/i.test(text)) {
+    return "报道梳理可能决定非洲球队出线走势的关键世界杯小组赛。";
+  }
+  if (/mctominay|misses training/i.test(text) && /scotland/i.test(text)) {
+    return "报道关注麦克托米奈缺席训练对苏格兰揭幕战备战的影响。";
+  }
+  if (/scotland.*world cup openers|history tells us about scotland/i.test(text)) {
+    return "报道回顾苏格兰历次世界杯揭幕战表现，并对本届开局提供参照。";
+  }
+  if (/world cup daily live|mexico vs\.? south africa pregame|bafana bafana.*mexico/i.test(text)) {
+    return "报道滚动更新揭幕日动态，重点关注南非队与墨西哥队的开幕战。";
+  }
+  if (/england at the 2026 world cup|england.*schedule.*how to watch/i.test(text)) {
+    return "报道整理英格兰队在2026世界杯的赛程、赛果入口、观赛方式和球队动态。";
+  }
+  if (/group a at the 2026 world cup|group a.*teams.*records.*stats/i.test(text)) {
+    return "报道梳理2026世界杯A组参赛球队、历史战绩和需要关注的关键数据。";
+  }
   if (/stadium|venue|host cit/i.test(text) && /england|scotland/i.test(text)) {
     return "报道梳理英格兰和苏格兰在2026世界杯期间涉及的美国比赛场馆与城市安排。";
   }
@@ -200,6 +284,24 @@ function fallbackArticleSummaryZh(article: NewsArticle): string | undefined {
   }
   if (/referee|official|var/i.test(text)) {
     return "报道关注世界杯裁判安排、执法尺度和相关争议。";
+  }
+  if (/world cup|fifa/i.test(text)) {
+    if (/schedule|fixture|results?|how to watch|where to watch/i.test(text)) {
+      return "报道整理世界杯相关赛程、赛果入口、观赛方式和赛事信息。";
+    }
+    if (/stadium|venue|host cit|city|toronto|miami|los angeles|new york|dallas/i.test(text)) {
+      return "报道关注世界杯比赛场馆、主办城市和赛事基础设施准备情况。";
+    }
+    if (/squad|roster|lineup|selection|players?|coach|manager|training|injur/i.test(text)) {
+      return "报道跟进世界杯参赛球队的阵容选择、训练备战和人员状态。";
+    }
+    if (/poll|fans?|expectations?|interest/i.test(text)) {
+      return "报道反映球迷对世界杯的关注度、期待值和相关舆论变化。";
+    }
+    if (/messi|ronaldo|bocelli|star|anthem|celebr/i.test(text)) {
+      return "报道聚焦世界杯球星话题、开幕活动和赛事文化看点。";
+    }
+    return "报道更新2026世界杯相关动态，具体信息以原文来源为准。";
   }
   return undefined;
 }

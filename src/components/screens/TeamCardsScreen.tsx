@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
-import { type PlayerProfile, type Team } from "@/lib/wc-data";
-import { groupLabel, teamName, tr } from "@/lib/i18n/content";
+import { type PlayerProfile, type Team, type TeamRoastItem } from "@/lib/wc-data";
+import { groupLabel, isZh, teamName, tr } from "@/lib/i18n/content";
 
 type Filter = "all" | "hot" | "dark" | "classic";
 
@@ -31,10 +31,74 @@ function HotStars({ count }: { count: number }) {
   );
 }
 
+function playerPrimaryName(player: PlayerProfile, locale: string): string {
+  return isZh(locale) && player.nameZh ? player.nameZh : player.name;
+}
+
+function playerSecondaryInfo(player: PlayerProfile, locale: string): string {
+  return [
+    isZh(locale) && player.nameZh ? player.name : "",
+    player.position,
+  ].filter(Boolean).join(" · ");
+}
+
+function playerMarker(player: PlayerProfile): string {
+  return player.shirtNumber ? String(player.shirtNumber) : player.name.slice(0, 1);
+}
+
+function sortRosterFromFrontToBack(roster: PlayerProfile[]): PlayerProfile[] {
+  const positionOrder: Record<string, number> = {
+    前锋: 0,
+    中场: 1,
+    后卫: 2,
+    门将: 3,
+  };
+  return roster.slice().sort((left, right) => {
+    const leftPosition = positionOrder[left.position] ?? 9;
+    const rightPosition = positionOrder[right.position] ?? 9;
+    return leftPosition - rightPosition
+      || (left.shirtNumber ?? 999) - (right.shirtNumber ?? 999)
+      || left.name.localeCompare(right.name);
+  });
+}
+
+function starPlayerLabel(team: Team, player: NonNullable<Team["starPlayers"]>[number], locale: string): string {
+  const rosterPlayer = team.roster?.find((item) => item.name === player.name);
+  const name = isZh(locale) && (player.nameZh || rosterPlayer?.nameZh)
+    ? (player.nameZh || rosterPlayer?.nameZh)
+    : player.name;
+  return `${player.position} ${name}`;
+}
+
+function hasTeamTag(team: Team, tag: string): boolean {
+  return team.tags.includes(tag);
+}
+
+function teamBadgeLabel(team: Team, locale: string): string | null {
+  if (hasTeamTag(team, "夺冠热门")) return tr(locale, "夺冠热门", "Title Favorite");
+  if (hasTeamTag(team, "话题黑马")) return tr(locale, "话题黑马", "Dark Horse");
+  if (hasTeamTag(team, "老牌强队") && team.hotLevel >= 4) return tr(locale, "老牌强队", "Classic Power");
+  return null;
+}
+
+function applyTeamRoastItems(teams: Team[], roasts: TeamRoastItem[]): Team[] {
+  if (!roasts.length) return teams;
+  const roastByKey = new Map<string, TeamRoastItem>();
+  for (const roast of roasts) {
+    for (const key of [roast.teamCode, roast.teamName, roast.teamNameEn].map(teamKey).filter(Boolean)) {
+      roastByKey.set(key, roast);
+    }
+  }
+  return teams.map((team) => {
+    const roast = [team.code, team.name, team.nameEn].map(teamKey).map((key) => roastByKey.get(key)).find(Boolean);
+    return roast ? { ...team, roast: roast.roast } : team;
+  });
+}
+
 function TeamCard({ team, onClick, locale }: { team: Team; onClick: () => void; locale: string }) {
-  const isHot = team.hotLevel >= 4;
+  const badgeLabel = teamBadgeLabel(team, locale);
   const starPlayers = team.starPlayers?.length
-    ? team.starPlayers.map((player) => `${player.position} ${player.name}`)
+    ? team.starPlayers.map((player) => starPlayerLabel(team, player, locale))
     : team.stars;
   return (
     <motion.div
@@ -44,11 +108,11 @@ function TeamCard({ team, onClick, locale }: { team: Team; onClick: () => void; 
       style={{ boxShadow: "3px 3px 0 0 #241A14" }}
     >
       {/* Floating badge */}
-      {isHot && (
+      {badgeLabel && (
         <div
           className="absolute -top-2.5 right-2 bg-[#D36E52] text-white text-[9px] font-bold px-1.5 py-0.5 border border-[#241A14]"
         >
-          {team.hotLevel === 5 ? tr(locale, "夺冠热门", "Title Favorite") : tr(locale, "话题黑马", "Dark Horse")}
+          {badgeLabel}
         </div>
       )}
 
@@ -143,16 +207,16 @@ function PlayerDetailModal({ player, onClose, locale }: { player: PlayerProfile;
               // eslint-disable-next-line @next/next/no-img-element
               <img src={player.avatarUrl} alt={player.name} className="h-14 w-14 border border-[#241A14] object-cover" />
             ) : (
-              <div className="flex h-14 w-14 items-center justify-center border border-[#241A14] bg-[#EDE9E0] text-lg font-black text-[#9E948C]">
-                {player.name.slice(0, 1)}
+              <div className="flex h-14 w-14 items-center justify-center border border-[#241A14] bg-[#EDE9E0] text-lg font-black tabular-nums text-[#9E948C]">
+                {playerMarker(player)}
               </div>
             )}
             <div>
               <h3 className="text-lg font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
-                {player.name}
+                {playerPrimaryName(player, locale)}
               </h3>
               <p className="text-[11px] text-[#9E948C]">
-                {[player.position, player.club, player.age ? `${player.age} 岁` : ""].filter(Boolean).join(" · ")}
+                {[isZh(locale) && player.nameZh ? player.name : "", player.position, player.club, player.age ? `${player.age} 岁` : ""].filter(Boolean).join(" · ")}
               </p>
             </div>
           </div>
@@ -198,8 +262,9 @@ function TeamDetailModal({
   ].filter((item): item is { label: string; value: string } => Boolean(item));
   const hasProfile = Boolean(team.coach || team.stars.length || team.starPlayers?.length || team.style || team.roast);
   const starPlayers = team.starPlayers?.length
-    ? team.starPlayers.map((player) => `${player.position} ${player.name}`)
+    ? team.starPlayers.map((player) => starPlayerLabel(team, player, locale))
     : team.stars;
+  const sortedRoster = team.roster ? sortRosterFromFrontToBack(team.roster) : [];
 
   return (
     <motion.div
@@ -290,9 +355,9 @@ function TeamDetailModal({
             >
               {tr(locale, "完整名单", "Full Squad")}
             </h4>
-            {team.roster && team.roster.length > 0 ? (
+            {sortedRoster.length > 0 ? (
               <div className="grid grid-cols-2 gap-2">
-                {team.roster.map((player) => (
+                {sortedRoster.map((player) => (
                   <button
                     key={player.id}
                     onClick={() => onPlayerClick(player)}
@@ -302,13 +367,13 @@ function TeamDetailModal({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={player.avatarUrl} alt={player.name} className="h-9 w-9 shrink-0 border border-[#241A14] object-cover" />
                     ) : (
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-[#241A14] bg-[#EDE9E0] text-xs font-black text-[#9E948C]">
-                        {player.name.slice(0, 1)}
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-[#241A14] bg-[#EDE9E0] text-xs font-black tabular-nums text-[#9E948C]">
+                        {playerMarker(player)}
                       </span>
                     )}
                     <span className="min-w-0">
-                      <span className="block truncate text-xs font-bold text-[#241A14]">{player.name}</span>
-                      <span className="block truncate text-[10px] text-[#9E948C]">{player.position}</span>
+                      <span className="block truncate text-xs font-bold text-[#241A14]">{playerPrimaryName(player, locale)}</span>
+                      <span className="block truncate text-[10px] text-[#9E948C]">{playerSecondaryInfo(player, locale)}</span>
                     </span>
                   </button>
                 ))}
@@ -373,21 +438,23 @@ export function TeamCardsScreen() {
   const [sourceLabel, setSourceLabel] = useState("等待数据源");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  const [teamRoasts, setTeamRoasts] = useState<TeamRoastItem[]>([]);
   const [selected, setSelected] = useState<Team | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerProfile | null>(null);
+  const displayItems = useMemo(() => applyTeamRoastItems(items, teamRoasts), [items, teamRoasts]);
 
   const filters: { key: Filter; label: string }[] = [
-    { key: "all", label: tr(locale, `已录入 ${items.length} 队`, `${items.length} teams`) },
+    { key: "all", label: tr(locale, `${items.length} 队`, `${items.length} teams`) },
     { key: "hot", label: tr(locale, "夺冠热门", "Favorites") },
     { key: "dark", label: tr(locale, "话题黑马", "Dark horses") },
-    { key: "classic", label: tr(locale, "老牌流量", "Classic powers") },
+    { key: "classic", label: tr(locale, "老牌强队", "Classic powers") },
   ];
 
   const filtered = useMemo(() => {
-    let list = items;
-    if (filter === "hot") list = list.filter((t) => t.hotLevel >= 4);
-    if (filter === "dark") list = list.filter((t) => t.hotLevel === 3);
-    if (filter === "classic") list = list.filter((t) => (t.rank > 0 && t.rank <= 10) || t.tags.includes("老牌强队"));
+    let list = displayItems;
+    if (filter === "hot") list = list.filter((t) => hasTeamTag(t, "夺冠热门"));
+    if (filter === "dark") list = list.filter((t) => hasTeamTag(t, "话题黑马"));
+    if (filter === "classic") list = list.filter((t) => hasTeamTag(t, "老牌强队"));
     if (query.trim()) {
       const q = query.trim().toLowerCase();
       list = list.filter(
@@ -403,7 +470,7 @@ export function TeamCardsScreen() {
             ...t.tags,
             ...t.stars,
             ...(t.starPlayers?.flatMap((player) => [player.name, player.position]) || []),
-            ...(t.roster?.flatMap((player) => [player.name, player.position, player.club || ""]) || []),
+            ...(t.roster?.flatMap((player) => [player.name, player.nameZh || "", player.position, player.club || ""]) || []),
           ];
           return fields.some((field) => field.toLowerCase().includes(q));
         }
@@ -413,7 +480,7 @@ export function TeamCardsScreen() {
       const groupCompare = groupOrder(left.group) - groupOrder(right.group);
       return groupCompare || left.name.localeCompare(right.name, "zh-CN");
     });
-  }, [items, query, filter, locale]);
+  }, [displayItems, query, filter, locale]);
 
   const grouped = useMemo(() => {
     const groups = new Map<string, Team[]>();
@@ -449,6 +516,21 @@ export function TeamCardsScreen() {
     }
 
     void loadTeams();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadTeamRoasts() {
+      const response = await fetch("/api/data/team-roasts", { cache: "no-store" });
+      if (!response.ok) return;
+      const data = (await response.json()) as { items?: TeamRoastItem[] };
+      if (!cancelled) setTeamRoasts(data.items || []);
+    }
+
+    void loadTeamRoasts();
     return () => {
       cancelled = true;
     };
@@ -567,8 +649,8 @@ function groupOrder(group: string): number {
   return letter.charCodeAt(0);
 }
 
-function teamKey(input: string): string {
-  return input
+function teamKey(input?: string): string {
+  return String(input || "")
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
