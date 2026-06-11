@@ -1,25 +1,31 @@
 {
-    "framework": "nextjs",
-    "buildCommand": "bun run build",
-    "headers": [
+  "framework": "nextjs",
+  "buildCommand": "bun run build",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
         {
-            "source": "/(.*)",
-            "headers": [
-                {
-                    "key": "Content-Security-Policy",
-                    "value": "frame-ancestors https: http:"
-                }
-            ]
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors https: http:"
         }
-    ],
-    "crons": [
-        {
-            "path": "/api/data/cron/refresh",
-            "schedule": "*/15 * * * *"
-        },
-        {
-            "path": "/api/notifications/cron/daily-digest",
-            "schedule": "0 17 * * *"
-        }
-    ]
+      ]
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/data/cron/refresh",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/notifications/cron/daily-digest",
+      "schedule": "0 17 * * *"
+    }
+  ],
+  "experimentalServices": {
+    "web": {
+      "routePrefix": "/",
+      "framework": "nextjs"
+    }
+  }
 }
