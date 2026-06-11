@@ -16,6 +16,7 @@ export type DataSourceAdapter =
   | "polymarket-gamma"
   | "worldcup26-api"
   | "worldcupapi-com"
+  | "api-football"
   | "football-data-org"
   | "openligadb"
   | "the-odds-api"
@@ -104,6 +105,60 @@ export const defaultAdminConfig: AdminConfig = {
       cacheTtlSeconds: 86400,
       timeoutMs: 8000,
       notes: "免费、无 key、可作为 104 场赛程的本地种子和默认赛程源。",
+    },
+    {
+      id: "api-football-worldcup-fixtures",
+      name: "API-Football Pro · World Cup Fixtures",
+      type: "scores",
+      adapter: "api-football",
+      baseUrl: "https://v3.football.api-sports.io",
+      endpointPath: "/fixtures",
+      apiKey: "",
+      apiKeyPlacement: "header",
+      apiKeyParamName: "",
+      apiKeyHeaderName: "x-apisports-key",
+      enabled: true,
+      priority: 1,
+      refreshSeconds: 60,
+      cacheTtlSeconds: 60,
+      timeoutMs: 10000,
+      notes: "API-Football Pro 主比分源。按日期拉取世界杯 fixtures，并用 details 源批量补齐事件、阵容和统计。",
+    },
+    {
+      id: "api-football-worldcup-details",
+      name: "API-Football Pro · Fixture Details",
+      type: "custom",
+      adapter: "api-football",
+      baseUrl: "https://v3.football.api-sports.io",
+      endpointPath: "/fixtures",
+      apiKey: "",
+      apiKeyPlacement: "header",
+      apiKeyParamName: "",
+      apiKeyHeaderName: "x-apisports-key",
+      enabled: true,
+      priority: 2,
+      refreshSeconds: 60,
+      cacheTtlSeconds: 60,
+      timeoutMs: 10000,
+      notes: "API-Football Pro 详情源。使用 fixtures ids 参数批量获取 events、lineups、statistics。",
+    },
+    {
+      id: "api-football-worldcup-teams",
+      name: "API-Football Pro · World Cup Teams",
+      type: "team-content",
+      adapter: "api-football",
+      baseUrl: "https://v3.football.api-sports.io",
+      endpointPath: "/teams",
+      apiKey: "",
+      apiKeyPlacement: "header",
+      apiKeyParamName: "",
+      apiKeyHeaderName: "x-apisports-key",
+      enabled: true,
+      priority: 1,
+      refreshSeconds: 86400,
+      cacheTtlSeconds: 86400,
+      timeoutMs: 10000,
+      notes: "API-Football Pro 球队源。获取世界杯参赛队 logo、国家和基础资料。",
     },
     {
       id: "worldcup26-ir",
@@ -525,6 +580,9 @@ function inferAdapter(source: Partial<DataSourceConfig>): DataSourceAdapter {
   }
   if (source.id === "openfootball-worldcup-json" || source.baseUrl?.includes("raw.githubusercontent.com")) {
     return "openfootball-worldcup-json";
+  }
+  if (source.id?.startsWith("api-football-") || source.baseUrl?.includes("football.api-sports.io")) {
+    return "api-football";
   }
   if (source.id === "football-data-org" || source.baseUrl?.includes("football-data.org")) {
     return "football-data-org";

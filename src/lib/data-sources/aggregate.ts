@@ -16,6 +16,9 @@ import {
   scheduleDateMeta,
   type FifaScheduleRecord,
   type Match,
+  type MatchEvent,
+  type MatchLineup,
+  type MatchStatistic,
   type MatchStatus,
   type MorningBrief,
   type NewsAggregationMeta,
@@ -88,6 +91,73 @@ interface FootballDataTeamsResponse {
     crest?: string;
     coach?: { name?: string };
   }>;
+}
+
+interface ApiFootballResponse<T> {
+  response?: T[];
+}
+
+interface ApiFootballFixture {
+  fixture?: {
+    id?: number;
+    date?: string;
+    venue?: { name?: string; city?: string };
+    status?: { short?: string; long?: string; elapsed?: number | null };
+  };
+  league?: {
+    round?: string;
+  };
+  teams?: {
+    home?: { id?: number; name?: string; logo?: string };
+    away?: { id?: number; name?: string; logo?: string };
+  };
+  goals?: { home?: number | null; away?: number | null };
+  score?: {
+    fulltime?: { home?: number | null; away?: number | null };
+  };
+  events?: ApiFootballEvent[];
+  lineups?: ApiFootballLineup[];
+  statistics?: ApiFootballStatisticGroup[];
+}
+
+interface ApiFootballEvent {
+  time?: { elapsed?: number | null; extra?: number | null };
+  team?: { id?: number; name?: string };
+  player?: { id?: number; name?: string };
+  assist?: { id?: number; name?: string };
+  type?: string;
+  detail?: string;
+  comments?: string | null;
+}
+
+interface ApiFootballLineup {
+  team?: { id?: number; name?: string };
+  coach?: { id?: number; name?: string };
+  formation?: string;
+  startXI?: Array<{ player?: ApiFootballLineupPlayer }>;
+  substitutes?: Array<{ player?: ApiFootballLineupPlayer }>;
+}
+
+interface ApiFootballLineupPlayer {
+  id?: number;
+  name?: string;
+  number?: number;
+  pos?: string;
+}
+
+interface ApiFootballStatisticGroup {
+  team?: { id?: number; name?: string };
+  statistics?: Array<{ type?: string; value?: string | number | null }>;
+}
+
+interface ApiFootballTeamResponse {
+  team?: {
+    id?: number;
+    name?: string;
+    code?: string;
+    country?: string;
+    logo?: string;
+  };
 }
 
 interface WorldCupApiFixture {
@@ -543,6 +613,181 @@ function transformFootballDataMatches(
     });
 }
 
+function apiFootballMatchStatus(status: string | undefined): MatchStatus {
+  const value = String(status || "").toUpperCase();
+  if (["FT", "AET", "PEN"].includes(value)) return "finished";
+  if (["1H", "HT", "2H", "ET", "BT", "P", "SUSP", "INT", "LIVE"].includes(value)) return "live";
+  return "upcoming";
+}
+
+function apiFootballRoundLabel(round: string | undefined): string {
+  const value = String(round || "");
+  if (/group stage/i.test(value)) {
+    const matchday = value.match(/(\d+)$/)?.[1];
+    return matchday ? `小组赛第 ${matchday} 轮` : "小组赛";
+  }
+  const labels: Array<[RegExp, string]> = [
+    [/round of 32/i, "三十二强"],
+    [/round of 16/i, "十六强"],
+    [/quarter/i, "四分之一决赛"],
+    [/semi/i, "半决赛"],
+    [/third|bronze/i, "三四名决赛"],
+    [/final/i, "决赛"],
+  ];
+  return labels.find(([pattern]) => pattern.test(value))?.[1] || value || "世界杯";
+}
+
+function apiFootballEventType(event: ApiFootballEvent): MatchEvent["type"] | undefined {
+  const type = String(event.type || "").toLowerCase();
+  const detail = String(event.detail || "").toLowerCase();
+  if (type === "goal" && detail.includes("own")) return "og";
+  if (type === "goal" && detail.includes("penalty")) return "penalty";
+  if (type === "goal") return "goal";
+  if (type === "card" && detail.includes("red")) return "red";
+  if (type === "card" && detail.includes("yellow")) return "yellow";
+  return undefined;
+}
+
+function apiFootballTeamSide(teamId: number | undefined, fixture: ApiFootballFixture): "home" | "away" {
+  return teamId && teamId === fixture.teams?.away?.id ? "away" : "home";
+}
+
+function transformApiFootballEvents(fixture: ApiFootballFixture): MatchEvent[] {
+  return (fixture.events || []).flatMap((event) => {
+    const type = apiFootballEventType(event);
+    if (!type) return [];
+    const minute = Number(event.time?.elapsed || 0) + Number(event.time?.extra || 0);
+    return [{
+      minute: Number.isFinite(minute) && minute > 0 ? minute : 0,
+      type,
+      player: event.player?.name || "Unknown",
+      team: apiFootballTeamSide(event.team?.id, fixture),
+      description: [event.detail, event.assist?.name ? `Assist: ${event.assist.name}` : "", event.comments || ""]
+        .filter(Boolean)
+        .join(" · "),
+    }];
+  });
+}
+
+function transformApiFootballLineups(fixture: ApiFootballFixture): MatchLineup[] {
+  return (fixture.lineups || []).map((lineup) => {
+    const player = (item: { player?: ApiFootballLineupPlayer }): MatchLineup["startXI"][number] => ({
+      id: item.player?.id,
+      name: item.player?.name || "Unknown",
+      number: item.player?.number,
+      position: item.player?.pos,
+    });
+    return {
+      team: apiFootballTeamSide(lineup.team?.id, fixture),
+      teamName: getTeam(lineup.team?.name).name,
+      formation: lineup.formation,
+      coach: lineup.coach?.name,
+      startXI: (lineup.startXI || []).map(player).filter((item) => item.name !== "Unknown"),
+      substitutes: (lineup.substitutes || []).map(player).filter((item) => item.name !== "Unknown"),
+    };
+  });
+}
+
+function transformApiFootballStatistics(fixture: ApiFootballFixture): MatchStatistic[] {
+  return (fixture.statistics || []).map((group) => ({
+    team: apiFootballTeamSide(group.team?.id, fixture),
+    teamName: getTeam(group.team?.name).name,
+    stats: (group.statistics || [])
+      .filter((stat) => stat.type)
+      .map((stat) => ({
+        type: String(stat.type),
+        value: stat.value ?? null,
+      })),
+  }));
+}
+
+function apiFootballPreview(lineups: MatchLineup[], statistics: MatchStatistic[]): string {
+  const parts: string[] = [];
+  const formations = lineups
+    .filter((lineup) => lineup.formation)
+    .map((lineup) => `${lineup.teamName} ${lineup.formation}`);
+  if (formations.length) parts.push(`首发阵型：${formations.join("；")}。`);
+
+  const statTypes = ["Shots on Goal", "Shots off Goal", "Ball Possession", "Total passes"];
+  const statSummary = statistics
+    .flatMap((teamStats) =>
+      statTypes.flatMap((type) => {
+        const value = teamStats.stats.find((stat) => stat.type === type)?.value;
+        return value === null || value === undefined ? [] : `${teamStats.teamName} ${type}: ${value}`;
+      }),
+    )
+    .slice(0, 8);
+  if (statSummary.length) parts.push(`技术统计：${statSummary.join("；")}。`);
+  return parts.join(" ");
+}
+
+function transformApiFootballMatches(
+  data: ApiFootballResponse<ApiFootballFixture>,
+  dateKey: ScheduleDateKey,
+): Match[] {
+  const sourceDate = dateKeyToSourceDate[dateKey];
+  return (data.response || [])
+    .filter((fixture) => providerDateBj(fixture.fixture?.date) === sourceDate)
+    .map((fixture) => {
+      const home = getTeam(fixture.teams?.home?.name);
+      const away = getTeam(fixture.teams?.away?.name);
+      const status = apiFootballMatchStatus(fixture.fixture?.status?.short);
+      const homeScore = fixture.goals?.home ?? fixture.score?.fulltime?.home ?? null;
+      const awayScore = fixture.goals?.away ?? fixture.score?.fulltime?.away ?? null;
+      const lineups = transformApiFootballLineups(fixture);
+      const statistics = transformApiFootballStatistics(fixture);
+      const events = transformApiFootballEvents(fixture);
+      const venue = [fixture.fixture?.venue?.name, fixture.fixture?.venue?.city].filter(Boolean).join("，");
+      const elapsed = fixture.fixture?.status?.elapsed ? ` · ${fixture.fixture.status.elapsed}'` : "";
+      return {
+        id: `api-football-${fixture.fixture?.id}`,
+        homeTeam: home.name,
+        awayTeam: away.name,
+        homeFlag: home.flag,
+        awayFlag: away.flag,
+        homeScore,
+        awayScore,
+        kickoffAt: fixture.fixture?.date,
+        kickoffBj: formatKickoffBj(fixture.fixture?.date),
+        group: "世界杯",
+        round: apiFootballRoundLabel(fixture.league?.round),
+        status,
+        signal: "none" as SignalType,
+        signalText: "",
+        homeWinProb: 0,
+        drawProb: 0,
+        awayWinProb: 0,
+        oddsImpliedHome: 0,
+        oddsImpliedDraw: 0,
+        oddsImpliedAway: 0,
+        venue,
+        previewText: apiFootballPreview(lineups, statistics),
+        updatedAt: `API-Football Pro${elapsed}`,
+        events,
+        lineups,
+        statistics,
+      };
+    });
+}
+
+function mergeApiFootballFixtureDetails(
+  baseData: ApiFootballResponse<ApiFootballFixture>,
+  detailData?: ApiFootballResponse<ApiFootballFixture>,
+): ApiFootballResponse<ApiFootballFixture> {
+  if (!detailData?.response?.length) return baseData;
+  const detailsById = new Map(
+    detailData.response
+      .filter((fixture) => fixture.fixture?.id)
+      .map((fixture) => [fixture.fixture?.id, fixture]),
+  );
+  return {
+    response: (baseData.response || []).map((fixture) => ({
+      ...fixture,
+      ...(detailsById.get(fixture.fixture?.id) || {}),
+    })),
+  };
+}
+
 function transformWorldCupApiMatches(data: unknown, dateKey: ScheduleDateKey): Match[] {
   const sourceDate = dateKeyToSourceDate[dateKey];
   const fixtures = Array.isArray(data)
@@ -738,6 +983,31 @@ function transformFootballDataTeams(data: FootballDataTeamsResponse): Team[] {
       groupStandings: { played: 0, won: 0, drawn: 0, lost: 0, pts: 0 },
       crestUrl: team.crest,
       source: "football-data.org",
+    };
+  });
+}
+
+function transformApiFootballTeams(data: ApiFootballResponse<ApiFootballTeamResponse>): Team[] {
+  return (data.response || []).map((item) => {
+    const display = getTeam(item.team?.name);
+    return {
+      id: `api-football-${item.team?.id}`,
+      code: item.team?.code,
+      name: display.name,
+      nameEn: item.team?.name || "",
+      flag: display.flag,
+      group: "",
+      rank: 0,
+      coach: "",
+      formation: "",
+      stars: [],
+      style: "",
+      hotLevel: 0,
+      tags: [],
+      talkingPoints: [],
+      groupStandings: { played: 0, won: 0, drawn: 0, lost: 0, pts: 0 },
+      crestUrl: item.team?.logo,
+      source: "API-Football Pro",
     };
   });
 }
@@ -1897,7 +2167,14 @@ export async function getAggregatedTeams(options: AggregationReadOptions = {}): 
   for (const source of sources) {
     try {
       let teams: Team[] = [];
-      if (source.adapter === "football-data-org") {
+      if (source.adapter === "api-football") {
+        const { data, diagnostic } = await fetchJsonFromSource<ApiFootballResponse<ApiFootballTeamResponse>>(source, {
+          league: 1,
+          season: 2026,
+        });
+        diagnostics.push(diagnostic);
+        teams = transformApiFootballTeams(data);
+      } else if (source.adapter === "football-data-org") {
         const { data, diagnostic } = await fetchJsonFromSource<FootballDataTeamsResponse>(source, {
           season: 2026,
         });
@@ -1993,7 +2270,37 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
   for (const source of scoreSources) {
     try {
       let matches: Match[] = [];
-      if (source.adapter === "football-data-org") {
+      if (source.adapter === "api-football") {
+        const { data, diagnostic } = await fetchJsonFromSource<ApiFootballResponse<ApiFootballFixture>>(source, {
+          league: 1,
+          season: 2026,
+          date: dateKeyToSourceDate[dateKey],
+          timezone: "Asia/Shanghai",
+        });
+        diagnostics.push(diagnostic);
+        const fixtureIds = (data.response || [])
+          .map((fixture) => fixture.fixture?.id)
+          .filter((id): id is number => Number.isFinite(id));
+        const detailSource = dataSources.find((item) =>
+          item.id === "api-football-worldcup-details"
+          && item.enabled
+          && item.apiKey
+        );
+        let detailData: ApiFootballResponse<ApiFootballFixture> | undefined;
+        if (detailSource && fixtureIds.length) {
+          try {
+            const detail = await fetchJsonFromSource<ApiFootballResponse<ApiFootballFixture>>(detailSource, {
+              ids: fixtureIds.join("-"),
+              timezone: "Asia/Shanghai",
+            });
+            diagnostics.push(detail.diagnostic);
+            detailData = detail.data;
+          } catch (error) {
+            diagnostics.push(error as SourceDiagnostic);
+          }
+        }
+        matches = transformApiFootballMatches(mergeApiFootballFixtureDetails(data, detailData), dateKey);
+      } else if (source.adapter === "football-data-org") {
         const { data, diagnostic } = await fetchJsonFromSource<FootballDataMatchesResponse>(source, {
           season: 2026,
         });

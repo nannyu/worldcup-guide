@@ -104,6 +104,7 @@ function PageTabs({ active, onChange, locale }: { active: PageTab; onChange: (ta
 }
 
 function MatchRow({ match, locale, matchNo }: { match: Match; locale: string; matchNo?: number }) {
+  const hasScore = match.homeScore !== null && match.awayScore !== null;
   return (
     <Link
       href={`/match/${match.id}`}
@@ -118,7 +119,9 @@ function MatchRow({ match, locale, matchNo }: { match: Match; locale: string; ma
         <div className="min-w-0 flex-1 text-sm font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
           {teamLabel(match.homeFlag, match.homeTeam, locale)}
         </div>
-        <span className="shrink-0 font-mono text-sm font-black text-[#5C524C]">:</span>
+        <span className={`shrink-0 font-mono text-sm font-black ${hasScore ? "text-[#D36E52]" : "text-[#5C524C]"}`}>
+          {hasScore ? `${match.homeScore} : ${match.awayScore}` : ":"}
+        </span>
         <div className="min-w-0 flex-1 text-right text-sm font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
           {teamLabel(match.awayFlag, match.awayTeam, locale)}
         </div>

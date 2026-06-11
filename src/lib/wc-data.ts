@@ -15,6 +15,31 @@ export interface MatchEvent {
   description?: string;
 }
 
+export interface MatchLineupPlayer {
+  id?: number;
+  name: string;
+  number?: number;
+  position?: string;
+}
+
+export interface MatchLineup {
+  team: "home" | "away";
+  teamName: string;
+  formation?: string;
+  coach?: string;
+  startXI: MatchLineupPlayer[];
+  substitutes: MatchLineupPlayer[];
+}
+
+export interface MatchStatistic {
+  team: "home" | "away";
+  teamName: string;
+  stats: Array<{
+    type: string;
+    value: string | number | null;
+  }>;
+}
+
 export interface Match {
   id: string;
   homeTeam: string;
@@ -41,6 +66,8 @@ export interface Match {
   venue: string;
   highlights?: string;
   events?: MatchEvent[];
+  lineups?: MatchLineup[];
+  statistics?: MatchStatistic[];
   previewText: string;
   updatedAt: string;
 }

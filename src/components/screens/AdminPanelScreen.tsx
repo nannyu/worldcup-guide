@@ -34,6 +34,7 @@ const dataSourceAdapters: DataSourceAdapter[] = [
   "polymarket-gamma",
   "worldcup26-api",
   "worldcupapi-com",
+  "api-football",
   "football-data-org",
   "openligadb",
   "the-odds-api",

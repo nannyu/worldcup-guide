@@ -131,6 +131,42 @@ const defaultPolicyByType: Record<DataSourceType, SourceRatePolicy> = {
 };
 
 const policyBySourceId: Record<string, Partial<SourceRatePolicy>> = {
+  "api-football-worldcup-fixtures": {
+    docsUrl: "https://www.api-football.com/documentation-v3",
+    officialLimit: 300,
+    officialWindowSeconds: 60,
+    dailyQuota: 7500,
+    quotaSafetyRatio: 0.8,
+    quotaCost: 1,
+    quietRefreshSeconds: 21600,
+    tournamentRefreshSeconds: 300,
+    matchWindowRefreshSeconds: 60,
+    note: "API-Football Pro has 7,500 requests/day. Use one daily fixtures call per schedule date and cache for 60s during match windows.",
+  },
+  "api-football-worldcup-details": {
+    docsUrl: "https://www.api-football.com/documentation-v3",
+    officialLimit: 300,
+    officialWindowSeconds: 60,
+    dailyQuota: 7500,
+    quotaSafetyRatio: 0.8,
+    quotaCost: 1,
+    quietRefreshSeconds: 21600,
+    tournamentRefreshSeconds: 300,
+    matchWindowRefreshSeconds: 60,
+    note: "Uses the fixtures ids parameter to retrieve events, lineups, statistics, and player details in one batched call.",
+  },
+  "api-football-worldcup-teams": {
+    docsUrl: "https://www.api-football.com/documentation-v3",
+    officialLimit: 300,
+    officialWindowSeconds: 60,
+    dailyQuota: 7500,
+    quotaSafetyRatio: 0.8,
+    quotaCost: 1,
+    quietRefreshSeconds: 604800,
+    tournamentRefreshSeconds: 86400,
+    matchWindowRefreshSeconds: 86400,
+    note: "Team metadata changes slowly. Refresh at most daily during the tournament.",
+  },
   "football-data-org": {
     docsUrl: "https://www.football-data.org/pricing",
     officialLimit: 10,

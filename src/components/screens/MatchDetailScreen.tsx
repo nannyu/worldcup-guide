@@ -11,6 +11,11 @@ function getMatch(id: string): Match | undefined {
   return allMatches.find((m) => m.id === id);
 }
 
+function formatStatValue(value: string | number | null): string {
+  if (value === null || value === undefined || value === "") return "-";
+  return String(value);
+}
+
 export function MatchDetailScreen() {
   const { i18n } = useTranslation();
   const locale = i18n.resolvedLanguage || i18n.language;
@@ -184,6 +189,67 @@ export function MatchDetailScreen() {
         {match.previewText && (
           <div className="border-l-2 border-[#D36E52] pl-3 text-sm text-[#5C524C]">
             {match.previewText}
+          </div>
+        )}
+
+        {Boolean(match.lineups?.length || match.statistics?.length) && (
+          <div className="space-y-3">
+            {Boolean(match.lineups?.length) && (
+              <div className="border-2 border-[#241A14] bg-[#FAF7F0] p-3">
+                <div
+                  className="mb-2 text-[10px] font-black uppercase tracking-widest text-[#D36E52]"
+                  style={{ fontFamily: "var(--font-heading)" }}
+                >
+                  {tr(locale, "首发阵容", "Lineups")}
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {match.lineups?.map((lineup) => (
+                    <div key={lineup.team} className="space-y-2">
+                      <div className="flex items-center justify-between gap-2 border-b border-[#241A14]/30 pb-1">
+                        <span className="text-xs font-black text-[#241A14]">{teamName(lineup.teamName, locale)}</span>
+                        <span className="font-mono text-[11px] font-black text-[#D36E52]">{lineup.formation || "-"}</span>
+                      </div>
+                      {lineup.coach && (
+                        <p className="text-[11px] text-[#5C524C]">{tr(locale, `主教练：${lineup.coach}`, `Coach: ${lineup.coach}`)}</p>
+                      )}
+                      <div className="grid grid-cols-2 gap-1">
+                        {lineup.startXI.slice(0, 11).map((player) => (
+                          <div key={`${lineup.team}-${player.id || player.name}`} className="truncate border border-[#241A14]/20 bg-white/40 px-1.5 py-1 text-[11px] text-[#241A14]">
+                            {player.number ? `${player.number} ` : ""}{player.name}
+                            {player.position ? <span className="text-[#9E948C]"> · {player.position}</span> : null}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {Boolean(match.statistics?.length) && (
+              <div className="border-2 border-[#241A14] bg-[#FAF7F0] p-3">
+                <div
+                  className="mb-2 text-[10px] font-black uppercase tracking-widest text-[#D36E52]"
+                  style={{ fontFamily: "var(--font-heading)" }}
+                >
+                  {tr(locale, "技术统计", "Match Stats")}
+                </div>
+                {["Shots on Goal", "Shots off Goal", "Ball Possession", "Total passes", "Passes accurate", "Fouls", "Corner Kicks", "Offsides"].map((statType) => {
+                  const homeStats = match.statistics?.find((item) => item.team === "home");
+                  const awayStats = match.statistics?.find((item) => item.team === "away");
+                  const homeValue = homeStats?.stats.find((stat) => stat.type === statType)?.value ?? null;
+                  const awayValue = awayStats?.stats.find((stat) => stat.type === statType)?.value ?? null;
+                  if (homeValue === null && awayValue === null) return null;
+                  return (
+                    <div key={statType} className="grid grid-cols-[1fr_1.2fr_1fr] items-center gap-2 border-t border-[#241A14]/15 py-1.5 text-xs">
+                      <span className="font-mono font-black text-[#241A14]">{formatStatValue(homeValue)}</span>
+                      <span className="text-center text-[11px] font-bold text-[#5C524C]">{statType}</span>
+                      <span className="text-right font-mono font-black text-[#241A14]">{formatStatValue(awayValue)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
