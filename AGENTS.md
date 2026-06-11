@@ -131,9 +131,9 @@ Run migrations with `bun run db:migrate`. Seed the official FIFA schedule with `
 ## Deployment Notes
 
 - Vercel runs the Next.js app and cron routes.
-- Railway runs `bun run worker`.
-- Supabase or another managed PostgreSQL provides `DATABASE_URL`.
-- `vercel.json` schedules `/api/data/cron/refresh` every 15 minutes and `/api/notifications/cron/daily-digest` daily.
+- Railway runs the `railway.json` start command: `node --dns-result-order=ipv4first ./node_modules/.bin/tsx scripts/background-worker.ts`. Local development can still use `bun run worker`.
+- Supabase provides PostgreSQL. Use the Supabase pooler URL for Vercel and Railway `DATABASE_URL`.
+- `vercel.json` schedules `/api/data/cron/refresh` daily at `0 16 * * *` on the current Hobby deployment and `/api/notifications/cron/daily-digest` daily at `0 17 * * *`.
 - Production must set `DATABASE_URL`, `DATABASE_SSL=require`, `DATABASE_PREPARE=false`, `CRON_SECRET`, `ADMIN_PASSWORD`, and `ADMIN_SESSION_SECRET`.
 
 ## Documentation

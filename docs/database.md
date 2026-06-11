@@ -43,7 +43,7 @@ bun run data:init
 3. `?refresh=1` on selected data APIs uses refresh mode and is intended for admin/manual refresh flows, not high-traffic page loads.
 4. `GET /api/data/cron/refresh` checks `CRON_SECRET` when configured.
 5. Vercel Cron requests and `?wait=1` run `runDataRefresh()` synchronously. Other manual calls enqueue a full refresh job and return `202`.
-6. Railway worker runs `bun run worker`, claims queued jobs with row locks, executes refresh logic, and writes new raw fetches plus feature snapshots.
+6. Railway worker runs the Node/tsx production command from `railway.json`, claims queued jobs with row locks, executes refresh logic, and writes new raw fetches plus feature snapshots. Local development can still run `bun run worker`.
 7. For each source, refresh logic reads `data_source_fetches` before making an external request.
 8. If providers fail during refresh, the application uses the latest stale normalized snapshot, seeded official schedule, or repository FIFA JSON fallback.
 
@@ -79,7 +79,7 @@ Team and player roast snapshot keys include the admin config `updatedAt`, so cha
 - Run migrations during deployment, not on every request.
 - Run `db:seed:fifa` after the first migration and whenever the bundled official schedule is updated.
 - Run `data:init` after migration/seed to populate `data_snapshots` before opening the frontend.
-- Deploy a Railway worker with `bun run worker` and the same database/source/AI environment variables.
-- Schedule Vercel Cron or an external cron to call `/api/data/cron/refresh`.
+- Deploy a Railway worker with the `railway.json` start command and the same database/source/AI environment variables.
+- Schedule Vercel Cron or an external cron to call `/api/data/cron/refresh`. The current Vercel Hobby deployment uses daily cron because sub-daily cron schedules are plan-gated.
 - Do not expose `DATABASE_URL` or provider API keys to client-side code.
-- Use Supabase pooler URL for Vercel `DATABASE_URL`, and `DATABASE_DIRECT_URL` for migrations when available.
+- Use the Supabase pooler URL for Vercel and Railway `DATABASE_URL`, and `DATABASE_DIRECT_URL` or Supabase CLI for migrations when available.

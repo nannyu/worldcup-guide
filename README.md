@@ -7,7 +7,7 @@
 - 已落地 Next.js 16 App Router 移动端应用，包含首页赛程、早报、球队、天眼雷达、工具箱、比赛详情、新闻详情和管理员面板。
 - 已接入 PostgreSQL + Drizzle ORM，支持 FIFA 官方赛程 seed、外部原始响应缓存、规范化页面快照、数据源使用记录和后台任务队列。
 - 页面 API 默认走 `cache-only`，读取 `data_snapshots`、数据库官方赛程和本地 FIFA JSON 兜底；主动刷新通过 cron、`data:refresh` 或 `?refresh=1` 触发。
-- 已实现 Railway/Bun worker，负责慢任务：数据抓取、新闻翻译、AI 新闻整理、球队毒舌和球员毒舌快照生成。
+- 已实现 Railway 后台 worker，负责慢任务：数据抓取、新闻翻译、AI 新闻整理、球队毒舌和球员毒舌快照生成。
 - 已支持管理员配置数据源和 AI Provider。配置文件只保存 API Key 的环境变量名，真实密钥统一放在 `.env`。
 - 已支持中英文 UI、主题切换、Eazo 登录用户资料同步、通知测试/定时通知和只读 MCP 工具入口。
 
@@ -97,13 +97,14 @@ bun run data:init
 bun run worker
 ```
 
-`/api/data/cron/refresh` 使用 `CRON_SECRET` Bearer 认证。Vercel Cron 默认每 15 分钟调用该路由；Vercel cron 请求会同步执行刷新，普通手动请求会入队 `background_jobs` 并返回 202。Railway worker 使用 `bun run worker` 消费任务。
+`/api/data/cron/refresh` 使用 `CRON_SECRET` Bearer 认证。当前 Vercel Hobby 部署使用每日 cron 调用该路由；更高频刷新由手动请求或外部 cron 调用同一路由完成。Vercel cron 请求会同步执行刷新，普通手动请求会入队 `background_jobs` 并返回 202。Railway worker 消费任务队列，本地仍可用 `bun run worker` 运行。
 
 ## 部署
 
-- Supabase：提供 PostgreSQL。Vercel 使用池化 `DATABASE_URL`，迁移可使用 `DATABASE_DIRECT_URL`。
-- Vercel：部署 Next.js 前端、只读页面 API、管理员 API、cron 入口和通知入口。
-- Railway：部署后台 worker，同一套环境变量，启动命令为 `bun run worker`。
+- 生产站点：[https://worldcup-guide-gamma.vercel.app](https://worldcup-guide-gamma.vercel.app)。
+- Supabase：提供 PostgreSQL。当前项目为 `worldcup-guide`，project ref 为 `zxrbbyolsbudnylvjnwx`。Vercel 和 Railway 使用 Supabase pooler `DATABASE_URL`，迁移和 seed 可使用直连地址或 Supabase CLI。
+- Vercel：部署 Next.js 前端、只读页面 API、管理员 API、cron 入口和通知入口。`vercel.json` 在 Hobby 限制下将数据刷新 cron 配为每日 `0 16 * * *`，通知 cron 为每日 `0 17 * * *`。
+- Railway：部署后台 worker，同一套环境变量。生产启动命令为 `node --dns-result-order=ipv4first ./node_modules/.bin/tsx scripts/background-worker.ts`，用于避开部分平台上的 IPv6 直连问题并消费 `background_jobs`。
 - 首次上线顺序：`bun run db:migrate`、`bun run db:seed:fifa`、`bun run data:init`，然后启动 Vercel 和 Railway worker。
 
 生产环境必须设置：

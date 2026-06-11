@@ -59,6 +59,8 @@ export async function enqueueBackgroundJob(input: EnqueueBackgroundJobInput): Pr
   }
   const now = new Date();
   const runAfter = input.runAfter || now;
+  const nowIso = now.toISOString();
+  const runAfterIso = runAfter.toISOString();
   const payload = input.payload || {};
   const priority = input.priority ?? 100;
   const maxAttempts = input.maxAttempts ?? 3;
@@ -69,8 +71,8 @@ export async function enqueueBackgroundJob(input: EnqueueBackgroundJobInput): Pr
       locked_by, started_at, finished_at, error_message, updated_at
     )
     values (
-      ${id}, ${input.type}, 'queued', ${sql.json(payload as never)}, 0, ${maxAttempts}, ${priority}, ${runAfter},
-      null, null, null, null, null, ${now}
+      ${id}, ${input.type}, 'queued', ${sql.json(payload as never)}, 0, ${maxAttempts}, ${priority}, ${runAfterIso}::timestamp,
+      null, null, null, null, null, ${nowIso}::timestamp
     )
     on conflict (id) do update set
       type = excluded.type,
@@ -116,22 +118,24 @@ export async function claimNextBackgroundJob(workerId: string, lockTimeoutSecond
   requireJobDatabase();
   const now = new Date();
   const staleBefore = new Date(now.getTime() - lockTimeoutSeconds * 1000);
+  const nowIso = now.toISOString();
+  const staleBeforeIso = staleBefore.toISOString();
   const sql = getSql();
   const rows = await sql<BackgroundJob[]>`
     update background_jobs
     set
       status = 'running',
       attempts = attempts + 1,
-      locked_at = ${now},
+      locked_at = ${nowIso}::timestamp,
       locked_by = ${workerId},
-      started_at = coalesce(started_at, ${now}),
-      updated_at = ${now}
+      started_at = coalesce(started_at, ${nowIso}::timestamp),
+      updated_at = ${nowIso}::timestamp
     where id = (
       select id
       from background_jobs
       where
-        (status = 'queued' and run_after <= ${now})
-        or (status = 'running' and locked_at < ${staleBefore})
+        (status = 'queued' and run_after <= ${nowIso}::timestamp)
+        or (status = 'running' and locked_at < ${staleBeforeIso}::timestamp)
       order by priority asc, run_after asc, created_at asc
       for update skip locked
       limit 1

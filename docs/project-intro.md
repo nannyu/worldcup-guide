@@ -27,9 +27,16 @@
 
 - 页面请求只读 API，默认 `cache-only`，快速读取规范化快照。
 - Vercel Cron、`data:refresh` 或手动刷新触发后台刷新。
-- Railway/Bun worker 消费 `background_jobs`，执行外部抓取、翻译、AI 整理和快照写入。
+- Railway worker 消费 `background_jobs`，执行外部抓取、翻译、AI 整理和快照写入；本地可以用 Bun 运行，生产通过 Node/tsx 启动以匹配 Railway 网络环境。
 - PostgreSQL 保存官方赛程、原始响应缓存、页面快照、使用记录和后台任务。
 - 本地 FIFA JSON 是最终赛程兜底；没有可靠来源的数据不使用演示填充。
+
+## 当前部署状态
+
+- Vercel 生产站点：[https://worldcup-guide-gamma.vercel.app](https://worldcup-guide-gamma.vercel.app)。
+- Supabase 项目 `worldcup-guide` 已承载 PostgreSQL，已写入 48 支球队、16 个场馆和 104 场官方赛程。
+- Railway 项目 `worldcup-guide` 部署后台 worker，消费 Supabase 中的持久化任务队列。
+- Vercel 和 Railway 都使用 Supabase pooler 连接数据库，避免 Serverless/容器运行时直连连接数和 IPv6 解析问题。
 
 ## 内容生成原则
 

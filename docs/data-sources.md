@@ -231,9 +231,17 @@ Runtime endpoint:
 - `GET /api/data/cron/refresh?mode=initialize`
 - `GET /api/data/cron/refresh?wait=1`
 
-The endpoint uses `CRON_SECRET` bearer auth when `CRON_SECRET` is set. `vercel.json` schedules `/api/data/cron/refresh` every 15 minutes; dynamic TTL and quota gates decide whether a real upstream request is allowed.
+The endpoint uses `CRON_SECRET` bearer auth when `CRON_SECRET` is set. The current Vercel Hobby deployment schedules `/api/data/cron/refresh` daily at `0 16 * * *`; dynamic TTL and quota gates still decide whether a real upstream request is allowed. Higher-frequency refreshes can be driven by an external cron or manual authenticated requests to the same endpoint.
 
 Vercel Cron requests and `wait=1` run the refresh synchronously. Other manual requests enqueue a full data refresh in `background_jobs` and return `202` with current background task state.
+
+Railway runs the long-lived worker with the production command in `railway.json`:
+
+```bash
+node --dns-result-order=ipv4first ./node_modules/.bin/tsx scripts/background-worker.ts
+```
+
+The worker uses the same Supabase pooler `DATABASE_URL` and provider environment variables as Vercel.
 
 Local scripts:
 
