@@ -206,7 +206,7 @@
     <div class="kicker">Worldcup Guide · Content Architecture</div>
     <h1>世界杯装杯指南：内容框架与数据链路</h1>
     <p class="subtitle">
-      本页面基于当前代码仓库梳理：各页面展示什么内容、内容来自远端网络/API、本地种子、前端计算还是未来 AI 生成，以及进入页面前经过哪些缓存、规范化和兜底处理。
+      本页面基于当前代码仓库梳理：各页面展示什么内容、内容来自远端网络/API、本地种子、前端计算还是后台 AI 快照，以及进入页面前经过哪些缓存、规范化、后台刷新和兜底处理。
     </p>
     <div class="meta">
       <span class="pill">项目：Next.js 16 App Router</span>
@@ -239,17 +239,18 @@
             <span class="tag source-local">FIFA PDF 抽取 JSON</span>
             <span class="tag source-api">PostgreSQL 快照/赛程表</span>
           </td>
-          <td>调用 <code>/api/data/matches?dateKey=...</code>；聚合器先读规范化快照，再按优先级请求远端源，转换为统一 <code>Match[]</code>，失败后读过期快照、数据库官方赛程或本地 FIFA JSON。</td>
-          <td>日期按北京时间动态生成。赛程与比分优先使用 football-data.org，赔率由 The Odds API 多家机构去水后取均值；无比赛时返回空数组。</td>
+          <td>调用 <code>/api/data/matches?dateKey=...</code>；页面请求默认读规范化快照，后台刷新按优先级请求远端源，转换为统一 <code>Match[]</code>，失败后读过期快照、数据库官方赛程或本地 FIFA JSON。</td>
+          <td>日期按北京时间动态生成。赛程与比分优先使用已启用数据源；无可靠远端数据时使用官方赛程兜底，不生成模拟比分。</td>
         </tr>
         <tr>
           <td><div class="page-name">早报复盘</div><code>/morning</code></td>
           <td>每日复盘标题、头版摘要、可复制朋友圈金句、昨夜赛果卡、30 秒看懂、进球时间线、集锦链接、市场八卦/概率卡。</td>
           <td>
             <span class="tag source-network">新闻 / 比分原始源</span>
-            <span class="tag source-ai">AI 规划中</span>
+            <span class="tag source-ai">AI 新闻整理</span>
+            <span class="tag source-api">PostgreSQL 快照</span>
           </td>
-          <td>调用 <code>/api/data/morning</code>；ESPN Soccer RSS、BBC RSS、Currents API、GDELT 会并行抓取，先按 URL 和标题相似度规则去重，再交给后台 AI 合并事件、生成中文摘要和要点。</td>
+          <td>调用 <code>/api/data/morning</code>；后台并行抓取 ESPN Site API、ChinaNews RSS、BBC RSS、Currents、GDELT、NewsAPI 等启用源，按 URL 和标题相似度规则去重，再交给后台 AI 合并事件、生成中文摘要和要点。</td>
           <td>AI 只处理已抓取事实。无可用模型 Key 或模型调用失败时保留规则去重结果，AI 摘要字段为空。</td>
         </tr>
         <tr>
@@ -258,10 +259,11 @@
           <td>
             <span class="tag source-network">football-data.org Teams</span>
             <span class="tag source-network">TheSportsDB 备份</span>
-            <span class="tag source-ai">AI 改写规划中</span>
+            <span class="tag source-local">本地球队资料</span>
+            <span class="tag source-ai">球队/球员毒舌快照</span>
           </td>
-          <td>前端调用 <code>/api/data/teams</code>，当前由 football-data.org 返回 48 队基础资料、队徽和主教练；TheSportsDB 为低优先级备份。</td>
-          <td>本地球队样例已清除。阵型、球星、话术等未获得可靠数据时不展示，不由页面补写。</td>
+          <td>前端调用 <code>/api/data/teams</code>、<code>/api/data/team-roasts</code> 和 <code>/api/data/player-roasts</code>；球队资料由本地快照和已启用 team-content 源合并，毒舌由后台 AI 或规则兜底生成。</td>
+          <td>已展示球队资料、阵容、球队毒舌和球员毒舌。没有可靠资料时不由页面补写事实。</td>
         </tr>
         <tr>
           <td><div class="page-name">天眼雷达</div><code>/radar</code></td>
@@ -287,10 +289,10 @@
           <td>
             <span class="tag source-network">比赛聚合 API</span>
             <span class="tag source-local">FIFA 官方赛程兜底</span>
-            <span class="tag source-ai">AI 规划中</span>
+            <span class="tag source-ai">规则文案 / 已有快照</span>
           </td>
           <td>先查本地 FIFA 官方赛程，再并行读取昨天/今天/明天的 <code>/api/data/matches</code> 以解析远端比赛 id。</td>
-          <td>固定话术已移除。没有统计、新闻或分析数据时，比赛分析区域显示为空。</td>
+          <td>没有统计、新闻或分析数据时保持谨慎空态，不用演示数据填充。</td>
         </tr>
         <tr>
           <td><div class="page-name">管理员面板</div><code>/admin</code></td>
@@ -317,22 +319,22 @@
       <div class="step">
         <span class="badge">2</span>
         <b>页面请求 API</b>
-        <p class="small">赛程、球队、赔率、新闻、早报和雷达分别请求对应的 <code>/api/data/*</code> 聚合接口。</p>
+        <p class="small">赛程、球队、赔率、新闻、早报、雷达、球队毒舌和球员毒舌分别请求对应的 <code>/api/data/*</code> 聚合接口。</p>
       </div>
       <div class="step">
         <span class="badge">3</span>
         <b>先读规范化快照</b>
-        <p class="small">PostgreSQL 中的页面级 payload 命中则直接返回，减少远端波动。</p>
+        <p class="small">页面 API 默认 <code>cache-only</code>，PostgreSQL 中的页面级 payload 命中则直接返回，减少远端波动。</p>
       </div>
       <div class="step">
         <span class="badge">4</span>
-        <b>请求远端源</b>
-        <p class="small">按 type 和 priority 过滤启用源；请求前检查内存缓存和原始响应数据库缓存。</p>
+        <b>后台请求远端源</b>
+        <p class="small">cron、初始化脚本或 worker 按 type 和 priority 过滤启用源；请求前检查原始响应数据库缓存和配额策略。</p>
       </div>
       <div class="step">
         <span class="badge">5</span>
         <b>规范化转换</b>
-        <p class="small">OpenFootball 转 <code>Match[]</code>；Polymarket 转 <code>RadarMatch[]</code>；写入快照。</p>
+        <p class="small">数据源转 <code>Match[]</code>、<code>NewsArticle[]</code>、<code>RadarMatch[]</code>、<code>Team[]</code> 等展示 DTO；写入快照。</p>
       </div>
       <div class="step">
         <span class="badge">6</span>
@@ -350,10 +352,12 @@
         <div class="tag-row">
           <span class="tag source-network">OpenFootball World Cup JSON</span>
           <span class="tag source-network">Polymarket Gamma API</span>
+          <span class="tag source-network">ESPN / BBC / ChinaNews / GDELT</span>
         </div>
         <ul class="small">
           <li>OpenFootball 提供赛程种子，转换为统一比赛卡字段。</li>
           <li>Polymarket 提供公开预测市场事件，不包含交易能力。</li>
+          <li>新闻源并行抓取后去重和 AI 整理。</li>
         </ul>
       </div>
       <div class="card">
@@ -391,7 +395,7 @@
         <div class="lane-body">
           <p class="small">远端赛程或官方兜底经过统一 Match 模型后进入页面。</p>
           <div class="bar">
-            <span class="source-network">OpenFootball / FIFA JSON</span>
+            <span class="source-network">远端赛程源 / FIFA JSON</span>
             <span class="source-api">缓存与快照</span>
             <span class="source-compute">日期过滤、北京时间格式化、队名映射</span>
             <span class="source-compute">MatchCard / HeroSpotlight</span>
@@ -402,11 +406,11 @@
       <div class="swimlane">
         <div class="lane-title">天眼雷达</div>
         <div class="lane-body">
-          <p class="small">预测市场数据被筛选成世界杯相关事件，再解析 Yes/No 概率。</p>
+          <p class="small">预测市场数据被筛选成世界杯相关事件，再与赔率赛事匹配并比较隐含概率。</p>
           <div class="bar">
             <span class="source-network">Polymarket events</span>
             <span class="source-api">原始响应缓存</span>
-            <span class="source-compute">筛选 World Cup/FIFA，解析 outcomePrices</span>
+            <span class="source-compute">筛选 World Cup/FIFA，解析 outcomePrices，与赔率匹配</span>
             <span class="source-compute">差值、趋势、标签展示</span>
             <span class="source-local">缺少真实赔率则为空</span>
           </div>
@@ -415,12 +419,12 @@
       <div class="swimlane">
         <div class="lane-title">早报 / 详情 / 球队</div>
         <div class="lane-body">
-          <p class="small">早报由多路真实新闻源并行抓取，经过规则去重后交给管理员选择的主 AI Provider 整理；失败时自动切换到其他已启用模型。</p>
+          <p class="small">早报由多路真实新闻源并行抓取，经过规则去重后交给管理员选择的主 AI Provider 整理；球队和球员毒舌也由后台快照生成，失败时使用规则兜底。</p>
           <div class="bar">
-            <span class="source-network">ESPN / BBC / Currents / GDELT</span>
+            <span class="source-network">ESPN / ChinaNews / BBC / Currents / GDELT / NewsAPI</span>
             <span class="source-compute">URL 与标题相似度去重</span>
-            <span class="source-ai">DeepSeek 主模型</span>
-            <span class="source-ai">Xiaomi MiMo V2.5 Pro 备用</span>
+            <span class="source-ai">管理员选择的主模型</span>
+            <span class="source-ai">其他启用模型备用</span>
             <span class="source-local">无数据或全失败则为空</span>
           </div>
         </div>
@@ -447,13 +451,13 @@
       <div class="card">
         <h3>当前代码里：已接入可选后台 AI 整理链路</h3>
         <p class="small">
-          新闻聚合完成规则去重后，会优先调用管理员选择且已启用的主 AI Provider，输出结构化事件摘要、要点、早报标题和总摘要；失败时按配置顺序自动尝试其他已启用 Provider。当前为 DeepSeek 主模型、Xiaomi MiMo V2.5 Pro 备用。
+          新闻聚合完成规则去重后，会优先调用管理员选择且已启用的主 AI Provider，输出结构化事件摘要、要点、早报标题和总摘要；失败时按配置顺序自动尝试其他已启用 Provider。当前默认主模型配置为 Xiaomi MiMo <code>mimo-v2.5-pro</code>，DeepSeek <code>deepseek-v4-flash</code> 可作为备用。
         </p>
       </div>
       <div class="card">
         <h3>安全边界：事实先行，生成层可降级</h3>
         <p class="small">
-          AI 输入只包含规范化后的标题、摘要、来源和发布时间，并被要求不能补充未提供事实。模型失败不会阻断新闻接口，也不会用本地 mock 替代。
+          AI 输入只包含规范化后的标题、摘要、来源、发布时间、球队资料和赛程上下文，并被要求不能补充未提供事实。模型失败不会阻断接口，也不会用本地 mock 替代。
         </p>
       </div>
     </div>
@@ -475,7 +479,7 @@
       </div>
       <div class="card soft">
         <h3>球队深层内容仍为空</h3>
-        <p class="small">48 队基础资料已接入；阵型、核心球员、战术和聊天话术仍需统计或内容源支持，当前不会由 mock 或 AI 自动补齐。</p>
+        <p class="small">48 队基础资料、阵容和毒舌快照已接入；仍需继续补强可审计来源、伤病和最新名单字段。</p>
       </div>
     </div>
   </section>
