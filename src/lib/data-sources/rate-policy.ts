@@ -286,6 +286,13 @@ function quotaIntervalSeconds(policy: SourceRatePolicy, mode: ActivityMode): num
   return Math.ceil((86400 / budget) * multiplier);
 }
 
+function configuredRefreshSeconds(source: DataSourceConfig): number {
+  const values = [source.cacheTtlSeconds, source.refreshSeconds]
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value) && value >= 10);
+  return values.length ? Math.max(...values) : 0;
+}
+
 export function getEffectiveRefreshSeconds(source: DataSourceConfig, now = new Date()): number {
   const policy = getRatePolicyForSource(source);
   const activity = getWorldCupActivity(now);
@@ -298,7 +305,13 @@ export function getEffectiveRefreshSeconds(source: DataSourceConfig, now = new D
   const providerWindow = policy.officialLimit && policy.officialWindowSeconds
     ? Math.ceil(policy.officialWindowSeconds / Math.max(1, policy.officialLimit)) + 1
     : 0;
-  return Math.max(10, desired, providerWindow, quotaIntervalSeconds(policy, activity.mode));
+  return Math.max(
+    10,
+    configuredRefreshSeconds(source),
+    desired,
+    providerWindow,
+    quotaIntervalSeconds(policy, activity.mode),
+  );
 }
 
 export function getSourceRefreshPlan(source: DataSourceConfig, now = new Date()) {
@@ -311,6 +324,7 @@ export function getSourceRefreshPlan(source: DataSourceConfig, now = new Date())
     activityMode: activity.mode,
     activeMatchCount: activity.activeMatchCount,
     nextKickoffAt: activity.nextKickoffAt,
+    configuredRefreshSeconds: configuredRefreshSeconds(source),
     effectiveRefreshSeconds: getEffectiveRefreshSeconds(source, now),
     policy,
   };

@@ -1,3 +1,5 @@
+import { getPlayerRoastSnapshot } from "@/lib/ai/player-roasts";
+import { getTeamRoastSnapshot } from "@/lib/ai/team-roasts";
 import {
   getAggregatedMatches,
   getAggregatedMorningBrief,
@@ -17,6 +19,8 @@ import {
   listBackgroundJobs,
   type BackgroundJobType,
 } from "@/lib/db/queries/background-jobs";
+import { recordIngestionRun } from "@/lib/db/queries/ingestion-runs";
+import { teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
 import { morningBriefTranslationArticle, translateArticleAndCache } from "@/lib/translation/article-translation";
 import type { NewsArticle, ScheduleDateKey } from "@/lib/wc-data";
 
@@ -53,6 +57,81 @@ function payloadArticle(payload: unknown): NewsArticle {
 async function translateNewsArticles(articles: NewsArticle[], limit = NEWS_TRANSLATION_LIMIT) {
   for (const article of articles.slice(0, limit)) {
     await translateArticleAndCache(article);
+  }
+}
+
+function featureForJobType(type: BackgroundJobType): string {
+  if (type === "team-roasts.refresh") return "team-roasts";
+  if (type === "player-roasts.refresh") return "player-roasts";
+  if (type === "refresh.full") return "refresh";
+  return type.split(".")[0] || type;
+}
+
+function resultCount(result: unknown): number {
+  if (!result || typeof result !== "object") return 0;
+  const record = result as Record<string, unknown>;
+  for (const key of ["teams", "oddsMatches", "radarMatches", "matches", "articles", "items"]) {
+    const value = record[key];
+    if (Array.isArray(value)) return value.length;
+  }
+  if (record.brief && typeof record.brief === "object") {
+    const brief = record.brief as { matches?: unknown[]; news?: unknown[] };
+    return (brief.matches?.length || 0) + (brief.news?.length || 0);
+  }
+  if (record.snapshot && typeof record.snapshot === "object") {
+    const snapshot = record.snapshot as { items?: unknown[] };
+    return snapshot.items?.length || 0;
+  }
+  if (Array.isArray(record.tasks)) return record.tasks.length;
+  return 0;
+}
+
+function resultMetadata(result: unknown): Record<string, unknown> | undefined {
+  if (!result || typeof result !== "object") return undefined;
+  const record = result as Record<string, unknown>;
+  return {
+    source: record.source,
+    mode: record.mode,
+    message: record.message,
+    diagnosticsCount: Array.isArray(record.diagnostics) ? record.diagnostics.length : undefined,
+    taskCount: Array.isArray(record.tasks) ? record.tasks.length : undefined,
+  };
+}
+
+async function auditBackgroundJob<T>(
+  type: BackgroundJobType,
+  payload: unknown,
+  run: () => Promise<T>,
+): Promise<T> {
+  const startedAt = new Date();
+  try {
+    const result = await run();
+    const count = resultCount(result);
+    await recordIngestionRun({
+      sourceId: type,
+      feature: featureForJobType(type),
+      status: "succeeded",
+      startedAt,
+      finishedAt: new Date(),
+      recordsRead: count,
+      recordsWritten: count,
+      metadata: {
+        payload,
+        result: resultMetadata(result),
+      },
+    });
+    return result;
+  } catch (error) {
+    await recordIngestionRun({
+      sourceId: type,
+      feature: featureForJobType(type),
+      status: "failed",
+      startedAt,
+      finishedAt: new Date(),
+      errorMessage: error instanceof Error ? error.message : "unknown error",
+      metadata: { payload },
+    });
+    throw error;
   }
 }
 
@@ -124,11 +203,19 @@ export function enqueueFullDataRefresh(mode: "scheduled" | "initialize" = "sched
   });
 }
 
+export function enqueueTeamRoastsRefresh() {
+  return enqueueBackgroundJob({ id: "data:team-roasts", type: "team-roasts.refresh", priority: 60 });
+}
+
+export function enqueuePlayerRoastsRefresh() {
+  return enqueueBackgroundJob({ id: "data:player-roasts", type: "player-roasts.refresh", priority: 60 });
+}
+
 export async function getBackgroundTaskStates() {
   return listBackgroundJobs(30);
 }
 
-export async function runBackgroundJobPayload(type: BackgroundJobType, payload: unknown) {
+async function executeBackgroundJobPayload(type: BackgroundJobType, payload: unknown) {
   if (type === "teams.refresh") return getAggregatedTeams({ cacheMode: "refresh" });
   if (type === "odds.refresh") return getAggregatedOdds({ cacheMode: "refresh" });
   if (type === "radar.refresh") return getAggregatedRadar({ cacheMode: "refresh" });
@@ -161,12 +248,24 @@ export async function runBackgroundJobPayload(type: BackgroundJobType, payload: 
     return translateArticleAndCache(payloadArticle(payload));
   }
 
+  if (type === "team-roasts.refresh") {
+    return getTeamRoastSnapshot(teamsWithBuiltInProfilesFromOfficialSchedule(), { cacheMode: "refresh" });
+  }
+
+  if (type === "player-roasts.refresh") {
+    return getPlayerRoastSnapshot(teamsWithBuiltInProfilesFromOfficialSchedule(), { cacheMode: "refresh" });
+  }
+
   if (type === "refresh.full") {
     const mode = payloadString(payload, "mode") === "initialize" ? "initialize" : "scheduled";
     return runDataRefresh(mode);
   }
 
   throw new Error(`Unsupported background job type: ${type}`);
+}
+
+export async function runBackgroundJobPayload(type: BackgroundJobType, payload: unknown) {
+  return auditBackgroundJob(type, payload, () => executeBackgroundJobPayload(type, payload));
 }
 
 export async function processNextBackgroundJob(workerId: string): Promise<boolean> {

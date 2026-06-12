@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { and, count, desc, eq, gt, gte } from "drizzle-orm";
+import { and, count, desc, eq, gt, gte, inArray } from "drizzle-orm";
 import { getDb, isDatabaseConfigured } from "../client";
 import { dataSnapshots, dataSourceFetches, dataSourceUsageEvents } from "../schema/data-cache";
 
@@ -476,4 +476,58 @@ export async function recordSourceUsage(input: SourceUsageInput): Promise<void> 
     logDbCacheError("record source usage", error);
     await recordSourceUsageFile(input);
   }
+}
+
+export type LatestSourceUsage = {
+  sourceId: string;
+  sourceType: string;
+  adapter: string;
+  statusCode?: number | null;
+  fetchedAt: Date;
+};
+
+export async function getLatestSourceUsageByIds(sourceIds: string[]): Promise<Map<string, LatestSourceUsage>> {
+  const ids = Array.from(new Set(sourceIds.filter(Boolean)));
+  const result = new Map<string, LatestSourceUsage>();
+  if (!ids.length) return result;
+
+  if (!isDatabaseConfigured) {
+    const cache = await readRuntimeCache();
+    const rows = cache.usageEvents
+      .filter((event) => ids.includes(event.sourceId))
+      .sort((left, right) => new Date(right.fetchedAt).getTime() - new Date(left.fetchedAt).getTime());
+    for (const row of rows) {
+      if (result.has(row.sourceId)) continue;
+      result.set(row.sourceId, {
+        sourceId: row.sourceId,
+        sourceType: row.sourceType,
+        adapter: row.adapter,
+        statusCode: row.statusCode,
+        fetchedAt: new Date(row.fetchedAt),
+      });
+    }
+    return result;
+  }
+
+  try {
+    const rows = await getDb()
+      .select()
+      .from(dataSourceUsageEvents)
+      .where(inArray(dataSourceUsageEvents.sourceId, ids))
+      .orderBy(desc(dataSourceUsageEvents.fetchedAt))
+      .limit(Math.max(ids.length * 5, 50));
+    for (const row of rows) {
+      if (result.has(row.sourceId)) continue;
+      result.set(row.sourceId, {
+        sourceId: row.sourceId,
+        sourceType: row.sourceType,
+        adapter: row.adapter,
+        statusCode: row.statusCode,
+        fetchedAt: row.fetchedAt,
+      });
+    }
+  } catch (error) {
+    logDbCacheError("latest source usage", error);
+  }
+  return result;
 }

@@ -11,6 +11,8 @@ export type BackgroundJobType =
   | "morning.refresh"
   | "news.refresh"
   | "news.translate"
+  | "team-roasts.refresh"
+  | "player-roasts.refresh"
   | "refresh.full";
 
 export type BackgroundJobStatus = "queued" | "running" | "succeeded" | "failed";

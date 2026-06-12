@@ -13,6 +13,7 @@ import {
   NEWS_TRANSLATION_LIMIT,
 } from "@/lib/data-sources/aggregate";
 import { getWorldCupActivity } from "@/lib/data-sources/rate-policy";
+import { recordIngestionRun } from "@/lib/db/queries/ingestion-runs";
 import { teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
 import { morningBriefTranslationArticle, translateArticleAndCache } from "@/lib/translation/article-translation";
 import type { ScheduleDateKey } from "@/lib/wc-data";
@@ -33,14 +34,45 @@ export interface RefreshRunResult {
   tasks: RefreshTaskResult[];
 }
 
+function featureForTaskName(name: string): string {
+  return name.split(":")[0] || name;
+}
+
 async function task(name: string, run: () => Promise<RefreshTaskResult>): Promise<RefreshTaskResult> {
+  const startedAt = new Date();
   try {
-    return await run();
+    const result = await run();
+    await recordIngestionRun({
+      sourceId: name,
+      feature: featureForTaskName(name),
+      status: result.ok ? "succeeded" : "failed",
+      startedAt,
+      finishedAt: new Date(),
+      recordsRead: result.count || 0,
+      recordsWritten: result.count || 0,
+      errorMessage: result.ok ? undefined : result.message,
+      metadata: {
+        task: name,
+        source: result.source,
+        message: result.message,
+      },
+    });
+    return result;
   } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown error";
+    await recordIngestionRun({
+      sourceId: name,
+      feature: featureForTaskName(name),
+      status: "failed",
+      startedAt,
+      finishedAt: new Date(),
+      errorMessage: message,
+      metadata: { task: name },
+    });
     return {
       name,
       ok: false,
-      message: error instanceof Error ? error.message : "unknown error",
+      message,
     };
   }
 }

@@ -18,6 +18,20 @@ type SessionState = {
   usingDevPassword: boolean;
 };
 
+type SourceHealthStatus = {
+  id: string;
+  health?: "healthy" | "stale" | "failing" | "disabled" | "unknown";
+  lastRefreshAt?: string;
+  lastFetchAt?: string;
+  lastRunAt?: string;
+  lastRunStatus?: string;
+  lastStatusCode?: number;
+  lastFailureReason?: string;
+  nextRefreshAt?: string;
+  effectiveRefreshSeconds?: number;
+  activityMode?: string;
+};
+
 const dataSourceTypes: DataSourceType[] = [
   "schedule",
   "scores",
@@ -144,6 +158,29 @@ function SelectInput<T extends string>({
   );
 }
 
+function formatDateTime(value: string | undefined) {
+  if (!value) return "暂无";
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "暂无";
+  return date.toLocaleString("zh-CN", { hour12: false });
+}
+
+function healthLabel(health: SourceHealthStatus["health"]) {
+  if (health === "healthy") return "健康";
+  if (health === "stale") return "待刷新";
+  if (health === "failing") return "失败";
+  if (health === "disabled") return "停用";
+  return "未知";
+}
+
+function healthClass(health: SourceHealthStatus["health"]) {
+  if (health === "healthy") return "border-[#6F8F5F] bg-[#6F8F5F]/10 text-[#4F6F42]";
+  if (health === "stale") return "border-[#C79A4B] bg-[#C79A4B]/10 text-[#8A652E]";
+  if (health === "failing") return "border-[#D36E52] bg-[#D36E52]/10 text-[#A34E38]";
+  if (health === "disabled") return "border-[#9E948C] bg-[#9E948C]/10 text-[#5C524C]";
+  return "border-[#9E948C] bg-[#F5F1E8] text-[#5C524C]";
+}
+
 function SectionHeader({
   title,
   desc,
@@ -251,10 +288,12 @@ function LoginPanel({
 
 function DataSourceCard({
   source,
+  health,
   onChange,
   onRemove,
 }: {
   source: DataSourceConfig;
+  health?: SourceHealthStatus;
   onChange: (source: DataSourceConfig) => void;
   onRemove: () => void;
 }) {
@@ -272,6 +311,20 @@ function DataSourceCard({
         <button type="button" onClick={onRemove} className="text-xs font-bold text-[#D36E52]">
           删除
         </button>
+      </div>
+      <div className={`border px-2 py-2 text-[11px] ${healthClass(health?.health)}`}>
+        <div className="flex flex-wrap items-center justify-between gap-2 font-bold">
+          <span>健康状态：{healthLabel(health?.health)}</span>
+          <span>有效刷新：{health?.effectiveRefreshSeconds ? `${health.effectiveRefreshSeconds}s` : "暂无"}</span>
+        </div>
+        <div className="mt-1 grid gap-1 md:grid-cols-3">
+          <span>最近刷新：{formatDateTime(health?.lastRefreshAt)}</span>
+          <span>最近抓取：{formatDateTime(health?.lastFetchAt)}</span>
+          <span>下次刷新：{formatDateTime(health?.nextRefreshAt)}</span>
+        </div>
+        {health?.lastFailureReason && (
+          <p className="mt-1 line-clamp-2 text-[#A34E38]">失败原因：{health.lastFailureReason}</p>
+        )}
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         <Field label="名称">
@@ -410,6 +463,7 @@ function AiProviderCard({
 export function AdminPanelScreen() {
   const [session, setSession] = useState<SessionState | null>(null);
   const [config, setConfig] = useState<AdminConfig | null>(null);
+  const [sourceHealth, setSourceHealth] = useState<Record<string, SourceHealthStatus>>({});
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -437,6 +491,17 @@ export function AdminPanelScreen() {
     if (!res.ok) return;
     const data = await res.json();
     setConfig(data.config);
+    await loadSourceHealth();
+  }
+
+  async function loadSourceHealth() {
+    const res = await fetch("/api/data/sources", { cache: "no-store" });
+    if (!res.ok) return;
+    const data = await res.json();
+    const byId = Object.fromEntries(
+      ((data.sources || []) as SourceHealthStatus[]).map((source) => [source.id, source]),
+    );
+    setSourceHealth(byId);
   }
 
   useEffect(() => {
@@ -456,6 +521,12 @@ export function AdminPanelScreen() {
       if (!configRes.ok || cancelled) return;
       const configData = await configRes.json();
       setConfig(configData.config);
+      const sourceRes = await fetch("/api/data/sources", { cache: "no-store" });
+      if (!sourceRes.ok || cancelled) return;
+      const sourceData = await sourceRes.json();
+      setSourceHealth(Object.fromEntries(
+        ((sourceData.sources || []) as SourceHealthStatus[]).map((source) => [source.id, source]),
+      ));
     }
 
     void syncSession();
@@ -480,6 +551,7 @@ export function AdminPanelScreen() {
     }
     const data = await res.json();
     setConfig(data.config);
+    await loadSourceHealth();
     setMessage("配置已保存到 data/admin-config.json");
   }
 
@@ -544,6 +616,7 @@ export function AdminPanelScreen() {
               <DataSourceCard
                 key={source.id}
                 source={source}
+                health={sourceHealth[source.id]}
                 onChange={(nextSource) => {
                   const next = [...config.dataSources];
                   next[index] = nextSource;

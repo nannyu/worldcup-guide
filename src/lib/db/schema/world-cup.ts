@@ -148,9 +148,36 @@ export const ingestionRuns = pgTable(
   }),
 );
 
+export const newsArticles = pgTable(
+  "news_articles",
+  {
+    articleId: varchar("article_id", { length: 256 }).primaryKey(),
+    url: text("url").notNull(),
+    title: text("title").notNull(),
+    source: varchar("source", { length: 128 }).notNull(),
+    publishedAt: timestamp("published_at", { withTimezone: true }).notNull(),
+    summary: text("summary").notNull().default(""),
+    domain: varchar("domain", { length: 256 }),
+    language: varchar("language", { length: 32 }),
+    country: varchar("country", { length: 32 }),
+    imageUrl: text("image_url"),
+    payload: jsonb("payload").$type<unknown>().notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    publishedAtIdx: index("news_articles_published_at_idx").on(table.publishedAt),
+    sourcePublishedAtIdx: index("news_articles_source_published_at_idx").on(
+      table.source,
+      table.publishedAt,
+    ),
+  }),
+);
+
 export type Competition = InferSelectModel<typeof competitions>;
 export type TeamRecord = InferSelectModel<typeof teams>;
 export type Venue = InferSelectModel<typeof venues>;
 export type MatchRecord = InferSelectModel<typeof matches>;
 export type MarketSnapshot = InferSelectModel<typeof marketSnapshots>;
 export type IngestionRun = InferSelectModel<typeof ingestionRuns>;
+export type NewsArticleRecord = InferSelectModel<typeof newsArticles>;

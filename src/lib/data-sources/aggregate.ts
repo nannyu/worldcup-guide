@@ -8,7 +8,23 @@ import {
   type SourceDiagnostic,
 } from "@/lib/data-sources/client";
 import { getEffectiveRefreshSeconds, getSourceRefreshPlan } from "@/lib/data-sources/rate-policy";
-import { readLatestSnapshotCache, readSnapshotCache, upsertSnapshotCache } from "@/lib/db/queries/data-cache";
+import {
+  getLatestSourceUsageByIds,
+  readLatestSnapshotCache,
+  readSnapshotCache,
+  upsertSnapshotCache,
+} from "@/lib/db/queries/data-cache";
+import { listRecentIngestionRuns } from "@/lib/db/queries/ingestion-runs";
+import {
+  readLatestOddsMarketSnapshots,
+  readLatestRadarMarketSnapshots,
+  recordOddsMarketSnapshots,
+  recordRadarMarketSnapshots,
+} from "@/lib/db/queries/market-snapshots";
+import {
+  getCanonicalNewsArticlesByIds,
+  upsertCanonicalNewsArticles,
+} from "@/lib/db/queries/news-articles";
 import { getStoredOfficialMatches } from "@/lib/db/queries/world-cup";
 import {
   fifaRecordToMatch,
@@ -366,9 +382,17 @@ export const NEWS_TRANSLATION_LIMIT = 30;
 
 type NewsSnapshotPayload = {
   articles: NewsArticle[];
+  articleIds?: string[];
   aggregation: NewsAggregationMeta;
   curation?: AiNewsCuration;
   diagnostics: SourceDiagnostic[];
+};
+
+type MorningBriefStoredPayload = MorningBrief | {
+  schemaVersion: 2;
+  brief: Omit<MorningBrief, "news">;
+  articleIds: string[];
+  newsPreview: NewsArticle[];
 };
 
 const dateKeyToSourceDate: Record<ScheduleDateKey, string> = {
@@ -393,6 +417,7 @@ function rollingRecentNewsWindow(now = new Date()): { start: Date; cacheKey: str
 
 export interface AggregationReadOptions {
   cacheMode?: "cache-first" | "cache-only" | "refresh";
+  liveScoresOnly?: boolean;
   useAi?: boolean;
 }
 
@@ -961,6 +986,82 @@ function mergeOddsIntoMatches(matches: Match[], odds: OddsMatch[]): Match[] {
       updatedAt: `${match.updatedAt} · The Odds API ${matched.bookmakerCount} 家均值`,
     };
   });
+}
+
+async function latestCanonicalOdds(): Promise<OddsMatch[]> {
+  const marketHistory = await readLatestOddsMarketSnapshots();
+  if (marketHistory.length) return marketHistory;
+  const latestSnapshot = await readLatestSnapshotCache<OddsMatch[]>("odds", { allowStale: true });
+  return latestSnapshot?.payload || [];
+}
+
+async function enrichMatchesWithLatestCanonicalOdds(
+  matches: Match[],
+  options: AggregationReadOptions = {},
+): Promise<Match[]> {
+  if (options.liveScoresOnly || !matches.length) return matches;
+  const odds = await latestCanonicalOdds();
+  return odds.length ? mergeOddsIntoMatches(matches, odds) : matches;
+}
+
+function newsArticlePreview(article: NewsArticle): NewsArticle {
+  return {
+    id: article.id,
+    title: article.title,
+    titleZh: article.titleZh,
+    titleEn: article.titleEn,
+    url: article.url,
+    source: article.source,
+    publishedAt: article.publishedAt,
+    summary: article.summary,
+    summaryZh: article.summaryZh,
+    summaryEn: article.summaryEn,
+    imageUrl: article.imageUrl,
+    domain: article.domain,
+    language: article.language,
+    country: article.country,
+    relatedSources: article.relatedSources,
+    relatedUrls: article.relatedUrls,
+    sourceCount: article.sourceCount,
+    aiSummary: article.aiSummary,
+    aiKeyPoints: article.aiKeyPoints,
+    aiScore: article.aiScore,
+    aiComment: article.aiComment,
+    keyPointsZh: article.keyPointsZh,
+    keyPointsEn: article.keyPointsEn,
+    commentZh: article.commentZh,
+    commentEn: article.commentEn,
+  };
+}
+
+function morningBriefStoredPayload(brief: MorningBrief): MorningBriefStoredPayload {
+  const { news, ...rest } = brief;
+  return {
+    schemaVersion: 2,
+    brief: rest,
+    articleIds: news.map((article) => article.id),
+    newsPreview: news.map(newsArticlePreview),
+  };
+}
+
+function isStoredMorningPayload(payload: MorningBriefStoredPayload): payload is Exclude<MorningBriefStoredPayload, MorningBrief> {
+  return typeof payload === "object"
+    && payload !== null
+    && "schemaVersion" in payload
+    && (payload as { schemaVersion?: unknown }).schemaVersion === 2;
+}
+
+async function hydrateMorningBriefPayload(payload: MorningBriefStoredPayload): Promise<MorningBrief> {
+  if (!isStoredMorningPayload(payload)) return payload;
+  const canonical = await getCanonicalNewsArticlesByIds(payload.articleIds);
+  const canonicalById = new Map(canonical.map((article) => [article.id, article]));
+  const previewById = new Map(payload.newsPreview.map((article) => [article.id, article]));
+  return {
+    ...payload.brief,
+    news: payload.articleIds
+      .map((id) => canonicalById.get(id) || previewById.get(id))
+      .filter((article): article is NewsArticle => Boolean(article)),
+  };
 }
 
 function transformFootballDataTeams(data: FootballDataTeamsResponse): Team[] {
@@ -2084,7 +2185,12 @@ export async function getAggregatedOdds(options: AggregationReadOptions = {}): P
   }
 
   if (isCacheOnly(options)) {
-    return { oddsMatches: [], source: "fallback", diagnostics: [] };
+    const latestOdds = await readLatestOddsMarketSnapshots();
+    return {
+      oddsMatches: latestOdds,
+      source: latestOdds.length ? "cache" : "fallback",
+      diagnostics: [],
+    };
   }
 
   const diagnostics: SourceDiagnostic[] = [];
@@ -2101,6 +2207,7 @@ export async function getAggregatedOdds(options: AggregationReadOptions = {}): P
       diagnostics.push(diagnostic);
       const oddsMatches = transformTheOddsApi(data);
       if (!oddsMatches.length) continue;
+      await recordOddsMarketSnapshots(oddsMatches, source.id);
       await upsertSnapshotCache({
         snapshotKey,
         feature: "odds",
@@ -2236,7 +2343,7 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
   const persisted = await readSnapshotCache<Match[]>(snapshotKey);
   if (shouldUseSnapshot(persisted, (payload) => payload.length > 0, options)) {
     return {
-      matches: persisted.payload,
+      matches: await enrichMatchesWithLatestCanonicalOdds(persisted.payload, options),
       source: "cache",
       diagnostics: [snapshotDiagnostic(snapshotKey, "schedule", persisted)],
     };
@@ -2246,7 +2353,7 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
     const stale = await readSnapshotCache<Match[]>(snapshotKey, { allowStale: true });
     if (stale) {
       return {
-        matches: stale.payload,
+        matches: await enrichMatchesWithLatestCanonicalOdds(stale.payload, options),
         source: "cache",
         diagnostics: [snapshotDiagnostic(snapshotKey, "schedule", stale, true)],
       };
@@ -2257,8 +2364,9 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
     const storedOfficialMatches = (
       await getStoredOfficialMatches<FifaScheduleRecord>(scheduleDateMeta[dateKey].date)
     ).map(fifaRecordToMatch);
+    const canonicalMatches = storedOfficialMatches.length ? storedOfficialMatches : matchesByDate[dateKey];
     return {
-      matches: storedOfficialMatches.length ? storedOfficialMatches : matchesByDate[dateKey],
+      matches: await enrichMatchesWithLatestCanonicalOdds(canonicalMatches, options),
       source: storedOfficialMatches.length ? "cache" : "fallback",
       diagnostics: [],
     };
@@ -2322,19 +2430,20 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
       }
       if (!matches.length) continue;
 
-      const oddsResult = await getAggregatedOdds(options);
-      const enrichedMatches = mergeOddsIntoMatches(matches, oddsResult.oddsMatches);
-      const combinedDiagnostics = [...diagnostics, ...oddsResult.diagnostics];
       await upsertSnapshotCache({
         snapshotKey,
         feature: "matches",
         sourceMode: "remote",
         sourceId: source.id,
-        payload: enrichedMatches,
-        diagnostics: combinedDiagnostics,
+        payload: matches,
+        diagnostics,
         ttlSeconds: getEffectiveRefreshSeconds(source),
       });
-      return { matches: enrichedMatches, source: "remote", diagnostics: combinedDiagnostics };
+      return {
+        matches: await enrichMatchesWithLatestCanonicalOdds(matches, options),
+        source: "remote",
+        diagnostics,
+      };
     } catch (error) {
       diagnostics.push(error as SourceDiagnostic);
     }
@@ -2349,22 +2458,19 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
       diagnostics.push(diagnostic);
       const matches = transformOpenFootballMatches(data, dateKey);
       if (matches.length > 0) {
-        const oddsResult = await getAggregatedOdds(options);
-        const enrichedMatches = mergeOddsIntoMatches(matches, oddsResult.oddsMatches);
-        const combinedDiagnostics = [...diagnostics, ...oddsResult.diagnostics];
         await upsertSnapshotCache({
           snapshotKey,
           feature: "matches",
           sourceMode: "remote",
           sourceId: source.id,
-          payload: enrichedMatches,
-          diagnostics: combinedDiagnostics,
+          payload: matches,
+          diagnostics,
           ttlSeconds: getEffectiveRefreshSeconds(source),
         });
         return {
-          matches: enrichedMatches,
+          matches: await enrichMatchesWithLatestCanonicalOdds(matches, options),
           source: "remote",
-          diagnostics: combinedDiagnostics,
+          diagnostics,
         };
       }
     } catch (error) {
@@ -2375,7 +2481,7 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
   const stale = await readSnapshotCache<Match[]>(snapshotKey, { allowStale: true });
   if (stale?.payload.length) {
     return {
-      matches: stale.payload,
+      matches: await enrichMatchesWithLatestCanonicalOdds(stale.payload, options),
       source: "cache",
       diagnostics: [
         ...diagnostics,
@@ -2388,8 +2494,6 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
     await getStoredOfficialMatches<FifaScheduleRecord>(scheduleDateMeta[dateKey].date)
   ).map(fifaRecordToMatch);
   if (storedOfficialMatches.length > 0) {
-    const oddsResult = await getAggregatedOdds(options);
-    const enrichedMatches = mergeOddsIntoMatches(storedOfficialMatches, oddsResult.oddsMatches);
     const databaseDiagnostic: SourceDiagnostic = {
       id: "fifa-official-db",
       name: "PostgreSQL FIFA 官方赛程",
@@ -2405,32 +2509,31 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
       feature: "matches",
       sourceMode: "fallback",
       sourceId: "fifa-official-db",
-      payload: enrichedMatches,
-      diagnostics: [...diagnostics, databaseDiagnostic, ...oddsResult.diagnostics],
+      payload: storedOfficialMatches,
+      diagnostics: [...diagnostics, databaseDiagnostic],
       ttlSeconds: 86400,
     });
     return {
-      matches: enrichedMatches,
+      matches: await enrichMatchesWithLatestCanonicalOdds(storedOfficialMatches, options),
       source: "cache",
-      diagnostics: [...diagnostics, databaseDiagnostic, ...oddsResult.diagnostics],
+      diagnostics: [...diagnostics, databaseDiagnostic],
     };
   }
 
-  const oddsResult = await getAggregatedOdds(options);
-  const fallbackMatches = mergeOddsIntoMatches(matchesByDate[dateKey], oddsResult.oddsMatches);
+  const fallbackMatches = matchesByDate[dateKey];
   await upsertSnapshotCache({
     snapshotKey,
     feature: "matches",
     sourceMode: "fallback",
     sourceId: "fifa-official-pdf",
     payload: fallbackMatches,
-    diagnostics: [...diagnostics, ...oddsResult.diagnostics],
+    diagnostics,
     ttlSeconds: 300,
   });
   return {
-    matches: fallbackMatches,
+    matches: await enrichMatchesWithLatestCanonicalOdds(fallbackMatches, options),
     source: "fallback",
-    diagnostics: [...diagnostics, ...oddsResult.diagnostics],
+    diagnostics,
   };
 }
 
@@ -2462,7 +2565,12 @@ export async function getAggregatedRadar(options: AggregationReadOptions = {}): 
   }
 
   if (isCacheOnly(options)) {
-    return { radarMatches: [], source: "fallback", diagnostics: [] };
+    const latestRadar = await readLatestRadarMarketSnapshots();
+    return {
+      radarMatches: latestRadar,
+      source: latestRadar.length ? "cache" : "fallback",
+      diagnostics: [],
+    };
   }
 
   const diagnostics: SourceDiagnostic[] = [];
@@ -2483,6 +2591,7 @@ export async function getAggregatedRadar(options: AggregationReadOptions = {}): 
       diagnostics.push(diagnostic);
       const transformed = transformPolymarketEvents(data);
       if (transformed.length > 0) {
+        await recordRadarMarketSnapshots(transformed, source.id);
         await upsertSnapshotCache({
           snapshotKey,
           feature: "radar",
@@ -2641,6 +2750,7 @@ export async function getAggregatedNews(options: {
   };
 
   if (articles.length > 0) {
+    await upsertCanonicalNewsArticles(articles);
     const ttlSeconds = Math.min(
       ...newsSources.map((source) => getEffectiveRefreshSeconds(source)),
     );
@@ -2649,7 +2759,7 @@ export async function getAggregatedNews(options: {
       feature: "news",
       sourceMode: "remote",
       sourceId: "multi-source-news",
-      payload: { articles, aggregation, curation: aiResult.curation, diagnostics },
+      payload: { articles, articleIds: articles.map((article) => article.id), aggregation, curation: aiResult.curation, diagnostics },
       diagnostics,
       ttlSeconds: Number.isFinite(ttlSeconds) ? ttlSeconds : 900,
     });
@@ -2681,7 +2791,7 @@ export async function getAggregatedNews(options: {
     feature: "news",
     sourceMode: "fallback",
     sourceId: "empty-news-fallback",
-    payload: { articles: [], aggregation, diagnostics },
+    payload: { articles: [], articleIds: [], aggregation, diagnostics },
     diagnostics,
     ttlSeconds: 300,
   });
@@ -2717,20 +2827,20 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
   const { updatedAt } = await readAdminConfig();
   const newsWindow = rollingRecentNewsWindow();
   const snapshotKey = `morning:v16:${dateKey}:${dateKeyToSourceDate[dateKey]}:${newsWindow.cacheKey}:${updatedAt}`;
-  const persisted = await readSnapshotCache<MorningBrief>(snapshotKey);
+  const persisted = await readSnapshotCache<MorningBriefStoredPayload>(snapshotKey);
   if (persisted?.payload && options.cacheMode !== "refresh") {
     return {
-      brief: persisted.payload,
+      brief: await hydrateMorningBriefPayload(persisted.payload),
       source: "cache",
       diagnostics: [snapshotDiagnostic(snapshotKey, "news", persisted)],
     };
   }
 
   if (isCacheFirst(options)) {
-    const stale = await readSnapshotCache<MorningBrief>(snapshotKey, { allowStale: true });
+    const stale = await readSnapshotCache<MorningBriefStoredPayload>(snapshotKey, { allowStale: true });
     if (stale?.payload) {
       return {
-        brief: stale.payload,
+        brief: await hydrateMorningBriefPayload(stale.payload),
         source: "cache",
         diagnostics: [snapshotDiagnostic(snapshotKey, "news", stale, true)],
       };
@@ -2823,7 +2933,7 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
     feature: "morning",
     sourceMode: newsResult.source === "remote" || matchesResult.source === "remote" ? "remote" : "fallback",
     sourceId: "morning-aggregate",
-    payload: brief,
+    payload: morningBriefStoredPayload(brief),
     diagnostics,
     ttlSeconds: 900,
   });
@@ -2835,8 +2945,32 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
   };
 }
 
+function sourceFeature(source: DataSourceConfig): string {
+  if (source.type === "schedule" || source.type === "scores") return "matches";
+  if (source.type === "prediction-market") return "radar";
+  if (source.type === "team-content") return "teams";
+  if (source.type === "odds") return "odds";
+  if (source.type === "news") return "news";
+  return source.type;
+}
+
+function latestDate(...dates: Array<Date | undefined | null>): Date | undefined {
+  return dates
+    .filter((date): date is Date => date instanceof Date && Number.isFinite(date.getTime()))
+    .sort((left, right) => right.getTime() - left.getTime())[0];
+}
+
 export async function getDataSourceStatus() {
   const { dataSources, updatedAt } = await readAdminConfig();
+  const [latestUsageBySource, recentRuns] = await Promise.all([
+    getLatestSourceUsageByIds(dataSources.map((source) => source.id)),
+    listRecentIngestionRuns(300),
+  ]);
+  const latestRunByFeature = new Map<string, (typeof recentRuns)[number]>();
+  for (const run of recentRuns) {
+    if (!latestRunByFeature.has(run.feature)) latestRunByFeature.set(run.feature, run);
+  }
+  const now = new Date();
   return {
     updatedAt,
     sources: dataSources
@@ -2844,6 +2978,22 @@ export async function getDataSourceStatus() {
       .sort((a, b) => a.priority - b.priority)
       .map((source) => {
         const refreshPlan = getSourceRefreshPlan(source);
+        const latestUsage = latestUsageBySource.get(source.id);
+        const latestRun = latestRunByFeature.get(sourceFeature(source));
+        const lastRefresh = latestDate(latestUsage?.fetchedAt, latestRun?.finishedAt || latestRun?.startedAt);
+        const nextRefresh = lastRefresh
+          ? new Date(lastRefresh.getTime() + refreshPlan.effectiveRefreshSeconds * 1000)
+          : undefined;
+        const latestFailure = latestRun?.status === "failed" ? latestRun : undefined;
+        const health = !source.enabled
+          ? "disabled"
+          : latestFailure
+            ? "failing"
+            : nextRefresh && nextRefresh < now
+              ? "stale"
+              : lastRefresh
+                ? "healthy"
+                : "unknown";
         return {
           id: source.id,
           name: source.name,
@@ -2853,10 +3003,19 @@ export async function getDataSourceStatus() {
           priority: source.priority,
           cacheTtlSeconds: source.cacheTtlSeconds,
           refreshSeconds: source.refreshSeconds,
+          configuredRefreshSeconds: refreshPlan.configuredRefreshSeconds,
           effectiveRefreshSeconds: refreshPlan.effectiveRefreshSeconds,
           activityMode: refreshPlan.activityMode,
           activeMatchCount: refreshPlan.activeMatchCount,
           nextKickoffAt: refreshPlan.nextKickoffAt,
+          health,
+          lastRefreshAt: lastRefresh?.toISOString(),
+          lastFetchAt: latestUsage?.fetchedAt.toISOString(),
+          lastStatusCode: latestUsage?.statusCode,
+          lastRunAt: latestRun?.finishedAt?.toISOString() || latestRun?.startedAt.toISOString(),
+          lastRunStatus: latestRun?.status,
+          lastFailureReason: latestFailure?.errorMessage || undefined,
+          nextRefreshAt: nextRefresh?.toISOString(),
           ratePolicy: {
             docsUrl: refreshPlan.policy.docsUrl,
             officialLimit: refreshPlan.policy.officialLimit,
