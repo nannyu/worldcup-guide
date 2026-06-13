@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { allMatches, matchIdentityKey, mergeMatchWithOfficialSource, type Match } from "@/lib/wc-data";
+import { allMatches, browserScheduleDateQuery, matchIdentityKey, mergeMatchWithOfficialSource, type Match } from "@/lib/wc-data";
 import { groupLabel, roundLabel, teamName, tr } from "@/lib/i18n/content";
 
 function getMatch(id: string): Match | undefined {
@@ -14,6 +14,81 @@ function getMatch(id: string): Match | undefined {
 function formatStatValue(value: string | number | null): string {
   if (value === null || value === undefined || value === "") return "-";
   return String(value);
+}
+
+function statValue(match: Match, type: string, side: "home" | "away"): string | undefined {
+  const value = match.statistics
+    ?.find((item) => item.team === side)
+    ?.stats.find((stat) => stat.type === type)
+    ?.value;
+  if (value === null || value === undefined || value === "") return undefined;
+  return String(value);
+}
+
+function latestMatchEvent(match: Match) {
+  return (match.events || []).slice().sort((left, right) => right.minute - left.minute)[0];
+}
+
+function eventTypeLabel(type: string, locale: string): string {
+  if (type === "goal") return tr(locale, "进球", "Goal");
+  if (type === "penalty") return tr(locale, "点球", "Penalty");
+  if (type === "og") return tr(locale, "乌龙球", "Own goal");
+  if (type === "red") return tr(locale, "红牌", "Red card");
+  return tr(locale, "黄牌", "Yellow card");
+}
+
+function buildMatchAnalysisPoints(match: Match, locale: string): Array<{ label: string; title: string; desc: string; isQuote?: boolean }> {
+  const points: Array<{ label: string; title: string; desc: string; isQuote?: boolean }> = [];
+  if (match.previewText) {
+    points.push({
+      label: tr(locale, "概览", "Brief"),
+      title: tr(locale, "赛前/赛况摘要", "Match context"),
+      desc: match.previewText,
+    });
+  }
+
+  const event = latestMatchEvent(match);
+  if (event) {
+    const side = event.team === "home" ? match.homeTeam : match.awayTeam;
+    points.push({
+      label: tr(locale, "事件", "Event"),
+      title: `${event.minute}' ${eventTypeLabel(event.type, locale)} · ${teamName(side, locale)}`,
+      desc: [event.player, event.description].filter(Boolean).join(" · "),
+    });
+  }
+
+  const shots = [statValue(match, "Shots on Goal", "home"), statValue(match, "Shots on Goal", "away")];
+  const possession = [statValue(match, "Ball Possession", "home"), statValue(match, "Ball Possession", "away")];
+  const corners = [statValue(match, "Corner Kicks", "home"), statValue(match, "Corner Kicks", "away")];
+  const statLines = [
+    shots[0] || shots[1] ? `${tr(locale, "射正", "Shots on target")} ${shots[0] || "-"}:${shots[1] || "-"}` : "",
+    possession[0] || possession[1] ? `${tr(locale, "控球", "Possession")} ${possession[0] || "-"} / ${possession[1] || "-"}` : "",
+    corners[0] || corners[1] ? `${tr(locale, "角球", "Corners")} ${corners[0] || "-"}:${corners[1] || "-"}` : "",
+  ].filter(Boolean);
+  if (statLines.length) {
+    points.push({
+      label: tr(locale, "统计", "Stats"),
+      title: tr(locale, "关键技术统计", "Key match stats"),
+      desc: statLines.join(" · "),
+    });
+  }
+
+  if (match.prediction) {
+    points.push({
+      label: tr(locale, "预测", "Model"),
+      title: match.prediction.source,
+      desc: match.prediction.advice
+        || `${tr(locale, "主胜/平/客胜", "Home/draw/away")} ${match.prediction.homePercent}% / ${match.prediction.drawPercent}% / ${match.prediction.awayPercent}%`,
+    });
+  } else if (match.oddsImpliedHome > 0 || match.oddsImpliedDraw > 0 || match.oddsImpliedAway > 0) {
+    points.push({
+      label: tr(locale, "概率", "Odds"),
+      title: match.oddsSource || tr(locale, "赔率隐含概率", "Odds-implied probability"),
+      desc: `${tr(locale, "主胜/平/客胜", "Home/draw/away")} ${match.oddsImpliedHome}% / ${match.oddsImpliedDraw}% / ${match.oddsImpliedAway}%`,
+    });
+  }
+
+  return points;
 }
 
 export function MatchDetailScreen() {
@@ -32,9 +107,10 @@ export function MatchDetailScreen() {
       const localMatch = getMatch(matchId);
       if (!localMatch) setLoading(true);
       const dateKeys = ["yesterday", "today", "tomorrow"] as const;
+      const browserNow = new Date();
       const responses = await Promise.all(
         dateKeys.map(async (dateKey) => {
-          const response = await fetch(`/api/data/matches?dateKey=${dateKey}`);
+          const response = await fetch(`/api/data/matches?${browserScheduleDateQuery(dateKey, browserNow)}`);
           if (!response.ok) return [];
           const data = (await response.json()) as { matches?: Match[] };
           return data.matches || [];
@@ -77,7 +153,7 @@ export function MatchDetailScreen() {
     );
   }
 
-  const points: Array<{ label: string; title: string; desc: string; isQuote?: boolean }> = [];
+  const points = buildMatchAnalysisPoints(match, locale);
 
   function copyText(text: string, idx: number) {
     navigator.clipboard.writeText(text).then(() => {

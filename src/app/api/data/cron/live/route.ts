@@ -53,6 +53,14 @@ function cacheComputedAt(matchesResult: Awaited<ReturnType<typeof getAggregatedM
   return candidates[0];
 }
 
+function shouldRefreshLiveMatches(activeMatchCount: number, cacheAgeSeconds: number | null): boolean {
+  if (cacheAgeSeconds === null) return true;
+  if (activeMatchCount > 0) {
+    return cacheAgeSeconds >= matchRefreshSeconds;
+  }
+  return cacheAgeSeconds >= quietRefreshSeconds;
+}
+
 function summarizeMatches(matches: Match[]) {
   return matches.map((match) => ({
     id: match.id,
@@ -84,7 +92,7 @@ export async function GET(request: NextRequest) {
     const cacheAgeSeconds = computedAt
       ? Math.max(0, Math.floor((now.getTime() - computedAt.getTime()) / 1000))
       : null;
-    const shouldRefresh = !computedAt || cacheAgeSeconds === null || cacheAgeSeconds >= refreshIntervalSeconds;
+    const shouldRefresh = shouldRefreshLiveMatches(activeMatchCount, cacheAgeSeconds);
     const result = shouldRefresh
       ? await getAggregatedMatches(dateKey, { cacheMode: "refresh", liveScoresOnly: true })
       : cached;

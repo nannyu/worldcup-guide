@@ -7,6 +7,7 @@ import type { LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   allMatches,
+  browserScheduleDateQuery,
   createMatchSequenceLookup,
   getGroupStandings,
   getMatchSequenceNumber,
@@ -750,11 +751,12 @@ export function RadarEyeScreen() {
 
     async function loadData() {
       try {
+        const browserNow = new Date();
         const [radarResponse, matchResponses] = await Promise.all([
           fetch("/api/data/radar"),
           Promise.all(
             dateKeys.map(async (dateKey) => {
-              const response = await fetch(`/api/data/matches?dateKey=${dateKey}`);
+              const response = await fetch(`/api/data/matches?${browserScheduleDateQuery(dateKey, browserNow)}`);
               if (!response.ok) return { matches: [] as Match[], source: undefined as DataSourceMode | undefined, diagnostics: [] };
               return (await response.json()) as {
                 matches?: Match[];

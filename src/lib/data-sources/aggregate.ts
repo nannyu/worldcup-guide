@@ -27,8 +27,8 @@ import {
 } from "@/lib/db/queries/news-articles";
 import { getStoredOfficialMatches } from "@/lib/db/queries/world-cup";
 import {
+  fifaMatchesInUtcDayBounds,
   fifaRecordToMatch,
-  matchesByDate,
   scheduleDateMeta,
   type FifaScheduleRecord,
   type Match,
@@ -43,6 +43,7 @@ import {
   type OddsMatch,
   type RadarMatch,
   type ScheduleDateKey,
+  type ScheduleUtcDayBounds,
   type SignalType,
   type Team,
   type TeamInjury,
@@ -529,11 +530,73 @@ type MorningBriefStoredPayload = MorningBrief | {
   newsPreview: NewsArticle[];
 };
 
-const dateKeyToSourceDate: Record<ScheduleDateKey, string> = {
-  yesterday: scheduleDateMeta.yesterday.date,
-  today: scheduleDateMeta.today.date,
-  tomorrow: scheduleDateMeta.tomorrow.date,
-};
+function sourceDateFor(
+  dateKey: ScheduleDateKey,
+  options?: Pick<AggregationReadOptions, "sourceDate" | "dateRange">,
+): string {
+  return options?.sourceDate || options?.dateRange?.date || scheduleDateMeta[dateKey].date;
+}
+
+function utcDayBoundsForBeijingDate(date: string): ScheduleUtcDayBounds {
+  const start = new Date(`${date}T00:00:00+08:00`);
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+  return {
+    date,
+    startUtc: start.toISOString(),
+    endUtc: end.toISOString(),
+  };
+}
+
+function dateRangeFor(
+  dateKey: ScheduleDateKey,
+  options?: Pick<AggregationReadOptions, "dateRange" | "sourceDate">,
+): ScheduleUtcDayBounds {
+  return options?.dateRange || utcDayBoundsForBeijingDate(sourceDateFor(dateKey, options));
+}
+
+function dateRangeSnapshotKey(bounds: ScheduleUtcDayBounds): string {
+  return `${bounds.startUtc}:${bounds.endUtc}`;
+}
+
+function dateInBeijing(input: number): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(input));
+}
+
+function providerDatesForRange(bounds: ScheduleUtcDayBounds, fallbackDate: string): string[] {
+  const startMs = Date.parse(bounds.startUtc);
+  const endMs = Date.parse(bounds.endUtc);
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || startMs >= endMs) return [fallbackDate];
+  return Array.from(new Set([
+    dateInBeijing(startMs),
+    dateInBeijing(Math.max(startMs, endMs - 1)),
+    dateInBeijing(Math.floor((startMs + endMs) / 2)),
+  ]));
+}
+
+function matchInDateRange(match: Pick<Match, "kickoffAt">, bounds: ScheduleUtcDayBounds): boolean {
+  const kickoffMs = Date.parse(match.kickoffAt || "");
+  const startMs = Date.parse(bounds.startUtc);
+  const endMs = Date.parse(bounds.endUtc);
+  return Number.isFinite(kickoffMs)
+    && Number.isFinite(startMs)
+    && Number.isFinite(endMs)
+    && kickoffMs >= startMs
+    && kickoffMs < endMs;
+}
+
+function uniqueMatches(matches: Match[]): Match[] {
+  const unique = new Map<string, Match>();
+  for (const match of matches) {
+    unique.set(match.id || `${match.homeTeam}:${match.awayTeam}:${match.kickoffAt || match.kickoffBj}`, match);
+  }
+  return Array.from(unique.values());
+}
 
 const MORNING_NEWS_WINDOW_HOURS = 24;
 const MORNING_NEWS_WINDOW_BUCKET_MINUTES = 15;
@@ -553,6 +616,8 @@ export interface AggregationReadOptions {
   cacheMode?: "cache-first" | "cache-only" | "refresh";
   liveScoresOnly?: boolean;
   useAi?: boolean;
+  sourceDate?: string;
+  dateRange?: ScheduleUtcDayBounds;
 }
 
 function isCacheFirst(options: AggregationReadOptions | undefined): boolean {
@@ -635,18 +700,6 @@ function formatKickoffBj(input: string | undefined): string {
   return `${value("month")}-${value("day")} ${value("hour")}:${value("minute")}`;
 }
 
-function providerDateBj(input: string | undefined): string {
-  if (!input) return "";
-  const date = new Date(input);
-  if (Number.isNaN(date.getTime())) return input.slice(0, 10);
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Shanghai",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(date);
-}
-
 function matchStatus(input: string | undefined, hasScore = false): MatchStatus {
   const status = String(input || "").toUpperCase();
   if (["FINISHED", "FT", "AET", "PEN", "MATCH FINISHED"].includes(status) || hasScore) {
@@ -670,9 +723,16 @@ function roundFromStage(stage: string | undefined, matchday?: number | null): st
 }
 
 function parseKickoffToBeijing(date: string | undefined, time: string | undefined): string {
+  const kickoffUtc = parseOpenFootballKickoffUtc(date, time);
+  if (kickoffUtc) return formatKickoffBj(kickoffUtc);
   if (!date || !time) return "";
+  return `${date} ${time}`;
+}
+
+function parseOpenFootballKickoffUtc(date: string | undefined, time: string | undefined): string | undefined {
+  if (!date || !time) return undefined;
   const match = time.match(/^(\d{1,2}):(\d{2})\s+UTC([+-]\d{1,2})$/);
-  if (!match) return `${date} ${time}`;
+  if (!match) return undefined;
   const [, hour, minute, offset] = match;
   const utcMs =
     Date.UTC(
@@ -683,22 +743,22 @@ function parseKickoffToBeijing(date: string | undefined, time: string | undefine
       Number(minute),
     ) -
     Number(offset) * 60 * 60 * 1000;
-  const bj = new Date(utcMs + 8 * 60 * 60 * 1000);
-  const mm = String(bj.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(bj.getUTCDate()).padStart(2, "0");
-  const hh = String(bj.getUTCHours()).padStart(2, "0");
-  const min = String(bj.getUTCMinutes()).padStart(2, "0");
-  return `${mm}-${dd} ${hh}:${min}`;
+  return new Date(utcMs).toISOString();
 }
 
-function transformOpenFootballMatches(data: OpenFootballWorldCup, dateKey: ScheduleDateKey): Match[] {
-  const sourceDate = dateKeyToSourceDate[dateKey];
+function transformOpenFootballMatches(
+  data: OpenFootballWorldCup,
+  dateKey: ScheduleDateKey,
+  sourceDate = sourceDateFor(dateKey),
+  dateRange = dateRangeFor(dateKey, { sourceDate }),
+): Match[] {
   return data.matches
     .map((match, index) => {
       const home = getTeam(match.team1);
       const away = getTeam(match.team2);
       const score = match.score?.ft;
       const status: MatchStatus = score ? "finished" : "upcoming";
+      const kickoffAt = parseOpenFootballKickoffUtc(match.date, match.time);
       return {
         id: `openfootball-${sourceDate}-${index + 1}`,
         homeTeam: home.name,
@@ -707,6 +767,7 @@ function transformOpenFootballMatches(data: OpenFootballWorldCup, dateKey: Sched
         awayFlag: away.flag,
         homeScore: score?.[0] ?? null,
         awayScore: score?.[1] ?? null,
+        kickoffAt,
         kickoffBj: parseKickoffToBeijing(match.date, match.time),
         group: (match.group || "").replace("Group", "").trim()
           ? `${(match.group || "").replace("Group", "").trim()} 组`
@@ -727,17 +788,17 @@ function transformOpenFootballMatches(data: OpenFootballWorldCup, dateKey: Sched
         events: [],
       };
     })
-    .filter((match) => match.kickoffBj.slice(0, 5) === sourceDate.slice(5))
+    .filter((match) => matchInDateRange(match, dateRange))
     .slice(0, 8);
 }
 
 function transformFootballDataMatches(
   data: FootballDataMatchesResponse,
   dateKey: ScheduleDateKey,
+  sourceDate = sourceDateFor(dateKey),
+  dateRange = dateRangeFor(dateKey, { sourceDate }),
 ): Match[] {
-  const sourceDate = dateKeyToSourceDate[dateKey];
   return (data.matches || [])
-    .filter((match) => providerDateBj(match.utcDate) === sourceDate)
     .map((match) => {
       const home = getTeam(match.homeTeam?.name || match.homeTeam?.shortName);
       const away = getTeam(match.awayTeam?.name || match.awayTeam?.shortName);
@@ -752,6 +813,7 @@ function transformFootballDataMatches(
         awayFlag: away.flag,
         homeScore,
         awayScore,
+        kickoffAt: match.utcDate,
         kickoffBj: formatKickoffBj(match.utcDate),
         group: match.group ? `${match.group.replace(/^GROUP_?/, "")} 组` : "世界杯",
         round: roundFromStage(match.stage, match.matchday),
@@ -769,7 +831,8 @@ function transformFootballDataMatches(
         updatedAt: "football-data.org",
         events: [],
       };
-    });
+    })
+    .filter((match) => matchInDateRange(match, dateRange));
 }
 
 function apiFootballMatchStatus(status: string | undefined): MatchStatus {
@@ -925,11 +988,11 @@ function normalizePredictionPercent(input: ApiFootballPredictionResponse["respon
 function transformApiFootballMatches(
   data: ApiFootballResponse<ApiFootballFixture>,
   dateKey: ScheduleDateKey,
+  sourceDate = sourceDateFor(dateKey),
+  dateRange = dateRangeFor(dateKey, { sourceDate }),
   predictionsByFixtureId = new Map<number, MatchPrediction>(),
 ): Match[] {
-  const sourceDate = dateKeyToSourceDate[dateKey];
   return (data.response || [])
-    .filter((fixture) => providerDateBj(fixture.fixture?.date) === sourceDate)
     .map((fixture) => {
       const home = getTeam(fixture.teams?.home?.name);
       const away = getTeam(fixture.teams?.away?.name);
@@ -974,7 +1037,8 @@ function transformApiFootballMatches(
         statistics,
         prediction,
       };
-    });
+    })
+    .filter((match) => matchInDateRange(match, dateRange));
 }
 
 function mergeApiFootballFixtureDetails(
@@ -995,8 +1059,12 @@ function mergeApiFootballFixtureDetails(
   };
 }
 
-function transformWorldCupApiMatches(data: unknown, dateKey: ScheduleDateKey): Match[] {
-  const sourceDate = dateKeyToSourceDate[dateKey];
+function transformWorldCupApiMatches(
+  data: unknown,
+  dateKey: ScheduleDateKey,
+  sourceDate = sourceDateFor(dateKey),
+  dateRange = dateRangeFor(dateKey, { sourceDate }),
+): Match[] {
   const fixtures = Array.isArray(data)
     ? data as WorldCupApiFixture[]
     : typeof data === "object" && data !== null && Array.isArray((data as { data?: unknown }).data)
@@ -1017,6 +1085,7 @@ function transformWorldCupApiMatches(data: unknown, dateKey: ScheduleDateKey): M
         awayFlag: away.flag,
         homeScore: null,
         awayScore: null,
+        kickoffAt,
         kickoffBj: formatKickoffBj(kickoffAt),
         group: fixture.group_id ? `Group ${fixture.group_id}` : "世界杯",
         round: fixture.round ? `小组赛第 ${fixture.round} 轮` : "世界杯",
@@ -1035,14 +1104,15 @@ function transformWorldCupApiMatches(data: unknown, dateKey: ScheduleDateKey): M
         events: [],
       };
     })
-    .filter((match) => match.kickoffBj.slice(0, 5) === sourceDate.slice(5));
+    .filter((match) => matchInDateRange(match, dateRange));
 }
 
 function transformTheSportsDbMatches(
   data: TheSportsDbEventsResponse,
   dateKey: ScheduleDateKey,
+  sourceDate = sourceDateFor(dateKey),
+  dateRange = dateRangeFor(dateKey, { sourceDate }),
 ): Match[] {
-  const sourceDate = dateKeyToSourceDate[dateKey];
   return (data.events || [])
     .map((event) => {
       const home = getTeam(event.strHomeTeam);
@@ -1065,6 +1135,7 @@ function transformTheSportsDbMatches(
         awayFlag: away.flag,
         homeScore: hasScore ? homeScore : null,
         awayScore: hasScore ? awayScore : null,
+        kickoffAt,
         kickoffBj: formatKickoffBj(kickoffAt),
         group: event.strGroup || "世界杯",
         round: event.intRound ? `第 ${event.intRound} 轮` : "世界杯",
@@ -1083,7 +1154,7 @@ function transformTheSportsDbMatches(
         events: [],
       };
     })
-    .filter((match) => match.kickoffBj.slice(0, 5) === sourceDate.slice(5));
+    .filter((match) => matchInDateRange(match, dateRange));
 }
 
 function average(values: number[]): number {
@@ -2894,13 +2965,14 @@ function buildMorningBrief(input: {
   news: NewsArticle[];
   sourceLabel: string;
   dateKey: ScheduleDateKey;
+  sourceDate?: string;
   aggregation: NewsAggregationMeta;
   curation?: AiNewsCuration;
 }): MorningBrief {
   const finishedMatches = input.matches.filter((match) => match.status === "finished");
   const headlineMatch = finishedMatches[0] || input.matches[0];
   const topNews = input.news[0];
-  const issueDate = scheduleDateMeta[input.dateKey].date;
+  const issueDate = input.sourceDate || scheduleDateMeta[input.dateKey].date;
   const edition = `${issueDate} 早报`;
   const fallbackTitle = headlineMatch
     ? `世界杯早报：${headlineMatch.homeTeam} vs ${headlineMatch.awayTeam}`
@@ -3181,7 +3253,10 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
   diagnostics: SourceDiagnostic[];
 }> {
   const { dataSources, updatedAt } = await readAdminConfig();
-  const snapshotKey = `matches:v4:${dateKey}:${dateKeyToSourceDate[dateKey]}:${updatedAt}`;
+  const sourceDate = sourceDateFor(dateKey, options);
+  const dateRange = dateRangeFor(dateKey, options);
+  const providerDates = providerDatesForRange(dateRange, sourceDate);
+  const snapshotKey = `matches:v5:${dateKey}:${dateRangeSnapshotKey(dateRange)}:${updatedAt}`;
   const persisted = await readSnapshotCache<Match[]>(snapshotKey);
   if (shouldUseSnapshot(persisted, (payload) => payload.length > 0, options)) {
     return {
@@ -3204,9 +3279,10 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
 
   if (isCacheOnly(options)) {
     const storedOfficialMatches = (
-      await getStoredOfficialMatches<FifaScheduleRecord>(scheduleDateMeta[dateKey].date)
+      await getStoredOfficialMatches<FifaScheduleRecord>(dateRange)
     ).map(fifaRecordToMatch);
-    const canonicalMatches = storedOfficialMatches.length ? storedOfficialMatches : matchesByDate[dateKey];
+    const fallbackMatches = fifaMatchesInUtcDayBounds(dateRange);
+    const canonicalMatches = storedOfficialMatches.length ? storedOfficialMatches : fallbackMatches;
     return {
       matches: await enrichMatchesWithLatestCanonicalOdds(canonicalMatches, options),
       source: storedOfficialMatches.length ? "cache" : "fallback",
@@ -3221,13 +3297,17 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
     try {
       let matches: Match[] = [];
       if (source.adapter === "api-football") {
-        const { data, diagnostic } = await fetchJsonFromSource<ApiFootballResponse<ApiFootballFixture>>(source, {
-          league: 1,
-          season: 2026,
-          date: dateKeyToSourceDate[dateKey],
-          timezone: "Asia/Shanghai",
-        });
-        diagnostics.push(diagnostic);
+        const data: ApiFootballResponse<ApiFootballFixture> = { response: [] };
+        for (const providerDate of providerDates) {
+          const result = await fetchJsonFromSource<ApiFootballResponse<ApiFootballFixture>>(source, {
+            league: 1,
+            season: 2026,
+            date: providerDate,
+            timezone: "Asia/Shanghai",
+          });
+          diagnostics.push(result.diagnostic);
+          data.response?.push(...(result.data.response || []));
+        }
         const fixtureIds = (data.response || [])
           .map((fixture) => fixture.fixture?.id)
           .filter((id): id is number => Number.isFinite(id));
@@ -3258,6 +3338,8 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
         matches = transformApiFootballMatches(
           mergeApiFootballFixtureDetails(data, detailData),
           dateKey,
+          sourceDate,
+          dateRange,
           predictionsByFixtureId,
         );
       } else if (source.adapter === "football-data-org") {
@@ -3265,20 +3347,24 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
           season: 2026,
         });
         diagnostics.push(diagnostic);
-        matches = transformFootballDataMatches(data, dateKey);
+        matches = transformFootballDataMatches(data, dateKey, sourceDate, dateRange);
       } else if (source.adapter === "worldcupapi-com") {
-        const { data, diagnostic } = await fetchJsonFromSource<unknown>(source, {
-          date: dateKeyToSourceDate[dateKey],
-        });
-        diagnostics.push(diagnostic);
-        matches = transformWorldCupApiMatches(data, dateKey);
+        matches = [];
+        for (const providerDate of providerDates) {
+          const { data, diagnostic } = await fetchJsonFromSource<unknown>(source, {
+            date: providerDate,
+          });
+          diagnostics.push(diagnostic);
+          matches.push(...transformWorldCupApiMatches(data, dateKey, sourceDate, dateRange));
+        }
+        matches = uniqueMatches(matches);
       } else if (source.adapter === "thesportsdb") {
         const { data, diagnostic } = await fetchJsonFromSource<TheSportsDbEventsResponse>(source, {
           id: 4429,
           s: 2026,
         });
         diagnostics.push(diagnostic);
-        matches = transformTheSportsDbMatches(data, dateKey);
+        matches = transformTheSportsDbMatches(data, dateKey, sourceDate, dateRange);
       }
       if (!matches.length) continue;
 
@@ -3308,7 +3394,7 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
       if (source.adapter !== "openfootball-worldcup-json") continue;
       const { data, diagnostic } = await fetchJsonFromSource<OpenFootballWorldCup>(source);
       diagnostics.push(diagnostic);
-      const matches = transformOpenFootballMatches(data, dateKey);
+      const matches = transformOpenFootballMatches(data, dateKey, sourceDate, dateRange);
       if (matches.length > 0) {
         await upsertSnapshotCache({
           snapshotKey,
@@ -3343,7 +3429,7 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
   }
 
   const storedOfficialMatches = (
-    await getStoredOfficialMatches<FifaScheduleRecord>(scheduleDateMeta[dateKey].date)
+    await getStoredOfficialMatches<FifaScheduleRecord>(dateRange)
   ).map(fifaRecordToMatch);
   if (storedOfficialMatches.length > 0) {
     const databaseDiagnostic: SourceDiagnostic = {
@@ -3372,7 +3458,7 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
     };
   }
 
-  const fallbackMatches = matchesByDate[dateKey];
+  const fallbackMatches = fifaMatchesInUtcDayBounds(dateRange);
   await upsertSnapshotCache({
     snapshotKey,
     feature: "matches",
@@ -3729,7 +3815,9 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
 }> {
   const { updatedAt } = await readAdminConfig();
   const newsWindow = rollingRecentNewsWindow();
-  const snapshotKey = `morning:v16:${dateKey}:${dateKeyToSourceDate[dateKey]}:${newsWindow.cacheKey}:${updatedAt}`;
+  const sourceDate = sourceDateFor(dateKey, options);
+  const dateRange = dateRangeFor(dateKey, options);
+  const snapshotKey = `morning:v17:${dateKey}:${dateRangeSnapshotKey(dateRange)}:${newsWindow.cacheKey}:${updatedAt}`;
   const persisted = await readSnapshotCache<MorningBriefStoredPayload>(snapshotKey);
   if (persisted?.payload && options.cacheMode !== "refresh") {
     return {
@@ -3751,7 +3839,11 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
   }
 
   if (isCacheOnly(options)) {
-    const matchesResult = await getAggregatedMatches(dateKey, { cacheMode: "cache-only" });
+    const matchesResult = await getAggregatedMatches(dateKey, {
+      cacheMode: "cache-only",
+      sourceDate,
+      dateRange,
+    });
     const teamsInMatches = matchesResult.matches
       .flatMap((match) => [match.homeTeam, match.awayTeam])
       .filter((team) => team && team !== "待定")
@@ -3788,6 +3880,7 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
       news: newsResult.articles,
       sourceLabel,
       dateKey,
+      sourceDate,
       aggregation: newsResult.aggregation,
       curation: newsResult.curation,
     });
@@ -3826,6 +3919,7 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
     news: newsResult.articles,
     sourceLabel,
     dateKey,
+    sourceDate,
     aggregation: newsResult.aggregation,
     curation: newsResult.curation,
   });

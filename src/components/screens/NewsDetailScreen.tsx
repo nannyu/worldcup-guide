@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import type { MorningBrief, NewsArticle } from "@/lib/wc-data";
+import { browserScheduleDateQuery, type MorningBrief, type NewsArticle } from "@/lib/wc-data";
 import { articleBody, articleComment, articleKeyPoints, articleSummary, articleTitle, tr } from "@/lib/i18n/content";
 
 function formatArticleTime(input: string, locale = "zh-CN"): string {
@@ -75,9 +75,10 @@ async function loadArticleById(id: string): Promise<NewsArticle | undefined> {
   }
 
   const dateKeys = ["yesterday", "today", "tomorrow"] as const;
+  const browserNow = new Date();
   let fallback: NewsArticle | undefined;
   for (const dateKey of dateKeys) {
-    const response = await fetch(`/api/data/morning?dateKey=${dateKey}`, { cache: "no-store" });
+    const response = await fetch(`/api/data/morning?${browserScheduleDateQuery(dateKey, browserNow)}`, { cache: "no-store" });
     if (!response.ok) continue;
     const data = (await response.json()) as { brief?: MorningBrief };
     const article = data.brief?.news?.find((item) => item.id === id);

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { getPlayerRoastSnapshot } from "@/lib/ai/player-roasts";
 import { getTeamRoastSnapshot } from "@/lib/ai/team-roasts";
 import {
@@ -7,6 +8,7 @@ import {
   getAggregatedOdds,
   getAggregatedRadar,
   getAggregatedTeams,
+  MAX_AGGREGATED_NEWS_LIMIT,
   MORNING_BRIEF_NEWS_LIMIT,
   NEWS_TRANSLATION_LIMIT,
 } from "@/lib/data-sources/aggregate";
@@ -22,10 +24,90 @@ import {
 import { recordIngestionRun } from "@/lib/db/queries/ingestion-runs";
 import { teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
 import { morningBriefTranslationArticle, translateArticleAndCache } from "@/lib/translation/article-translation";
-import type { NewsArticle, ScheduleDateKey } from "@/lib/wc-data";
+import {
+  normalizeScheduleDate,
+  normalizeScheduleUtcDayBounds,
+  type NewsArticle,
+  type ScheduleDateKey,
+  type ScheduleUtcDayBounds,
+} from "@/lib/wc-data";
+
+const MAX_BACKGROUND_JOB_ID_LENGTH = 240;
+const MAX_NEWS_QUERY_LENGTH = 180;
+const MAX_BACKGROUND_ARTICLE_TEXT_LENGTH = 4000;
+const MAX_BACKGROUND_ARTICLE_PARAGRAPHS = 8;
 
 function stableJobId(type: BackgroundJobType, parts: Array<string | number | undefined>) {
-  return [type, ...parts.map((part) => String(part || ""))].join(":");
+  const raw = [type, ...parts.map((part) => String(part || ""))].join(":");
+  if (raw.length <= MAX_BACKGROUND_JOB_ID_LENGTH) return raw;
+  const digest = createHash("sha256").update(raw).digest("hex").slice(0, 32);
+  return `${type}:${digest}`;
+}
+
+function truncateText(value: string | undefined, maxLength: number): string | undefined {
+  const text = value?.replace(/\s+/g, " ").trim();
+  if (!text) return undefined;
+  return text.length > maxLength ? text.slice(0, maxLength) : text;
+}
+
+function normalizeNewsQuery(query: string | undefined): string | undefined {
+  return truncateText(query, MAX_NEWS_QUERY_LENGTH);
+}
+
+function normalizeLimit(limit: number | undefined): number {
+  const value = Number(limit);
+  return Number.isFinite(value)
+    ? Math.min(Math.max(Math.round(value), 1), MAX_AGGREGATED_NEWS_LIMIT)
+    : MORNING_BRIEF_NEWS_LIMIT;
+}
+
+function normalizeDateString(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const parsed = new Date(value);
+  return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : undefined;
+}
+
+function trimTextList(values: string[] | undefined, maxLength: number): string[] | undefined {
+  const trimmed = values
+    ?.map((value) => truncateText(value, maxLength))
+    .filter((value): value is string => Boolean(value))
+    .slice(0, MAX_BACKGROUND_ARTICLE_PARAGRAPHS);
+  return trimmed?.length ? trimmed : undefined;
+}
+
+function trimArticleForBackground(article: NewsArticle): NewsArticle {
+  return {
+    ...article,
+    id: truncateText(article.id, 256) || article.id,
+    title: truncateText(article.title, 500) || article.title,
+    url: truncateText(article.url, 1000) || article.url,
+    source: truncateText(article.source, 128) || article.source,
+    summary: truncateText(article.summary, 1200) || "",
+    sourceText: truncateText(article.sourceText, MAX_BACKGROUND_ARTICLE_TEXT_LENGTH),
+    aiSummary: truncateText(article.aiSummary, 1200),
+    imageUrl: truncateText(article.imageUrl, 1000),
+    domain: truncateText(article.domain, 256),
+    body: trimTextList(article.body, 1400),
+    bodyEn: trimTextList(article.bodyEn, 1400),
+    bodyZh: trimTextList(article.bodyZh, 1400),
+    keyPointsEn: trimTextList(article.keyPointsEn, 300),
+    keyPointsZh: trimTextList(article.keyPointsZh, 300),
+    aiKeyPoints: trimTextList(article.aiKeyPoints, 300),
+  };
+}
+
+function normalizeNewsRefreshOptions(options: {
+  query?: string;
+  limit?: number;
+  publishedAfter?: string;
+  publishedBefore?: string;
+}) {
+  return {
+    query: normalizeNewsQuery(options.query),
+    limit: normalizeLimit(options.limit),
+    publishedAfter: normalizeDateString(options.publishedAfter),
+    publishedBefore: normalizeDateString(options.publishedBefore),
+  };
 }
 
 function payloadValue(payload: unknown, key: string): unknown {
@@ -46,6 +128,26 @@ function payloadScheduleDateKey(payload: unknown): ScheduleDateKey {
   const value = payloadString(payload, "dateKey");
   if (value === "yesterday" || value === "tomorrow") return value;
   return "today";
+}
+
+function payloadScheduleDate(payload: unknown): string | undefined {
+  return normalizeScheduleDate(payloadString(payload, "date"));
+}
+
+function payloadScheduleUtcDayBounds(payload: unknown): ScheduleUtcDayBounds | undefined {
+  return normalizeScheduleUtcDayBounds({
+    date: payloadString(payload, "date"),
+    startUtc: payloadString(payload, "startUtc"),
+    endUtc: payloadString(payload, "endUtc"),
+  });
+}
+
+function payloadScheduleOptions(payload: unknown): { sourceDate?: string; dateRange?: ScheduleUtcDayBounds } {
+  const dateRange = payloadScheduleUtcDayBounds(payload);
+  return {
+    sourceDate: dateRange?.date || payloadScheduleDate(payload),
+    dateRange,
+  };
 }
 
 function payloadArticle(payload: unknown): NewsArticle {
@@ -147,20 +249,46 @@ export function enqueueRadarRefresh() {
   return enqueueBackgroundJob({ id: "data:radar", type: "radar.refresh", priority: 50 });
 }
 
-export function enqueueMatchesRefresh(dateKey: ScheduleDateKey) {
+export function enqueueMatchesRefresh(
+  dateKey: ScheduleDateKey,
+  options: { sourceDate?: string; dateRange?: ScheduleUtcDayBounds } = {},
+) {
   return enqueueBackgroundJob({
-    id: stableJobId("matches.refresh", [dateKey]),
+    id: stableJobId("matches.refresh", [
+      dateKey,
+      options.sourceDate,
+      options.dateRange?.startUtc,
+      options.dateRange?.endUtc,
+    ]),
     type: "matches.refresh",
-    payload: { dateKey },
+    payload: {
+      dateKey,
+      date: options.sourceDate,
+      startUtc: options.dateRange?.startUtc,
+      endUtc: options.dateRange?.endUtc,
+    },
     priority: 40,
   });
 }
 
-export function enqueueMorningRefresh(dateKey: ScheduleDateKey) {
+export function enqueueMorningRefresh(
+  dateKey: ScheduleDateKey,
+  options: { sourceDate?: string; dateRange?: ScheduleUtcDayBounds } = {},
+) {
   return enqueueBackgroundJob({
-    id: stableJobId("morning.refresh", [dateKey]),
+    id: stableJobId("morning.refresh", [
+      dateKey,
+      options.sourceDate,
+      options.dateRange?.startUtc,
+      options.dateRange?.endUtc,
+    ]),
     type: "morning.refresh",
-    payload: { dateKey },
+    payload: {
+      dateKey,
+      date: options.sourceDate,
+      startUtc: options.dateRange?.startUtc,
+      endUtc: options.dateRange?.endUtc,
+    },
     priority: 30,
   });
 }
@@ -171,24 +299,26 @@ export function enqueueNewsRefresh(options: {
   publishedAfter?: string;
   publishedBefore?: string;
 }) {
+  const normalized = normalizeNewsRefreshOptions(options);
   return enqueueBackgroundJob({
-    id: stableJobId("news.refresh", [options.query, options.limit || MORNING_BRIEF_NEWS_LIMIT, options.publishedAfter, options.publishedBefore]),
+    id: stableJobId("news.refresh", [
+      normalized.query,
+      normalized.limit,
+      normalized.publishedAfter,
+      normalized.publishedBefore,
+    ]),
     type: "news.refresh",
-    payload: {
-      query: options.query,
-      limit: options.limit || MORNING_BRIEF_NEWS_LIMIT,
-      publishedAfter: options.publishedAfter,
-      publishedBefore: options.publishedBefore,
-    },
+    payload: normalized,
     priority: 30,
   });
 }
 
 export function enqueueArticleTranslation(article: NewsArticle) {
+  const backgroundArticle = trimArticleForBackground(article);
   return enqueueBackgroundJob({
-    id: stableJobId("news.translate", [article.id]),
+    id: stableJobId("news.translate", [backgroundArticle.id]),
     type: "news.translate",
-    payload: { article: article as unknown as Record<string, unknown> },
+    payload: { article: backgroundArticle as unknown as Record<string, unknown> },
     priority: 20,
   });
 }
@@ -221,23 +351,29 @@ async function executeBackgroundJobPayload(type: BackgroundJobType, payload: unk
   if (type === "radar.refresh") return getAggregatedRadar({ cacheMode: "refresh" });
 
   if (type === "matches.refresh") {
-    return getAggregatedMatches(payloadScheduleDateKey(payload), { cacheMode: "refresh" });
+    return getAggregatedMatches(payloadScheduleDateKey(payload), {
+      cacheMode: "refresh",
+      ...payloadScheduleOptions(payload),
+    });
   }
 
   if (type === "morning.refresh") {
-    const result = await getAggregatedMorningBrief(payloadScheduleDateKey(payload), { cacheMode: "refresh" });
+    const result = await getAggregatedMorningBrief(payloadScheduleDateKey(payload), {
+      cacheMode: "refresh",
+      ...payloadScheduleOptions(payload),
+    });
     await translateArticleAndCache(morningBriefTranslationArticle(result.brief));
     await translateNewsArticles(result.brief.news);
     return result;
   }
 
   if (type === "news.refresh") {
-    const limit = payloadNumber(payload, "limit") || MORNING_BRIEF_NEWS_LIMIT;
+    const limit = normalizeLimit(payloadNumber(payload, "limit"));
     const result = await getAggregatedNews({
-      query: payloadString(payload, "query"),
+      query: normalizeNewsQuery(payloadString(payload, "query")),
       limit,
-      publishedAfter: payloadString(payload, "publishedAfter"),
-      publishedBefore: payloadString(payload, "publishedBefore"),
+      publishedAfter: normalizeDateString(payloadString(payload, "publishedAfter")),
+      publishedBefore: normalizeDateString(payloadString(payload, "publishedBefore")),
       cacheMode: "refresh",
     });
     await translateNewsArticles(result.articles, limit);

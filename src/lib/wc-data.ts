@@ -230,9 +230,20 @@ export function fifaRecordToMatch(record: FifaScheduleRecord): Match {
   };
 }
 
-function fifaMatchesOn(date: string): Match[] {
+export function fifaMatchesOn(date: string): Match[] {
   return fifaSchedule.matches
     .filter((match) => match.kickoffBeijing.slice(0, 10) === date)
+    .map(fifaRecordToMatch);
+}
+
+export function fifaMatchesInUtcDayBounds(bounds: ScheduleUtcDayBounds): Match[] {
+  const startMs = Date.parse(bounds.startUtc);
+  const endMs = Date.parse(bounds.endUtc);
+  return fifaSchedule.matches
+    .filter((match) => {
+      const kickoffMs = Date.parse(match.kickoffBeijing);
+      return Number.isFinite(kickoffMs) && kickoffMs >= startMs && kickoffMs < endMs;
+    })
     .map(fifaRecordToMatch);
 }
 
@@ -513,14 +524,14 @@ export interface GroupStanding {
   rows: GroupStandingRow[];
 }
 
-function beijingDate(offsetDays: number): string {
+function beijingDate(offsetDays: number, now = new Date()): string {
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Shanghai",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   });
-  const today = formatter.format(new Date());
+  const today = formatter.format(now);
   const date = new Date(`${today}T00:00:00+08:00`);
   date.setUTCDate(date.getUTCDate() + offsetDays);
   return formatter.format(date);
@@ -531,42 +542,181 @@ function dateTabLabel(date: string): string {
   return `${Number(month)}月${Number(day)}日`;
 }
 
-const yesterdayDate = beijingDate(-1);
-const todayDate = beijingDate(0);
-const tomorrowDate = beijingDate(1);
+const scheduleDateOffsets: Record<ScheduleDateKey, number> = {
+  yesterday: -1,
+  today: 0,
+  tomorrow: 1,
+};
+
+const scheduleDateListLabels: Record<ScheduleDateKey, string> = {
+  yesterday: "昨日赛程",
+  today: "今日赛程",
+  tomorrow: "明日赛程",
+};
+
+export interface ScheduleUtcDayBounds {
+  date?: string;
+  startUtc: string;
+  endUtc: string;
+}
+
+const MIN_NATURAL_DAY_MS = 20 * 60 * 60 * 1000;
+const MAX_NATURAL_DAY_MS = 28 * 60 * 60 * 1000;
+
+function localCalendarDate(offsetDays: number, now = new Date()): string {
+  const date = new Date(now);
+  date.setDate(date.getDate() + offsetDays);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function normalizeScheduleDate(value: string | null | undefined): string | undefined {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    Number.isNaN(date.getTime())
+    || date.getUTCFullYear() !== year
+    || date.getUTCMonth() !== month - 1
+    || date.getUTCDate() !== day
+  ) {
+    return undefined;
+  }
+  return value;
+}
+
+function normalizeUtcInstant(value: string | null | undefined): string | undefined {
+  if (!value) return undefined;
+  const time = Date.parse(value);
+  return Number.isFinite(time) ? new Date(time).toISOString() : undefined;
+}
+
+export function normalizeScheduleUtcDayBounds(input: {
+  date?: string | null;
+  startUtc?: string | null;
+  endUtc?: string | null;
+}): ScheduleUtcDayBounds | undefined {
+  const startUtc = normalizeUtcInstant(input.startUtc);
+  const endUtc = normalizeUtcInstant(input.endUtc);
+  if (!startUtc || !endUtc) return undefined;
+  const startMs = Date.parse(startUtc);
+  const endMs = Date.parse(endUtc);
+  const durationMs = endMs - startMs;
+  if (durationMs < MIN_NATURAL_DAY_MS || durationMs > MAX_NATURAL_DAY_MS) return undefined;
+  const date = normalizeScheduleDate(input.date);
+  return date ? { date, startUtc, endUtc } : { startUtc, endUtc };
+}
+
+function scheduleDateMetaFor(dateKey: ScheduleDateKey, now = new Date()) {
+  const date = beijingDate(scheduleDateOffsets[dateKey], now);
+  return {
+    date,
+    tabLabel: dateTabLabel(date),
+    listLabel: scheduleDateListLabels[dateKey],
+  };
+}
+
+function browserScheduleDateMetaFor(dateKey: ScheduleDateKey, now = new Date()) {
+  const date = localCalendarDate(scheduleDateOffsets[dateKey], now);
+  return {
+    date,
+    tabLabel: dateTabLabel(date),
+    listLabel: scheduleDateListLabels[dateKey],
+  };
+}
+
+export function browserScheduleUtcDayBounds(dateKey: ScheduleDateKey, now = new Date()): ScheduleUtcDayBounds {
+  const target = new Date(now);
+  target.setDate(target.getDate() + scheduleDateOffsets[dateKey]);
+  const start = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+  const end = new Date(target.getFullYear(), target.getMonth(), target.getDate() + 1);
+  return {
+    date: localCalendarDate(scheduleDateOffsets[dateKey], now),
+    startUtc: start.toISOString(),
+    endUtc: end.toISOString(),
+  };
+}
+
+export function getScheduleDateMeta(now = new Date()): Record<
+  ScheduleDateKey,
+  { date: string; tabLabel: string; listLabel: string }
+> {
+  return {
+    yesterday: scheduleDateMetaFor("yesterday", now),
+    today: scheduleDateMetaFor("today", now),
+    tomorrow: scheduleDateMetaFor("tomorrow", now),
+  };
+}
+
+export function getBrowserScheduleDateMeta(now = new Date()): Record<
+  ScheduleDateKey,
+  { date: string; tabLabel: string; listLabel: string }
+> {
+  return {
+    yesterday: browserScheduleDateMetaFor("yesterday", now),
+    today: browserScheduleDateMetaFor("today", now),
+    tomorrow: browserScheduleDateMetaFor("tomorrow", now),
+  };
+}
+
+export function browserScheduleDateQuery(dateKey: ScheduleDateKey, now = new Date()): string {
+  const bounds = browserScheduleUtcDayBounds(dateKey, now);
+  return new URLSearchParams({
+    dateKey,
+    date: bounds.date || browserScheduleDateMetaFor(dateKey, now).date,
+    startUtc: bounds.startUtc,
+    endUtc: bounds.endUtc,
+  }).toString();
+}
 
 export const scheduleDateMeta: Record<
   ScheduleDateKey,
   { date: string; tabLabel: string; listLabel: string }
 > = {
-  yesterday: {
-    date: yesterdayDate,
-    tabLabel: dateTabLabel(yesterdayDate),
-    listLabel: "昨日赛程",
+  get yesterday() {
+    return scheduleDateMetaFor("yesterday");
   },
-  today: {
-    date: todayDate,
-    tabLabel: dateTabLabel(todayDate),
-    listLabel: "今日赛程",
+  get today() {
+    return scheduleDateMetaFor("today");
   },
-  tomorrow: {
-    date: tomorrowDate,
-    tabLabel: dateTabLabel(tomorrowDate),
-    listLabel: "明日赛程",
+  get tomorrow() {
+    return scheduleDateMetaFor("tomorrow");
   },
 };
 
+export function matchesForDateKey(dateKey: ScheduleDateKey, now = new Date()): Match[] {
+  return fifaMatchesOn(scheduleDateMetaFor(dateKey, now).date);
+}
+
 export const matchesByDate: Record<ScheduleDateKey, Match[]> = {
-  yesterday: fifaMatchesOn(scheduleDateMeta.yesterday.date),
-  today: fifaMatchesOn(scheduleDateMeta.today.date),
-  tomorrow: fifaMatchesOn(scheduleDateMeta.tomorrow.date),
+  get yesterday() {
+    return matchesForDateKey("yesterday");
+  },
+  get today() {
+    return matchesForDateKey("today");
+  },
+  get tomorrow() {
+    return matchesForDateKey("tomorrow");
+  },
 };
+
+function dynamicMatchesForDateKey(dateKey: ScheduleDateKey): Match[] {
+  return new Proxy([] as Match[], {
+    get(_target, property) {
+      const current = matchesForDateKey(dateKey);
+      const value = Reflect.get(current, property, current);
+      return typeof value === "function" ? value.bind(current) : value;
+    },
+  });
+}
 
 // Compatibility exports used by existing screens and MCP tools. These now
 // contain official FIFA schedule data only.
-export const yesterdayMatches = matchesByDate.yesterday;
-export const todayMatches = matchesByDate.today;
-export const tomorrowMatches = matchesByDate.tomorrow;
+export const yesterdayMatches = dynamicMatchesForDateKey("yesterday");
+export const todayMatches = dynamicMatchesForDateKey("today");
+export const tomorrowMatches = dynamicMatchesForDateKey("tomorrow");
 export const allMatches = fifaSchedule.matches.map(fifaRecordToMatch);
 
 function groupSortValue(group: string): number {

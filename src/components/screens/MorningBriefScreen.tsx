@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import {
+  browserScheduleDateQuery,
   type GossipItem,
   type Match,
   type MorningBrief,
@@ -537,7 +538,7 @@ export function MorningBriefScreen() {
   useEffect(() => {
     let cancelled = false;
     async function loadBrief() {
-      const res = await fetch(`/api/data/morning?dateKey=${morningDateKey}`, { cache: "no-store" });
+      const res = await fetch(`/api/data/morning?${browserScheduleDateQuery(morningDateKey)}`, { cache: "no-store" });
       if (!res.ok) return;
       const data = (await res.json()) as { brief?: MorningBrief };
       if (cancelled || !data.brief) return;

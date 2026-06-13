@@ -26,10 +26,14 @@ function databaseUrl(): string {
 }
 
 function postgresOptions(): postgres.Options<Record<string, postgres.PostgresType>> {
+  const configuredPoolMax = Number(process.env.DATABASE_POOL_MAX);
+  const defaultPoolMax = process.env.VERCEL ? 1 : 5;
   return {
     connect_timeout: 3,
     idle_timeout: 20,
-    max: Number(process.env.DATABASE_POOL_MAX || 5),
+    max: Number.isInteger(configuredPoolMax) && configuredPoolMax > 0
+      ? configuredPoolMax
+      : defaultPoolMax,
     prepare: process.env.DATABASE_PREPARE === "true",
     ssl: process.env.DATABASE_SSL === "disable" ? false : process.env.DATABASE_SSL === "require" ? "require" : undefined,
   };

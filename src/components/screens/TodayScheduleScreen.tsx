@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import {
   allMatches,
   allScheduleDayGroups,
+  browserScheduleDateQuery,
   createMatchSequenceLookup,
   getCountdownToBj,
   getGroupStandings,
@@ -333,9 +334,10 @@ export function TodayScheduleScreen() {
   useEffect(() => {
     let cancelled = false;
     async function loadLiveMatches() {
+      const browserNow = new Date();
       const responses = await Promise.all(
         liveDateKeys.map(async (dateKey) => {
-          const response = await fetch(`/api/data/matches?dateKey=${dateKey}`);
+          const response = await fetch(`/api/data/matches?${browserScheduleDateQuery(dateKey, browserNow)}`);
           if (!response.ok) return { matches: [] as Match[], source: undefined as "remote" | "fallback" | "cache" | undefined, diagnostics: [] as Array<{ name: string; ok: boolean }> };
           return (await response.json()) as {
             matches?: Match[];
