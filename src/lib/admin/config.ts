@@ -20,6 +20,7 @@ export type DataSourceAdapter =
   | "football-data-org"
   | "openligadb"
   | "the-odds-api"
+  | "odds-api-io"
   | "thesportsdb"
   | "zafronix"
   | "balldontlie-fifa"
@@ -100,11 +101,11 @@ export const defaultAdminConfig: AdminConfig = {
       apiKeyParamName: "",
       apiKeyHeaderName: "",
       enabled: true,
-      priority: 10,
+      priority: 90,
       refreshSeconds: 86400,
       cacheTtlSeconds: 86400,
       timeoutMs: 8000,
-      notes: "免费、无 key、可作为 104 场赛程的本地种子和默认赛程源。",
+      notes: "免费、无 key，仅作为 API-Football 和官方赛程库不可用时的低优先级兜底。",
     },
     {
       id: "api-football-worldcup-fixtures",
@@ -161,6 +162,114 @@ export const defaultAdminConfig: AdminConfig = {
       notes: "API-Football Pro 球队源。获取世界杯参赛队 logo、国家和基础资料。",
     },
     {
+      id: "api-football-worldcup-standings",
+      name: "API-Football Pro · World Cup Standings",
+      type: "team-content",
+      adapter: "api-football",
+      baseUrl: "https://v3.football.api-sports.io",
+      endpointPath: "/standings",
+      apiKey: "",
+      apiKeyPlacement: "header",
+      apiKeyParamName: "",
+      apiKeyHeaderName: "x-apisports-key",
+      enabled: true,
+      priority: 2,
+      refreshSeconds: 300,
+      cacheTtlSeconds: 300,
+      timeoutMs: 10000,
+      notes: "API-Football Pro 积分榜源。按 league=1、season=2026 获取小组排名、胜平负、进失球和 form。",
+    },
+    {
+      id: "api-football-worldcup-squads",
+      name: "API-Football Pro · World Cup Squads",
+      type: "team-content",
+      adapter: "api-football",
+      baseUrl: "https://v3.football.api-sports.io",
+      endpointPath: "/players/squads",
+      apiKey: "",
+      apiKeyPlacement: "header",
+      apiKeyParamName: "",
+      apiKeyHeaderName: "x-apisports-key",
+      enabled: true,
+      priority: 3,
+      refreshSeconds: 86400,
+      cacheTtlSeconds: 86400,
+      timeoutMs: 10000,
+      notes: "API-Football Pro 名单源。按 team id 获取球员号码、位置和头像。",
+    },
+    {
+      id: "api-football-worldcup-injuries",
+      name: "API-Football Pro · World Cup Injuries",
+      type: "team-content",
+      adapter: "api-football",
+      baseUrl: "https://v3.football.api-sports.io",
+      endpointPath: "/injuries",
+      apiKey: "",
+      apiKeyPlacement: "header",
+      apiKeyParamName: "",
+      apiKeyHeaderName: "x-apisports-key",
+      enabled: true,
+      priority: 4,
+      refreshSeconds: 1800,
+      cacheTtlSeconds: 1800,
+      timeoutMs: 10000,
+      notes: "API-Football Pro 伤停源。按世界杯联赛和赛季同步球员伤停、原因和关联 fixture。",
+    },
+    {
+      id: "api-football-worldcup-odds",
+      name: "API-Football Pro · Pre-match Odds",
+      type: "odds",
+      adapter: "api-football",
+      baseUrl: "https://v3.football.api-sports.io",
+      endpointPath: "/odds",
+      apiKey: "",
+      apiKeyPlacement: "header",
+      apiKeyParamName: "",
+      apiKeyHeaderName: "x-apisports-key",
+      enabled: true,
+      priority: 1,
+      refreshSeconds: 300,
+      cacheTtlSeconds: 300,
+      timeoutMs: 10000,
+      notes: "API-Football Pro 赛前赔率源。聚合 1X2 Match Winner 市场并计算去水隐含概率。",
+    },
+    {
+      id: "api-football-worldcup-live-odds",
+      name: "API-Football Pro · Live Odds",
+      type: "odds",
+      adapter: "api-football",
+      baseUrl: "https://v3.football.api-sports.io",
+      endpointPath: "/odds/live",
+      apiKey: "",
+      apiKeyPlacement: "header",
+      apiKeyParamName: "",
+      apiKeyHeaderName: "x-apisports-key",
+      enabled: true,
+      priority: 2,
+      refreshSeconds: 60,
+      cacheTtlSeconds: 60,
+      timeoutMs: 10000,
+      notes: "API-Football Pro 实时赔率源。赛中优先使用 live odds；无可用 1X2 市场时回落到赛前赔率快照。",
+    },
+    {
+      id: "api-football-worldcup-predictions",
+      name: "API-Football Pro · Predictions",
+      type: "custom",
+      adapter: "api-football",
+      baseUrl: "https://v3.football.api-sports.io",
+      endpointPath: "/predictions",
+      apiKey: "",
+      apiKeyPlacement: "header",
+      apiKeyParamName: "",
+      apiKeyHeaderName: "x-apisports-key",
+      enabled: true,
+      priority: 1,
+      refreshSeconds: 900,
+      cacheTtlSeconds: 900,
+      timeoutMs: 10000,
+      notes: "API-Football Pro 预测源。按 fixture 获取胜平负概率、建议和预测胜方，用于比赛页预测补充；盘口页仍使用 Polymarket。",
+    },
+    {
       id: "worldcup26-ir",
       name: "worldcup26.ir 免费 API",
       type: "scores",
@@ -190,11 +299,11 @@ export const defaultAdminConfig: AdminConfig = {
       apiKeyParamName: "",
       apiKeyHeaderName: "",
       enabled: true,
-      priority: 10,
+      priority: 1,
       refreshSeconds: 60,
       cacheTtlSeconds: 60,
       timeoutMs: 6000,
-      notes: "公开预测市场数据，不接交易能力。",
+      notes: "公开预测市场数据，不接交易能力。作为盘口页第一数据源。",
     },
     {
       id: "worldcupapi-com",
@@ -267,6 +376,24 @@ export const defaultAdminConfig: AdminConfig = {
       cacheTtlSeconds: 300,
       timeoutMs: 8000,
       notes: "真实欧赔源。读取欧洲区 h2h 市场，聚合多家 bookmaker 后计算去水隐含概率。",
+    },
+    {
+      id: "odds-api-io-worldcup",
+      name: "Odds-API.io · FIFA World Cup",
+      type: "odds",
+      adapter: "odds-api-io",
+      baseUrl: "https://api.odds-api.io/v3",
+      endpointPath: "/events",
+      apiKey: "",
+      apiKeyPlacement: "query",
+      apiKeyParamName: "apiKey",
+      apiKeyHeaderName: "",
+      enabled: true,
+      priority: 90,
+      refreshSeconds: 900,
+      cacheTtlSeconds: 900,
+      timeoutMs: 10000,
+      notes: "工具页赔率兜底源。免费级别使用 Polymarket/Kalshi 的标准化 ML 欧赔；盘口页仍只使用 Polymarket Gamma。",
     },
     {
       id: "thesportsdb-worldcup",
@@ -593,6 +720,9 @@ function inferAdapter(source: Partial<DataSourceConfig>): DataSourceAdapter {
   if (source.id === "the-odds-api-worldcup" || source.baseUrl?.includes("the-odds-api.com")) {
     return "the-odds-api";
   }
+  if (source.id === "odds-api-io-worldcup" || source.baseUrl?.includes("odds-api.io")) {
+    return "odds-api-io";
+  }
   if (source.id === "thesportsdb-worldcup" || source.baseUrl?.includes("thesportsdb.com")) {
     return "thesportsdb";
   }
@@ -649,6 +779,36 @@ function resolveApiKey(envName: string | undefined, legacyApiKey: string): strin
   return legacyApiKey;
 }
 
+function resolveDataSourceApiKey(id: string, envName: string | undefined, legacyApiKey: string): string {
+  const direct = resolveApiKey(envName, legacyApiKey);
+  if (direct) return direct;
+  if (id === "odds-api-io-worldcup") {
+    for (const fallbackEnvName of [
+      "DATA_SOURCE_ODDS_API_IO_WORLDCUP_API_KEY",
+      "DATA_SOURCE_ODDS_API_IO_API_KEY",
+      "ODDS_API_IO_API_KEY",
+    ]) {
+      const value = process.env[fallbackEnvName];
+      if (typeof value === "string" && value.length > 0) return value;
+    }
+    return "";
+  }
+  if (!id.startsWith("api-football-")) return "";
+  for (const fallbackEnvName of [
+    "DATA_SOURCE_API_FOOTBALL_API_KEY",
+    "DATA_SOURCE_API_FOOTBALL_WORLDCUP_FIXTURES_API_KEY",
+    "DATA_SOURCE_API_FOOTBALL_WORLDCUP_DETAILS_API_KEY",
+    "DATA_SOURCE_API_FOOTBALL_WORLDCUP_TEAMS_API_KEY",
+    "API_FOOTBALL_API_KEY",
+    "APIFOOTBALL_API_KEY",
+    "APISPORTS_API_KEY",
+  ]) {
+    const value = process.env[fallbackEnvName];
+    if (typeof value === "string" && value.length > 0) return value;
+  }
+  return "";
+}
+
 function normalizeDataSource(source: Partial<DataSourceConfig>, index: number, resolveSecrets: boolean): DataSourceConfig {
   const id = String(source.id || `data-source-${index + 1}`);
   const defaults = defaultDataSourceFor(id);
@@ -669,7 +829,8 @@ function normalizeDataSource(source: Partial<DataSourceConfig>, index: number, r
     || defaultDataSourceApiKeyEnvName(id, apiKeyPlacement),
   );
   const legacyApiKey = String(source.apiKey || "");
-  const resolvedApiKey = resolveSecrets ? resolveApiKey(apiKeyEnvName, legacyApiKey) : "";
+  const resolvedApiKey = resolveSecrets ? resolveDataSourceApiKey(id, apiKeyEnvName, legacyApiKey) : "";
+  const configuredApiKey = resolveDataSourceApiKey(id, apiKeyEnvName, legacyApiKey);
   return {
     id,
     name: String(migratedSource.name || defaults?.name || "未命名数据源"),
@@ -679,7 +840,7 @@ function normalizeDataSource(source: Partial<DataSourceConfig>, index: number, r
     endpointPath: String(migratedSource.endpointPath || defaults?.endpointPath || ""),
     apiKey: resolvedApiKey,
     apiKeyEnvName,
-    apiKeyConfigured: Boolean(resolveApiKey(apiKeyEnvName, legacyApiKey)),
+    apiKeyConfigured: Boolean(configuredApiKey),
     apiKeyPlacement,
     apiKeyParamName: String(source.apiKeyParamName || defaults?.apiKeyParamName || ""),
     apiKeyHeaderName: String(source.apiKeyHeaderName || defaults?.apiKeyHeaderName || ""),
@@ -704,6 +865,75 @@ function mergeMissingDefaultSources(sources: DataSourceConfig[], resolveSecrets:
     .filter((source) => !seen.has(source.id))
     .map((source, index) => normalizeDataSource(source, sources.length + index, resolveSecrets));
   return [...sources, ...missingDefaults];
+}
+
+const apiFootballAuthoritySourceIds = new Set([
+  "api-football-worldcup-fixtures",
+  "api-football-worldcup-details",
+  "api-football-worldcup-teams",
+  "api-football-worldcup-standings",
+  "api-football-worldcup-squads",
+  "api-football-worldcup-injuries",
+  "api-football-worldcup-odds",
+  "api-football-worldcup-live-odds",
+  "api-football-worldcup-predictions",
+]);
+
+const supersededFreeSourceIds = new Set([
+  "football-data-org",
+  "football-data-org-teams",
+  "the-odds-api-worldcup",
+  "thesportsdb-worldcup",
+  "thesportsdb-worldcup-teams",
+]);
+
+function applyApiFootballAuthorityPolicy(sources: DataSourceConfig[]): DataSourceConfig[] {
+  return sources.map((source) => {
+    const defaults = defaultDataSourceFor(source.id);
+    if (apiFootballAuthoritySourceIds.has(source.id) && defaults) {
+      return {
+        ...source,
+        name: defaults.name,
+        type: defaults.type,
+        adapter: defaults.adapter,
+        baseUrl: defaults.baseUrl,
+        endpointPath: defaults.endpointPath,
+        apiKeyPlacement: defaults.apiKeyPlacement,
+        apiKeyParamName: defaults.apiKeyParamName,
+        apiKeyHeaderName: defaults.apiKeyHeaderName,
+        enabled: true,
+        priority: defaults.priority,
+        refreshSeconds: defaults.refreshSeconds,
+        cacheTtlSeconds: defaults.cacheTtlSeconds,
+        timeoutMs: defaults.timeoutMs,
+        notes: defaults.notes,
+      };
+    }
+    if (supersededFreeSourceIds.has(source.id)) {
+      return {
+        ...source,
+        enabled: false,
+        priority: Math.max(source.priority, 80),
+        notes: `${source.notes} 已被 API-Football Pro 权威源替代，仅保留为手动恢复时的备援配置。`,
+      };
+    }
+    if (source.id === "polymarket-gamma") {
+      return {
+        ...source,
+        enabled: true,
+        priority: 1,
+        notes: "公开预测市场数据，不接交易能力。作为盘口页第一数据源。",
+      };
+    }
+    if (source.id === "openfootball-worldcup-json") {
+      return {
+        ...source,
+        priority: Math.max(source.priority, 90),
+        notes: "免费、无 key，仅作为 API-Football 和官方赛程库不可用时的低优先级兜底。",
+      };
+    }
+    return source;
+  });
 }
 
 function mergeMissingDefaultProviders(providers: AiProviderConfig[], resolveSecrets: boolean): AiProviderConfig[] {
@@ -745,7 +975,9 @@ function normalizeConfig(input: Partial<AdminConfig>, options: { resolveSecrets:
     primaryAiProviderId: String(
       input.primaryAiProviderId || defaultAdminConfig.primaryAiProviderId,
     ),
-    dataSources: mergeMissingDefaultSources(dataSources, options.resolveSecrets),
+    dataSources: applyApiFootballAuthorityPolicy(
+      mergeMissingDefaultSources(dataSources, options.resolveSecrets),
+    ),
     aiProviders: mergeMissingDefaultProviders(aiProviders, options.resolveSecrets),
   };
 }

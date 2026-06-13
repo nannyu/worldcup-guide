@@ -24,6 +24,7 @@ type LocalizedText = {
 };
 
 type TabKey = "games" | "props" | "groups" | "bracket";
+type GameStatusTab = "open" | "finished";
 type MarketCategoryKey = NonNullable<RadarMatch["category"]>;
 type MarketFilterKey = "all" | MarketCategoryKey;
 type DataSourceMode = "remote" | "fallback" | "cache";
@@ -627,6 +628,22 @@ function groupGameMatches(matches: Match[], radarMatches: RadarMatch[], locale: 
     }));
 }
 
+function isGameFinished(match: GameMatch | Match): boolean {
+  const sourceMatch = "sourceMatch" in match ? match.sourceMatch : match;
+  if (sourceMatch.status === "finished") return true;
+  if (sourceMatch.status === "live") return false;
+  const kickoff = kickoffDate(sourceMatch);
+  if (!kickoff) return false;
+  return Date.now() - kickoff.getTime() >= 3 * 60 * 60 * 1000;
+}
+
+function filterMatchDaysByStatus(days: DisplayMatchDay[], status: GameStatusTab): DisplayMatchDay[] {
+  return days.flatMap((day) => {
+    const matches = day.matches.filter((match) => status === "finished" ? isGameFinished(match) : !isGameFinished(match));
+    return matches.length ? [{ ...day, matches }] : [];
+  });
+}
+
 function bracketRoundsFromMatches(matches: Match[]): BracketRound[] {
   const groups = new Map<string, Match[]>();
   for (const match of matches) {
@@ -687,6 +704,7 @@ function formatVolumeLabel(volume: string | undefined, volumeUsd: number | undef
 }
 
 function isWorldCupRadarMatch(match: RadarMatch): boolean {
+  if (match.id.startsWith("api-football-")) return false;
   const text = [match.title, match.eventTitle, match.eventSlug, match.marketLabel, match.homeTeam, match.awayTeam].filter(Boolean).join(" ").toLowerCase();
   return ["world cup", "世界杯", "fifa", "fifwc"].some((keyword) => text.includes(keyword));
 }
@@ -842,6 +860,15 @@ export function RadarEyeScreen() {
 }
 
 function GamesTab({ locale, days, sourceLabel, marketSourceLabel }: { locale: string; days: DisplayMatchDay[]; sourceLabel: string; marketSourceLabel: string }) {
+  const [statusTab, setStatusTab] = useState<GameStatusTab>("open");
+  const openDays = useMemo(() => filterMatchDaysByStatus(days, "open"), [days]);
+  const finishedDays = useMemo(() => filterMatchDaysByStatus(days, "finished"), [days]);
+  const visibleDays = statusTab === "finished" ? finishedDays : openDays;
+  const tabItems: Array<{ key: GameStatusTab; label: string; count: number }> = [
+    { key: "open", label: tr(locale, "未结束", "Open"), count: openDays.reduce((sum, day) => sum + day.matches.length, 0) },
+    { key: "finished", label: tr(locale, "已结束", "Finished"), count: finishedDays.reduce((sum, day) => sum + day.matches.length, 0) },
+  ];
+
   return (
     <div className="space-y-4">
       <SectionLead
@@ -854,14 +881,37 @@ function GamesTab({ locale, days, sourceLabel, marketSourceLabel }: { locale: st
         }}
       />
 
-      {days.length === 0 ? (
+      <div className="inline-flex w-full border border-[#241A14] bg-[#FAF7F0] p-1 sm:w-auto">
+        {tabItems.map((item) => {
+          const isActive = statusTab === item.key;
+          return (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => setStatusTab(item.key)}
+              className={`flex min-h-9 flex-1 items-center justify-center gap-1.5 border px-3 text-xs font-black transition-colors sm:min-w-28 ${
+                isActive
+                  ? "border-[#241A14] bg-[#D36E52] text-white"
+                  : "border-transparent text-[#5C524C] hover:border-[#241A14]/30 hover:bg-[#EDE9E0]"
+              }`}
+            >
+              {item.label}
+              <span className={isActive ? "text-white/80" : "text-[#9E948C]"}>{item.count}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {visibleDays.length === 0 ? (
         <EmptyState
           locale={locale}
-          title={{ zh: "暂无比赛数据", en: "No games yet" }}
-          copy={{ zh: "赛程源返回比赛后会自动显示。", en: "Games will appear once fixture sources return records." }}
+          title={statusTab === "finished" ? { zh: "暂无已结束比赛", en: "No finished games" } : { zh: "暂无未结束比赛", en: "No open games" }}
+          copy={statusTab === "finished"
+            ? { zh: "比赛完场后会自动进入这里。", en: "Finished games will move here automatically." }
+            : { zh: "未结束比赛会显示在这里；完场后自动移入已结束。", en: "Open games appear here and move to Finished automatically." }}
         />
       ) : (
-        days.map((day) => (
+        visibleDays.map((day) => (
           <section key={day.key} className="border-2 border-[#241A14] bg-[#FAF7F0]">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-[#241A14] bg-[#EDE9E0] px-3 py-2">
               <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-[#241A14]">

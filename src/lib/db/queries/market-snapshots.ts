@@ -88,7 +88,7 @@ export function recordRadarMarketSnapshots(radarMatches: RadarMatch[], provider:
     raw: {
       kind: "radar",
       match,
-      source: "Polymarket",
+      source: provider,
       outcomes: match.outcomes,
     },
   })));

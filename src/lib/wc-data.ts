@@ -40,8 +40,20 @@ export interface MatchStatistic {
   }>;
 }
 
+export interface MatchPrediction {
+  source: string;
+  winnerName?: string;
+  winnerSide?: "home" | "away" | "draw";
+  advice?: string;
+  homePercent: number;
+  drawPercent: number;
+  awayPercent: number;
+  updatedAt?: string;
+}
+
 export interface Match {
   id: string;
+  providerFixtureId?: number;
   homeTeam: string;
   awayTeam: string;
   homeCode?: string;
@@ -68,6 +80,8 @@ export interface Match {
   events?: MatchEvent[];
   lineups?: MatchLineup[];
   statistics?: MatchStatistic[];
+  prediction?: MatchPrediction;
+  oddsSource?: string;
   previewText: string;
   updatedAt: string;
 }
@@ -224,6 +238,7 @@ function fifaMatchesOn(date: string): Match[] {
 
 export interface Team {
   id: string;
+  providerTeamId?: number;
   code?: string;
   name: string;
   nameEn: string;
@@ -251,8 +266,11 @@ export interface Team {
   source?: string;
   starPlayers?: TeamStarPlayer[];
   roster?: PlayerProfile[];
+  injuries?: TeamInjury[];
+  formSummary?: TeamFormSummary;
   roast?: string;
   championProbability?: number | null;
+  sourceUpdatedAt?: string;
 }
 
 export interface TeamRoastItem {
@@ -321,10 +339,29 @@ export interface PlayerProfile {
   position: string;
   club?: string;
   age?: number;
+  photoUrl?: string;
   avatarUrl?: string;
   intro?: string;
   career?: string[];
   roast?: string;
+}
+
+export interface TeamInjury {
+  id: string;
+  playerName: string;
+  playerId?: number;
+  type?: string;
+  reason?: string;
+  fixtureId?: number;
+  fixtureDate?: string;
+  updatedAt?: string;
+}
+
+export interface TeamFormSummary {
+  form?: string;
+  lastFive?: string[];
+  note?: string;
+  updatedAt?: string;
 }
 
 export interface GossipItem {

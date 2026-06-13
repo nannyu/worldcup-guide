@@ -49,6 +49,81 @@ function groupRoundLabel(match: Match, locale: string): string {
     : `Group ${group} Matchday ${roundNo}`;
 }
 
+function statusText(match: Match, locale: string): string {
+  if (match.status === "live") {
+    const elapsed = match.updatedAt.match(/·\s*(\d+')/)?.[1];
+    return elapsed ? `${tr(locale, "进行中", "Live")} ${elapsed}` : tr(locale, "进行中", "Live");
+  }
+  if (match.status === "finished") return tr(locale, "已完赛", "FT");
+  return tr(locale, "未开赛", "Upcoming");
+}
+
+function latestEventText(match: Match, locale: string): string {
+  const event = (match.events || []).slice().sort((a, b) => b.minute - a.minute)[0];
+  if (!event) return tr(locale, "暂无事件", "No events");
+  const label = event.type === "goal"
+    ? tr(locale, "进球", "Goal")
+    : event.type === "penalty"
+      ? tr(locale, "点球", "Penalty")
+      : event.type === "og"
+        ? tr(locale, "乌龙", "Own goal")
+        : event.type === "red"
+          ? tr(locale, "红牌", "Red")
+          : tr(locale, "黄牌", "Yellow");
+  return `${event.minute}' ${label} · ${event.player}`;
+}
+
+function statValue(match: Match, type: string, side: "home" | "away"): string {
+  const group = (match.statistics || []).find((item) => item.team === side);
+  const value = group?.stats.find((item) => item.type === type)?.value;
+  return value === undefined || value === null ? "—" : String(value);
+}
+
+function formationText(match: Match): string {
+  const home = match.lineups?.find((item) => item.team === "home")?.formation;
+  const away = match.lineups?.find((item) => item.team === "away")?.formation;
+  return [home || "—", away || "—"].join(" / ");
+}
+
+function hasRichMatchData(match: Match): boolean {
+  return Boolean(
+    match.events?.length
+    || match.lineups?.length
+    || match.statistics?.length
+    || match.prediction
+    || match.oddsImpliedHome
+    || match.oddsImpliedDraw
+    || match.oddsImpliedAway,
+  );
+}
+
+function ProbabilityBar({
+  values,
+  labels,
+}: {
+  values: [number, number, number];
+  labels: [string, string, string];
+}) {
+  const total = values.reduce((sum, value) => sum + value, 0);
+  if (total <= 0) return null;
+  return (
+    <div className="space-y-1">
+      <div className="grid grid-cols-3 gap-1 text-[10px] font-bold text-[#5C524C]">
+        {values.map((value, index) => (
+          <span key={labels[index]} className={index === 1 ? "text-center" : index === 2 ? "text-right" : ""}>
+            {labels[index]} {value}%
+          </span>
+        ))}
+      </div>
+      <div className="flex h-2 overflow-hidden border border-[#241A14] bg-[#EDE9E0]">
+        <span className="bg-[#D36E52]" style={{ width: `${Math.max(0, values[0])}%` }} />
+        <span className="bg-[#E4A853]" style={{ width: `${Math.max(0, values[1])}%` }} />
+        <span className="bg-[#6A8D73]" style={{ width: `${Math.max(0, values[2])}%` }} />
+      </div>
+    </div>
+  );
+}
+
 function mergeScheduleGroups(liveMatches: Match[]): ScheduleDayGroup[] {
   if (liveMatches.length === 0) return allScheduleDayGroups;
   const byId = new Map(liveMatches.map((match) => [match.id, match]));
@@ -105,15 +180,21 @@ function PageTabs({ active, onChange, locale }: { active: PageTab; onChange: (ta
 
 function MatchRow({ match, locale, matchNo }: { match: Match; locale: string; matchNo?: number }) {
   const hasScore = match.homeScore !== null && match.awayScore !== null;
+  const prediction = match.prediction;
+  const hasOdds = match.oddsImpliedHome > 0 || match.oddsImpliedDraw > 0 || match.oddsImpliedAway > 0;
+  const rich = hasRichMatchData(match);
   return (
     <Link
       href={`/match/${match.id}`}
       className="block border border-[#241A14] bg-[#FAF7F0] px-3 py-2 transition-colors hover:bg-white"
       style={{ boxShadow: "2px 2px 0 0 #241A14" }}
     >
-      <div className="flex items-center gap-2 text-sm text-[#241A14]">
+      <div className="flex flex-wrap items-center gap-2 text-sm text-[#241A14]">
         <span className="w-12 shrink-0 font-mono text-sm font-black text-[#D36E52]">{kickoffTime(match)}</span>
         <span className="shrink-0 text-[11px] font-bold text-[#9E948C]">{groupRoundLabel(match, locale)}</span>
+        <span className={`border border-[#241A14] px-1.5 py-0.5 text-[9px] font-black ${match.status === "live" ? "bg-[#D36E52] text-white" : match.status === "finished" ? "bg-[#241A14] text-white" : "bg-[#EDE9E0] text-[#5C524C]"}`}>
+          {statusText(match, locale)}
+        </span>
       </div>
       <div className="mt-1 flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1 text-sm font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
@@ -132,6 +213,40 @@ function MatchRow({ match, locale, matchNo }: { match: Match; locale: string; ma
           <span className="shrink-0">{tr(locale, "第", "Match ")} {matchNo} {tr(locale, "场", "")}</span>
         ) : null}
       </div>
+      {rich && (
+        <div className="mt-2 grid gap-2 border-t border-dashed border-[#241A14]/25 pt-2 md:grid-cols-[1.2fr_1fr]">
+          <div className="space-y-1 text-[10px] text-[#5C524C]">
+            <div className="grid grid-cols-[64px_1fr] gap-2">
+              <span className="font-bold text-[#241A14]">{tr(locale, "事件", "Event")}</span>
+              <span className="truncate">{latestEventText(match, locale)}</span>
+            </div>
+            <div className="grid grid-cols-[64px_1fr] gap-2">
+              <span className="font-bold text-[#241A14]">{tr(locale, "阵型", "Shape")}</span>
+              <span>{formationText(match)}</span>
+            </div>
+            <div className="grid grid-cols-[64px_1fr] gap-2">
+              <span className="font-bold text-[#241A14]">{tr(locale, "射正/控球", "SOT/Poss")}</span>
+              <span>{statValue(match, "Shots on Goal", "home")} - {statValue(match, "Shots on Goal", "away")} · {statValue(match, "Ball Possession", "home")} / {statValue(match, "Ball Possession", "away")}</span>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {prediction && (
+              <ProbabilityBar
+                values={[prediction.homePercent, prediction.drawPercent, prediction.awayPercent]}
+                labels={[tr(locale, "主", "H"), tr(locale, "平", "D"), tr(locale, "客", "A")]}
+              />
+            )}
+            {hasOdds && (
+              <div className="text-[10px] text-[#5C524C]">
+                <span className="font-bold text-[#241A14]">{tr(locale, "赔率隐含", "Odds implied")}: </span>
+                {match.oddsImpliedHome}% / {match.oddsImpliedDraw}% / {match.oddsImpliedAway}%
+                {match.oddsSource ? <span className="text-[#9E948C]"> · {match.oddsSource}</span> : null}
+              </div>
+            )}
+            {prediction?.advice && <div className="line-clamp-2 text-[10px] text-[#9E948C]">{prediction.advice}</div>}
+          </div>
+        </div>
+      )}
     </Link>
   );
 }

@@ -7,7 +7,7 @@ import { teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profile
 import { type PlayerProfile, type PlayerRoastItem, type Team, type TeamRoastItem } from "@/lib/wc-data";
 import { groupLabel, isZh, teamName, tr } from "@/lib/i18n/content";
 
-type Filter = "all" | "hot" | "dark" | "classic";
+type Filter = "all" | "hot" | "dark" | "classic" | "injury" | "data";
 
 function HotStars({ count }: { count: number }) {
   return (
@@ -81,6 +81,46 @@ function teamBadgeLabel(team: Team, locale: string): string | null {
   return null;
 }
 
+function standingLine(team: Team, locale: string): string {
+  const s = team.groupStandings;
+  if (!s || (s.played === 0 && s.pts === 0)) return tr(locale, "积分待赛果", "Standings pending");
+  return `${s.played}${tr(locale, "场", "P")} ${s.won}/${s.drawn}/${s.lost} · ${s.goalsFor ?? 0}:${s.goalsAgainst ?? 0} · ${s.pts}${tr(locale, "分", "pts")}`;
+}
+
+function dataCompleteness(team: Team): number {
+  return [
+    team.crestUrl,
+    team.groupStandings?.played || team.groupStandings?.pts,
+    team.roster?.length,
+    team.injuries,
+    team.formSummary?.form,
+    team.sourceUpdatedAt,
+  ].filter(Boolean).length;
+}
+
+function FormBadges({ team }: { team: Team }) {
+  const form = team.formSummary?.lastFive?.length
+    ? team.formSummary.lastFive
+    : team.formSummary?.form
+      ? team.formSummary.form.split("").slice(-5)
+      : [];
+  if (!form.length) return null;
+  return (
+    <div className="flex gap-0.5">
+      {form.map((item, index) => (
+        <span
+          key={`${item}-${index}`}
+          className={`flex h-4 w-4 items-center justify-center border border-[#241A14] text-[9px] font-black ${
+            item === "W" ? "bg-[#6A8D73] text-white" : item === "D" ? "bg-[#E4A853] text-[#241A14]" : "bg-[#D36E52] text-white"
+          }`}
+        >
+          {item}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function applyTeamRoastItems(teams: Team[], roasts: TeamRoastItem[]): Team[] {
   if (!roasts.length) return teams;
   const roastByKey = new Map<string, TeamRoastItem>();
@@ -152,6 +192,25 @@ function TeamCard({ team, onClick, locale }: { team: Team; onClick: () => void; 
 
       {/* Divider */}
       <div className="border-t border-dashed border-[#241A14]/30 pt-2 mt-1 space-y-1.5">
+        <div className="grid grid-cols-3 gap-1 text-[10px]">
+          <div className="border border-[#241A14]/40 bg-[#EDE9E0] px-1.5 py-1">
+            <div className="font-black text-[#241A14]">{standingLine(team, locale)}</div>
+            <div className="text-[#9E948C]">{tr(locale, "小组战绩", "Group record")}</div>
+          </div>
+          <div className="border border-[#241A14]/40 bg-[#EDE9E0] px-1.5 py-1">
+            <div className="font-black text-[#241A14]">{team.roster?.length || 0}</div>
+            <div className="text-[#9E948C]">{tr(locale, "名单人数", "Squad")}</div>
+          </div>
+          <div className="border border-[#241A14]/40 bg-[#EDE9E0] px-1.5 py-1">
+            <div className="font-black text-[#241A14]">{team.injuries?.length || 0}</div>
+            <div className="text-[#9E948C]">{tr(locale, "伤停", "Injuries")}</div>
+          </div>
+        </div>
+        <div className="flex items-center justify-between gap-2 text-[10px] text-[#9E948C]">
+          <FormBadges team={team} />
+          <span>{tr(locale, "资料完整度", "Data")} {dataCompleteness(team)}/6</span>
+        </div>
+
         {team.style && (
           <p className="text-xs text-[#5C524C]">
             <strong className="text-[#241A14]">{tr(locale, "球队资料：", "Team profile:")}</strong> {team.style}
@@ -273,6 +332,9 @@ function TeamDetailModal({
     team.rank > 0 ? { label: "FIFA 排名", value: `#${team.rank}` } : null,
     team.formation ? { label: "阵型", value: team.formation } : null,
     team.group ? { label: "小组", value: team.group } : null,
+    team.roster?.length ? { label: "名单", value: String(team.roster.length) } : null,
+    team.injuries?.length ? { label: "伤停", value: String(team.injuries.length) } : null,
+    dataCompleteness(team) ? { label: "资料", value: `${dataCompleteness(team)}/6` } : null,
   ].filter((item): item is { label: string; value: string } => Boolean(item));
   const hasProfile = Boolean(team.coach || team.stars.length || team.starPlayers?.length || team.style || team.roast);
   const starPlayers = team.starPlayers?.length
@@ -334,9 +396,41 @@ function TeamDetailModal({
             {stats.map((s) => (
               <div key={s.label} className="border border-[#241A14] p-2 text-center">
                 <div className="text-lg font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>{s.value}</div>
-                <div className="text-[10px] text-[#9E948C]">{tr(locale, s.label, s.label === "FIFA 排名" ? "FIFA rank" : s.label === "阵型" ? "Formation" : "Group")}</div>
+                <div className="text-[10px] text-[#9E948C]">{tr(locale, s.label, s.label === "FIFA 排名" ? "FIFA rank" : s.label === "阵型" ? "Formation" : s.label === "小组" ? "Group" : s.label === "名单" ? "Squad" : s.label === "伤停" ? "Injuries" : "Data")}</div>
               </div>
             ))}
+            </div>
+          )}
+
+          <div className="border border-[#241A14] bg-[#EDE9E0] p-3 text-xs text-[#5C524C]">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <strong className="text-[#241A14]">{tr(locale, "API-Football 数据面板", "API-Football Data Panel")}</strong>
+              <FormBadges team={team} />
+            </div>
+            <div className="grid gap-2 md:grid-cols-2">
+              <p><strong className="text-[#241A14]">{tr(locale, "小组战绩：", "Group record:")}</strong>{standingLine(team, locale)}</p>
+              <p><strong className="text-[#241A14]">{tr(locale, "Form：", "Form:")}</strong>{team.formSummary?.form || tr(locale, "待返回", "Pending")}</p>
+              <p><strong className="text-[#241A14]">{tr(locale, "Provider ID：", "Provider ID:")}</strong>{team.providerTeamId || "—"}</p>
+              <p><strong className="text-[#241A14]">{tr(locale, "更新时间：", "Updated:")}</strong>{team.sourceUpdatedAt ? new Date(team.sourceUpdatedAt).toLocaleString(locale) : "—"}</p>
+            </div>
+          </div>
+
+          {(team.injuries?.length || 0) > 0 && (
+            <div>
+              <h4
+                className="font-bold text-xs tracking-wider text-[#241A14] mb-2 uppercase"
+                style={{ fontFamily: "var(--font-heading)" }}
+              >
+                {tr(locale, "伤停名单", "Injuries")}
+              </h4>
+              <div className="space-y-2">
+                {team.injuries?.slice(0, 8).map((injury) => (
+                  <div key={injury.id} className="border border-[#241A14] bg-[#F5F1E8] p-2 text-xs text-[#5C524C]">
+                    <div className="font-bold text-[#241A14]">{injury.playerName}</div>
+                    <div>{[injury.type, injury.reason, injury.fixtureDate ? new Date(injury.fixtureDate).toLocaleDateString(locale) : ""].filter(Boolean).join(" · ") || tr(locale, "伤停原因待确认", "Reason pending")}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -466,6 +560,8 @@ export function TeamCardsScreen() {
     { key: "hot", label: tr(locale, "夺冠热门", "Favorites") },
     { key: "dark", label: tr(locale, "话题黑马", "Dark horses") },
     { key: "classic", label: tr(locale, "老牌强队", "Classic powers") },
+    { key: "injury", label: tr(locale, "有伤停", "Injuries") },
+    { key: "data", label: tr(locale, "资料完整", "Rich data") },
   ];
 
   const filtered = useMemo(() => {
@@ -473,6 +569,8 @@ export function TeamCardsScreen() {
     if (filter === "hot") list = list.filter((t) => hasTeamTag(t, "夺冠热门"));
     if (filter === "dark") list = list.filter((t) => hasTeamTag(t, "话题黑马"));
     if (filter === "classic") list = list.filter((t) => hasTeamTag(t, "老牌强队"));
+    if (filter === "injury") list = list.filter((t) => (t.injuries?.length || 0) > 0);
+    if (filter === "data") list = list.filter((t) => dataCompleteness(t) >= 4);
     if (query.trim()) {
       const q = query.trim().toLowerCase();
       list = list.filter(
@@ -490,6 +588,8 @@ export function TeamCardsScreen() {
             ...t.stars,
             ...(t.starPlayers?.flatMap((player) => [player.name, player.position]) || []),
             ...(t.roster?.flatMap((player) => [player.name, player.nameZh || "", player.position, player.club || ""]) || []),
+            ...(t.injuries?.flatMap((injury) => [injury.playerName, injury.reason || "", injury.type || ""]) || []),
+            t.formSummary?.form || "",
           ];
           return fields.some((field) => field.toLowerCase().includes(q));
         }
@@ -718,6 +818,7 @@ function enrichTeamsWithOfficialGroups(receivedTeams: Team[], officialTeams: Tea
 function mergeTeamProfile(team: Team, official: Team): Team {
   return {
     ...team,
+    providerTeamId: team.providerTeamId || official.providerTeamId,
     code: team.code || official.code,
     nameEn: team.nameEn || official.nameEn,
     group: team.group || official.group,
@@ -734,7 +835,10 @@ function mergeTeamProfile(team: Team, official: Team): Team {
     groupStandings: team.groupStandings || official.groupStandings,
     starPlayers: team.starPlayers?.length ? team.starPlayers : official.starPlayers,
     roster: team.roster?.length ? team.roster : official.roster,
+    injuries: team.injuries?.length ? team.injuries : official.injuries,
+    formSummary: team.formSummary || official.formSummary,
     roast: team.roast || official.roast,
+    sourceUpdatedAt: team.sourceUpdatedAt || official.sourceUpdatedAt,
     source: mergeSourceLabels(team.source, official.source),
   };
 }

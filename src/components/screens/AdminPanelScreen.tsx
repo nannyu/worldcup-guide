@@ -52,6 +52,7 @@ const dataSourceAdapters: DataSourceAdapter[] = [
   "football-data-org",
   "openligadb",
   "the-odds-api",
+  "odds-api-io",
   "thesportsdb",
   "zafronix",
   "balldontlie-fifa",

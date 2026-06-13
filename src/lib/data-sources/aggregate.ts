@@ -34,6 +34,7 @@ import {
   type Match,
   type MatchEvent,
   type MatchLineup,
+  type MatchPrediction,
   type MatchStatistic,
   type MatchStatus,
   type MorningBrief,
@@ -44,6 +45,7 @@ import {
   type ScheduleDateKey,
   type SignalType,
   type Team,
+  type TeamInjury,
 } from "@/lib/wc-data";
 
 interface OpenFootballWorldCup {
@@ -176,6 +178,121 @@ interface ApiFootballTeamResponse {
   };
 }
 
+interface ApiFootballOddsResponse {
+  response?: ApiFootballOddsRecord[];
+}
+
+interface ApiFootballOddsRecord {
+  fixture?: {
+    id?: number;
+    date?: string;
+  };
+  update?: string;
+  bookmakers?: Array<{
+    id?: number;
+    name?: string;
+    bets?: Array<{
+      id?: number;
+      name?: string;
+      values?: Array<{
+        value?: string;
+        odd?: string | number;
+      }>;
+    }>;
+  }>;
+}
+
+interface ApiFootballLiveOddsResponse {
+  response?: ApiFootballLiveOddsRecord[];
+}
+
+interface ApiFootballLiveOddsRecord {
+  fixture?: {
+    id?: number;
+    date?: string;
+  };
+  league?: {
+    id?: number;
+    season?: number;
+  };
+  update?: string;
+  bet?: {
+    id?: number;
+    name?: string;
+  };
+  odds?: Array<{
+    value?: string;
+    odd?: string | number;
+  }>;
+}
+
+interface ApiFootballPredictionResponse {
+  response?: Array<{
+    predictions?: {
+      winner?: { id?: number | null; name?: string | null; comment?: string | null };
+      win_or_draw?: boolean;
+      under_over?: string | null;
+      goals?: { home?: string | null; away?: string | null };
+      advice?: string | null;
+      percent?: { home?: string; draw?: string; away?: string };
+    };
+    teams?: {
+      home?: { id?: number; name?: string; logo?: string };
+      away?: { id?: number; name?: string; logo?: string };
+    };
+    fixture?: { id?: number };
+  }>;
+}
+
+interface ApiFootballStandingsResponse {
+  response?: Array<{
+    league?: {
+      standings?: Array<Array<ApiFootballStandingRow>>;
+    };
+  }>;
+}
+
+interface ApiFootballStandingRow {
+  rank?: number;
+  team?: { id?: number; name?: string; logo?: string };
+  points?: number;
+  goalsDiff?: number;
+  group?: string;
+  form?: string;
+  status?: string;
+  description?: string;
+  all?: {
+    played?: number;
+    win?: number;
+    draw?: number;
+    lose?: number;
+    goals?: { for?: number; against?: number };
+  };
+}
+
+interface ApiFootballSquadResponse {
+  response?: Array<{
+    team?: { id?: number; name?: string; logo?: string };
+    players?: Array<{
+      id?: number;
+      name?: string;
+      age?: number;
+      number?: number;
+      position?: string;
+      photo?: string;
+    }>;
+  }>;
+}
+
+interface ApiFootballInjuryResponse {
+  response?: Array<{
+    player?: { id?: number; name?: string; photo?: string; type?: string; reason?: string };
+    team?: { id?: number; name?: string; logo?: string };
+    fixture?: { id?: number; date?: string };
+    league?: { id?: number; season?: number };
+  }>;
+}
+
 interface WorldCupApiFixture {
   id?: number;
   date?: string;
@@ -230,6 +347,23 @@ interface TheOddsApiEvent {
       outcomes?: Array<{ name?: string; price?: number }>;
     }>;
   }>;
+}
+
+interface OddsApiIoEvent {
+  id?: string | number;
+  home?: string;
+  away?: string;
+  date?: string;
+  status?: string;
+  bookmakers?: Record<string, Array<{
+    name?: string;
+    updatedAt?: string;
+    odds?: Array<{
+      home?: string | number;
+      draw?: string | number;
+      away?: string | number;
+    }>;
+  }>>;
 }
 
 interface GdeltDocResponse {
@@ -746,9 +880,52 @@ function apiFootballPreview(lineups: MatchLineup[], statistics: MatchStatistic[]
   return parts.join(" ");
 }
 
+function apiFootballFixtureIdFromMatchId(id: string): number | undefined {
+  const value = Number(id.replace(/^api-football-/, ""));
+  return Number.isFinite(value) ? value : undefined;
+}
+
+function parsePercentValue(input: string | number | undefined): number {
+  const value = typeof input === "number" ? input : Number(String(input || "").replace("%", "").trim());
+  return Number.isFinite(value) ? Math.max(0, Math.min(100, Math.round(value))) : 0;
+}
+
+function normalizePredictionPercent(input: ApiFootballPredictionResponse["response"]): Map<number, MatchPrediction> {
+  const predictions = new Map<number, MatchPrediction>();
+  for (const item of input || []) {
+    const fixtureId = item.fixture?.id;
+    if (!fixtureId) continue;
+    const home = parsePercentValue(item.predictions?.percent?.home);
+    const draw = parsePercentValue(item.predictions?.percent?.draw);
+    const away = parsePercentValue(item.predictions?.percent?.away);
+    const winnerName = item.predictions?.winner?.name || undefined;
+    const homeName = item.teams?.home?.name || "";
+    const awayName = item.teams?.away?.name || "";
+    const winnerKey = canonicalTeamName(winnerName);
+    const winnerSide = winnerKey && winnerKey === canonicalTeamName(homeName)
+      ? "home"
+      : winnerKey && winnerKey === canonicalTeamName(awayName)
+        ? "away"
+        : !winnerName && draw >= home && draw >= away
+          ? "draw"
+          : undefined;
+    predictions.set(fixtureId, {
+      source: "API-Football Pro · Predictions",
+      winnerName,
+      winnerSide,
+      advice: item.predictions?.advice || item.predictions?.winner?.comment || undefined,
+      homePercent: home,
+      drawPercent: draw,
+      awayPercent: away,
+    });
+  }
+  return predictions;
+}
+
 function transformApiFootballMatches(
   data: ApiFootballResponse<ApiFootballFixture>,
   dateKey: ScheduleDateKey,
+  predictionsByFixtureId = new Map<number, MatchPrediction>(),
 ): Match[] {
   const sourceDate = dateKeyToSourceDate[dateKey];
   return (data.response || [])
@@ -762,10 +939,14 @@ function transformApiFootballMatches(
       const lineups = transformApiFootballLineups(fixture);
       const statistics = transformApiFootballStatistics(fixture);
       const events = transformApiFootballEvents(fixture);
+      const fixtureId = fixture.fixture?.id;
+      const prediction = fixtureId ? predictionsByFixtureId.get(fixtureId) : undefined;
       const venue = [fixture.fixture?.venue?.name, fixture.fixture?.venue?.city].filter(Boolean).join("，");
       const elapsed = fixture.fixture?.status?.elapsed ? ` · ${fixture.fixture.status.elapsed}'` : "";
+      const predictionText = prediction?.advice ? ` 预测：${prediction.advice}。` : "";
       return {
-        id: `api-football-${fixture.fixture?.id}`,
+        id: `api-football-${fixtureId}`,
+        providerFixtureId: fixtureId,
         homeTeam: home.name,
         awayTeam: away.name,
         homeFlag: home.flag,
@@ -786,11 +967,12 @@ function transformApiFootballMatches(
         oddsImpliedDraw: 0,
         oddsImpliedAway: 0,
         venue,
-        previewText: apiFootballPreview(lineups, statistics),
+        previewText: `${apiFootballPreview(lineups, statistics)}${predictionText}`.trim(),
         updatedAt: `API-Football Pro${elapsed}`,
         events,
         lineups,
         statistics,
+        prediction,
       };
     });
 }
@@ -908,6 +1090,193 @@ function average(values: number[]): number {
   return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
 }
 
+function normalizedOddsProbability(homeOdds: number, drawOdds: number, awayOdds: number) {
+  const rawHome = 1 / homeOdds;
+  const rawDraw = 1 / drawOdds;
+  const rawAway = 1 / awayOdds;
+  const total = rawHome + rawDraw + rawAway;
+  if (!Number.isFinite(total) || total <= 0) return undefined;
+  return {
+    home: Math.round((rawHome / total) * 100),
+    draw: Math.round((rawDraw / total) * 100),
+    away: Math.round((rawAway / total) * 100),
+  };
+}
+
+function parseOddValue(value: string | number | undefined): number | undefined {
+  const parsed = typeof value === "number" ? value : Number(String(value || "").trim());
+  return Number.isFinite(parsed) && parsed > 1 ? parsed : undefined;
+}
+
+function isMatchWinnerMarket(name: string | undefined): boolean {
+  return /match winner|1x2|winner|full time result/i.test(String(name || ""));
+}
+
+function oddsSideLabel(
+  label: string | undefined,
+  homeName: string,
+  awayName: string,
+): "home" | "draw" | "away" | undefined {
+  const value = canonicalTeamName(label);
+  if (!value) return undefined;
+  if (["home", "1"].includes(value) || value === canonicalTeamName(homeName)) return "home";
+  if (["draw", "x"].includes(value)) return "draw";
+  if (["away", "2"].includes(value) || value === canonicalTeamName(awayName)) return "away";
+  return undefined;
+}
+
+function addOddsTriple(
+  values: Array<{ value?: string; odd?: string | number }> | undefined,
+  fixture: ApiFootballFixture,
+  output: {
+    homeOddsValues: number[];
+    drawOddsValues: number[];
+    awayOddsValues: number[];
+    homeProbValues: number[];
+    drawProbValues: number[];
+    awayProbValues: number[];
+  },
+): boolean {
+  const homeName = fixture.teams?.home?.name || "";
+  const awayName = fixture.teams?.away?.name || "";
+  let homeOdds: number | undefined;
+  let drawOdds: number | undefined;
+  let awayOdds: number | undefined;
+  for (const item of values || []) {
+    const side = oddsSideLabel(item.value, homeName, awayName);
+    const odd = parseOddValue(item.odd);
+    if (!side || !odd) continue;
+    if (side === "home") homeOdds = odd;
+    if (side === "draw") drawOdds = odd;
+    if (side === "away") awayOdds = odd;
+  }
+  if (!homeOdds || !drawOdds || !awayOdds) return false;
+  const probabilities = normalizedOddsProbability(homeOdds, drawOdds, awayOdds);
+  if (!probabilities) return false;
+  output.homeOddsValues.push(homeOdds);
+  output.drawOddsValues.push(drawOdds);
+  output.awayOddsValues.push(awayOdds);
+  output.homeProbValues.push(probabilities.home);
+  output.drawProbValues.push(probabilities.draw);
+  output.awayProbValues.push(probabilities.away);
+  return true;
+}
+
+function buildApiFootballOddsMatch(input: {
+  fixture: ApiFootballFixture;
+  fixtureId: number;
+  sourceLabel: string;
+  updateTimes: string[];
+  homeOddsValues: number[];
+  drawOddsValues: number[];
+  awayOddsValues: number[];
+  homeProbValues: number[];
+  drawProbValues: number[];
+  awayProbValues: number[];
+}): OddsMatch | undefined {
+  if (!input.homeProbValues.length) return undefined;
+  const home = getTeam(input.fixture.teams?.home?.name);
+  const away = getTeam(input.fixture.teams?.away?.name);
+  return {
+    id: `api-football-odds-${input.fixtureId}-${input.sourceLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+    homeTeam: home.name,
+    awayTeam: away.name,
+    kickoffAt: input.fixture.fixture?.date || "",
+    kickoffBj: formatKickoffBj(input.fixture.fixture?.date),
+    homeOdds: Number(average(input.homeOddsValues).toFixed(2)),
+    drawOdds: Number(average(input.drawOddsValues).toFixed(2)),
+    awayOdds: Number(average(input.awayOddsValues).toFixed(2)),
+    homeProbability: Math.round(average(input.homeProbValues)),
+    drawProbability: Math.round(average(input.drawProbValues)),
+    awayProbability: Math.round(average(input.awayProbValues)),
+    bookmakerCount: input.homeProbValues.length,
+    updatedAt: input.updateTimes.sort().at(-1) || new Date().toISOString(),
+    source: input.sourceLabel,
+  };
+}
+
+function transformApiFootballPreMatchOdds(
+  data: ApiFootballOddsResponse,
+  fixturesById: Map<number, ApiFootballFixture>,
+): OddsMatch[] {
+  return (data.response || []).flatMap((record) => {
+    const fixtureId = record.fixture?.id;
+    const fixture = fixtureId ? fixturesById.get(fixtureId) : undefined;
+    if (!fixtureId || !fixture) return [];
+    const bucket = {
+      homeOddsValues: [] as number[],
+      drawOddsValues: [] as number[],
+      awayOddsValues: [] as number[],
+      homeProbValues: [] as number[],
+      drawProbValues: [] as number[],
+      awayProbValues: [] as number[],
+    };
+    const updateTimes: string[] = [];
+    for (const bookmaker of record.bookmakers || []) {
+      const bet = bookmaker.bets?.find((item) => isMatchWinnerMarket(item.name));
+      if (!bet) continue;
+      if (addOddsTriple(bet.values, fixture, bucket) && record.update) updateTimes.push(record.update);
+    }
+    const match = buildApiFootballOddsMatch({
+      fixture,
+      fixtureId,
+      sourceLabel: "API-Football Pro · Pre-match Odds",
+      updateTimes,
+      ...bucket,
+    });
+    return match ? [match] : [];
+  });
+}
+
+function transformApiFootballLiveOdds(
+  data: ApiFootballLiveOddsResponse,
+  fixturesById: Map<number, ApiFootballFixture>,
+): OddsMatch[] {
+  const grouped = new Map<number, {
+    fixture: ApiFootballFixture;
+    updateTimes: string[];
+    homeOddsValues: number[];
+    drawOddsValues: number[];
+    awayOddsValues: number[];
+    homeProbValues: number[];
+    drawProbValues: number[];
+    awayProbValues: number[];
+  }>();
+  for (const record of data.response || []) {
+    if (!isMatchWinnerMarket(record.bet?.name)) continue;
+    const fixtureId = record.fixture?.id;
+    const fixture = fixtureId ? fixturesById.get(fixtureId) : undefined;
+    if (!fixtureId || !fixture) continue;
+    const bucket = grouped.get(fixtureId) || {
+      fixture,
+      updateTimes: [],
+      homeOddsValues: [],
+      drawOddsValues: [],
+      awayOddsValues: [],
+      homeProbValues: [],
+      drawProbValues: [],
+      awayProbValues: [],
+    };
+    if (addOddsTriple(record.odds, fixture, bucket) && record.update) bucket.updateTimes.push(record.update);
+    grouped.set(fixtureId, bucket);
+  }
+  return Array.from(grouped.entries()).flatMap(([fixtureId, bucket]) => {
+    const match = buildApiFootballOddsMatch({
+      fixture: bucket.fixture,
+      fixtureId,
+      sourceLabel: "API-Football Pro · Live Odds",
+      updateTimes: bucket.updateTimes,
+      homeOddsValues: bucket.homeOddsValues,
+      drawOddsValues: bucket.drawOddsValues,
+      awayOddsValues: bucket.awayOddsValues,
+      homeProbValues: bucket.homeProbValues,
+      drawProbValues: bucket.drawProbValues,
+      awayProbValues: bucket.awayProbValues,
+    });
+    return match ? [match] : [];
+  });
+}
+
 function transformTheOddsApi(data: TheOddsApiEvent[]): OddsMatch[] {
   return data.flatMap((event) => {
     const homeName = event.home_team || "";
@@ -970,6 +1339,101 @@ function transformTheOddsApi(data: TheOddsApiEvent[]): OddsMatch[] {
   });
 }
 
+function oddsApiIoEventList(data: OddsApiIoEvent[] | { data?: OddsApiIoEvent[]; events?: OddsApiIoEvent[] }): OddsApiIoEvent[] {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.data)) return data.data;
+  if (Array.isArray(data.events)) return data.events;
+  return [];
+}
+
+function transformOddsApiIo(data: OddsApiIoEvent[]): OddsMatch[] {
+  return data.flatMap((event) => {
+    const homeName = event.home || "";
+    const awayName = event.away || "";
+    const homeOddsValues: number[] = [];
+    const drawOddsValues: number[] = [];
+    const awayOddsValues: number[] = [];
+    const homeProbValues: number[] = [];
+    const drawProbValues: number[] = [];
+    const awayProbValues: number[] = [];
+    const updateTimes: string[] = [];
+
+    for (const markets of Object.values(event.bookmakers || {})) {
+      const market = markets.find((item) => String(item.name || "").toUpperCase() === "ML");
+      const odds = market?.odds?.[0];
+      const homeOdds = parseOddValue(odds?.home);
+      const drawOdds = parseOddValue(odds?.draw);
+      const awayOdds = parseOddValue(odds?.away);
+      if (!homeOdds || !drawOdds || !awayOdds) continue;
+      const probabilities = normalizedOddsProbability(homeOdds, drawOdds, awayOdds);
+      if (!probabilities) continue;
+      homeOddsValues.push(homeOdds);
+      drawOddsValues.push(drawOdds);
+      awayOddsValues.push(awayOdds);
+      homeProbValues.push(probabilities.home);
+      drawProbValues.push(probabilities.draw);
+      awayProbValues.push(probabilities.away);
+      if (market?.updatedAt) updateTimes.push(market.updatedAt);
+    }
+
+    if (!homeProbValues.length) return [];
+    const home = getTeam(homeName);
+    const away = getTeam(awayName);
+    return [{
+      id: `odds-api-io-${event.id || `${canonicalTeamName(homeName)}-${canonicalTeamName(awayName)}-${event.date || ""}`}`,
+      homeTeam: home.name,
+      awayTeam: away.name,
+      kickoffAt: event.date || "",
+      kickoffBj: formatKickoffBj(event.date),
+      homeOdds: Number(average(homeOddsValues).toFixed(2)),
+      drawOdds: Number(average(drawOddsValues).toFixed(2)),
+      awayOdds: Number(average(awayOddsValues).toFixed(2)),
+      homeProbability: Math.round(average(homeProbValues)),
+      drawProbability: Math.round(average(drawProbValues)),
+      awayProbability: Math.round(average(awayProbValues)),
+      bookmakerCount: homeProbValues.length,
+      updatedAt: updateTimes.sort().at(-1) || new Date().toISOString(),
+      source: "Odds-API.io · Polymarket/Kalshi",
+    }];
+  });
+}
+
+async function fetchOddsApiIoOdds(source: DataSourceConfig, diagnostics: SourceDiagnostic[]): Promise<OddsMatch[]> {
+  if (!source.apiKey) return [];
+  const eventsSource: DataSourceConfig = { ...source, endpointPath: "/events" };
+  const { data: eventsData, diagnostic: eventsDiagnostic } = await fetchJsonFromSource<
+    OddsApiIoEvent[] | { data?: OddsApiIoEvent[]; events?: OddsApiIoEvent[] }
+  >(eventsSource, {
+    sport: "football",
+    league: "international-fifa-world-cup",
+    status: "pending,live",
+    limit: 200,
+  });
+  diagnostics.push(eventsDiagnostic);
+
+  const eventIds = oddsApiIoEventList(eventsData)
+    .map((event) => event.id)
+    .filter((id): id is string | number => id !== undefined && id !== null)
+    .map(String);
+  const uniqueEventIds = Array.from(new Set(eventIds));
+  if (!uniqueEventIds.length) return [];
+
+  const oddsSource: DataSourceConfig = { ...source, endpointPath: "/odds/multi" };
+  const oddsMatches: OddsMatch[] = [];
+  for (let index = 0; index < uniqueEventIds.length; index += 10) {
+    const batch = uniqueEventIds.slice(index, index + 10);
+    const { data, diagnostic } = await fetchJsonFromSource<
+      OddsApiIoEvent[] | { data?: OddsApiIoEvent[]; events?: OddsApiIoEvent[] }
+    >(oddsSource, {
+      eventIds: batch.join(","),
+      bookmakers: "Polymarket,Kalshi",
+    });
+    diagnostics.push(diagnostic);
+    oddsMatches.push(...transformOddsApiIo(oddsApiIoEventList(data)));
+  }
+  return oddsMatches;
+}
+
 function mergeOddsIntoMatches(matches: Match[], odds: OddsMatch[]): Match[] {
   return matches.map((match) => {
     const matched = odds.find((item) =>
@@ -983,9 +1447,67 @@ function mergeOddsIntoMatches(matches: Match[], odds: OddsMatch[]): Match[] {
       oddsImpliedHome: matched.homeProbability,
       oddsImpliedDraw: matched.drawProbability,
       oddsImpliedAway: matched.awayProbability,
-      updatedAt: `${match.updatedAt} · The Odds API ${matched.bookmakerCount} 家均值`,
+      oddsSource: matched.source,
+      updatedAt: `${match.updatedAt} · ${matched.source} ${matched.bookmakerCount} 家均值`,
     };
   });
+}
+
+function enabledSourceById(dataSources: DataSourceConfig[], id: string): DataSourceConfig | undefined {
+  return dataSources.find((source) => source.id === id && source.enabled && source.apiKey);
+}
+
+async function fetchApiFootballFixturesForIds(
+  dataSources: DataSourceConfig[],
+  fixtureIds: number[],
+  diagnostics: SourceDiagnostic[],
+): Promise<Map<number, ApiFootballFixture>> {
+  const source = enabledSourceById(dataSources, "api-football-worldcup-details")
+    || enabledSourceById(dataSources, "api-football-worldcup-fixtures");
+  const uniqueIds = Array.from(new Set(fixtureIds.filter((id) => Number.isFinite(id))));
+  const fixturesById = new Map<number, ApiFootballFixture>();
+  if (!source || !uniqueIds.length) return fixturesById;
+  const chunkSize = 20;
+  for (let index = 0; index < uniqueIds.length; index += chunkSize) {
+    const ids = uniqueIds.slice(index, index + chunkSize);
+    try {
+      const { data, diagnostic } = await fetchJsonFromSource<ApiFootballResponse<ApiFootballFixture>>(source, {
+        ids: ids.join("-"),
+        timezone: "Asia/Shanghai",
+      });
+      diagnostics.push(diagnostic);
+      for (const fixture of data.response || []) {
+        if (fixture.fixture?.id) fixturesById.set(fixture.fixture.id, fixture);
+      }
+    } catch (error) {
+      diagnostics.push(error as SourceDiagnostic);
+    }
+  }
+  return fixturesById;
+}
+
+async function fetchApiFootballPredictionsForFixtureIds(
+  source: DataSourceConfig | undefined,
+  fixtureIds: number[],
+  diagnostics: SourceDiagnostic[],
+): Promise<Map<number, MatchPrediction>> {
+  const predictions = new Map<number, MatchPrediction>();
+  const uniqueIds = Array.from(new Set(fixtureIds.filter((id) => Number.isFinite(id))));
+  if (!source || !uniqueIds.length) return predictions;
+  for (const fixtureId of uniqueIds.slice(0, 32)) {
+    try {
+      const { data, diagnostic } = await fetchJsonFromSource<ApiFootballPredictionResponse>(source, {
+        fixture: fixtureId,
+      });
+      diagnostics.push(diagnostic);
+      for (const [id, prediction] of normalizePredictionPercent(data.response).entries()) {
+        predictions.set(id, prediction);
+      }
+    } catch (error) {
+      diagnostics.push(error as SourceDiagnostic);
+    }
+  }
+  return predictions;
 }
 
 async function latestCanonicalOdds(): Promise<OddsMatch[]> {
@@ -1093,6 +1615,7 @@ function transformApiFootballTeams(data: ApiFootballResponse<ApiFootballTeamResp
     const display = getTeam(item.team?.name);
     return {
       id: `api-football-${item.team?.id}`,
+      providerTeamId: item.team?.id,
       code: item.team?.code,
       name: display.name,
       nameEn: item.team?.name || "",
@@ -1109,6 +1632,129 @@ function transformApiFootballTeams(data: ApiFootballResponse<ApiFootballTeamResp
       groupStandings: { played: 0, won: 0, drawn: 0, lost: 0, pts: 0 },
       crestUrl: item.team?.logo,
       source: "API-Football Pro",
+      sourceUpdatedAt: new Date().toISOString(),
+    };
+  });
+}
+
+function apiFootballGroupLabel(group: string | undefined): string {
+  const letter = String(group || "").match(/Group\s+([A-Z])/i)?.[1] || String(group || "").match(/\b([A-Z])\b/)?.[1];
+  return letter ? `${letter} 组` : group || "";
+}
+
+function uniqueLabels(items: Array<string | undefined>): string[] {
+  return Array.from(new Set(items.map((item) => String(item || "").trim()).filter(Boolean)));
+}
+
+function mergeSourceLabels(...sources: Array<string | undefined>): string {
+  return uniqueLabels(sources.flatMap((source) => source?.split(" · ") || [])).join(" · ");
+}
+
+function teamMergeKeys(teamId: number | undefined, name: string | undefined): string[] {
+  return [
+    teamId ? `id:${teamId}` : "",
+    canonicalTeamName(name),
+  ].filter(Boolean);
+}
+
+function transformApiFootballStandings(data: ApiFootballStandingsResponse): Map<string, Partial<Team>> {
+  const byKey = new Map<string, Partial<Team>>();
+  for (const row of data.response?.flatMap((item) => item.league?.standings?.flat() || []) || []) {
+    const partial: Partial<Team> = {
+      providerTeamId: row.team?.id,
+      group: apiFootballGroupLabel(row.group),
+      rank: row.rank || 0,
+      groupStandings: {
+        played: row.all?.played || 0,
+        won: row.all?.win || 0,
+        drawn: row.all?.draw || 0,
+        lost: row.all?.lose || 0,
+        goalsFor: row.all?.goals?.for || 0,
+        goalsAgainst: row.all?.goals?.against || 0,
+        pts: row.points || 0,
+      },
+      formSummary: {
+        form: row.form,
+        lastFive: row.form ? row.form.split("").slice(-5) : [],
+        note: [row.description, row.status ? `status: ${row.status}` : ""].filter(Boolean).join(" · "),
+        updatedAt: new Date().toISOString(),
+      },
+      crestUrl: row.team?.logo,
+      sourceUpdatedAt: new Date().toISOString(),
+    };
+    for (const key of teamMergeKeys(row.team?.id, row.team?.name)) byKey.set(key, partial);
+  }
+  return byKey;
+}
+
+function transformApiFootballSquads(data: ApiFootballSquadResponse): Map<string, Team["roster"]> {
+  const byKey = new Map<string, Team["roster"]>();
+  for (const item of data.response || []) {
+    const roster = (item.players || [])
+      .filter((player) => player.name)
+      .map((player) => ({
+        id: `api-football-player-${player.id || `${item.team?.id}-${player.name}`}`,
+        name: player.name || "",
+        shirtNumber: player.number,
+        position: player.position || "",
+        age: player.age,
+        photoUrl: player.photo,
+        avatarUrl: player.photo,
+        intro: "API-Football Pro squad profile.",
+      }));
+    for (const key of teamMergeKeys(item.team?.id, item.team?.name)) byKey.set(key, roster);
+  }
+  return byKey;
+}
+
+function transformApiFootballInjuries(data: ApiFootballInjuryResponse): Map<string, TeamInjury[]> {
+  const byKey = new Map<string, TeamInjury[]>();
+  for (const item of data.response || []) {
+    if (!item.player?.name) continue;
+    const injury: TeamInjury = {
+      id: `api-football-injury-${item.fixture?.id || "fixture"}-${item.player.id || item.player.name}`,
+      playerName: item.player.name,
+      playerId: item.player.id,
+      type: item.player.type,
+      reason: item.player.reason,
+      fixtureId: item.fixture?.id,
+      fixtureDate: item.fixture?.date,
+      updatedAt: new Date().toISOString(),
+    };
+    for (const key of teamMergeKeys(item.team?.id, item.team?.name)) {
+      byKey.set(key, [...(byKey.get(key) || []), injury]);
+    }
+  }
+  return byKey;
+}
+
+function mergeApiFootballTeamAuxData(
+  teams: Team[],
+  input: {
+    standings?: Map<string, Partial<Team>>;
+    squads?: Map<string, Team["roster"]>;
+    injuries?: Map<string, TeamInjury[]>;
+  },
+): Team[] {
+  return teams.map((team) => {
+    const keys = teamMergeKeys(team.providerTeamId, team.nameEn || team.name);
+    const standings = keys.map((key) => input.standings?.get(key)).find(Boolean);
+    const roster = keys.map((key) => input.squads?.get(key)).find(Boolean);
+    const injuries = keys.map((key) => input.injuries?.get(key)).find(Boolean);
+    return {
+      ...team,
+      ...standings,
+      groupStandings: standings?.groupStandings || team.groupStandings,
+      formSummary: standings?.formSummary || team.formSummary,
+      roster: roster?.length ? roster : team.roster,
+      injuries: injuries?.length ? injuries : team.injuries,
+      tags: uniqueLabels([
+        ...team.tags,
+        standings?.rank ? `小组第${standings.rank}` : "",
+        injuries?.length ? `${injuries.length}人伤停` : "",
+      ]),
+      source: mergeSourceLabels(team.source, standings || roster || injuries ? "API-Football Pro · standings/squads/injuries" : undefined),
+      sourceUpdatedAt: new Date().toISOString(),
     };
   });
 }
@@ -1149,18 +1795,89 @@ function mergeTeamLists(lists: Team[][]): Team[] {
       }
       merged.set(key, {
         ...existing,
+        providerTeamId: existing.providerTeamId || team.providerTeamId,
         coach: existing.coach || team.coach,
         formation: existing.formation || team.formation,
         style: existing.style || team.style,
         crestUrl: existing.crestUrl || team.crestUrl,
+        group: existing.group || team.group,
+        rank: existing.rank || team.rank,
+        groupStandings: existing.groupStandings?.played || existing.groupStandings?.pts
+          ? existing.groupStandings
+          : team.groupStandings,
         stars: existing.stars.length ? existing.stars : team.stars,
         tags: Array.from(new Set([...existing.tags, ...team.tags])),
         talkingPoints: Array.from(new Set([...existing.talkingPoints, ...team.talkingPoints])),
+        roster: existing.roster?.length ? existing.roster : team.roster,
+        injuries: existing.injuries?.length ? existing.injuries : team.injuries,
+        formSummary: existing.formSummary || team.formSummary,
+        sourceUpdatedAt: existing.sourceUpdatedAt || team.sourceUpdatedAt,
         source: Array.from(new Set([existing.source, team.source].filter(Boolean))).join(" + "),
       });
     }
   }
   return Array.from(merged.values());
+}
+
+async function enrichApiFootballTeamsWithAuxSources(
+  teams: Team[],
+  dataSources: DataSourceConfig[],
+  diagnostics: SourceDiagnostic[],
+): Promise<Team[]> {
+  if (!teams.length) return teams;
+  const standingsSource = enabledSourceById(dataSources, "api-football-worldcup-standings");
+  const squadsSource = enabledSourceById(dataSources, "api-football-worldcup-squads");
+  const injuriesSource = enabledSourceById(dataSources, "api-football-worldcup-injuries");
+  const aux: Parameters<typeof mergeApiFootballTeamAuxData>[1] = {};
+
+  if (standingsSource) {
+    try {
+      const { data, diagnostic } = await fetchJsonFromSource<ApiFootballStandingsResponse>(standingsSource, {
+        league: 1,
+        season: 2026,
+      });
+      diagnostics.push(diagnostic);
+      aux.standings = transformApiFootballStandings(data);
+    } catch (error) {
+      diagnostics.push(error as SourceDiagnostic);
+    }
+  }
+
+  if (injuriesSource) {
+    try {
+      const { data, diagnostic } = await fetchJsonFromSource<ApiFootballInjuryResponse>(injuriesSource, {
+        league: 1,
+        season: 2026,
+      });
+      diagnostics.push(diagnostic);
+      aux.injuries = transformApiFootballInjuries(data);
+    } catch (error) {
+      diagnostics.push(error as SourceDiagnostic);
+    }
+  }
+
+  if (squadsSource) {
+    const squads = new Map<string, Team["roster"]>();
+    const teamIds = teams
+      .map((team) => team.providerTeamId)
+      .filter((id): id is number => Number.isFinite(id));
+    for (const teamId of Array.from(new Set(teamIds)).slice(0, 64)) {
+      try {
+        const { data, diagnostic } = await fetchJsonFromSource<ApiFootballSquadResponse>(squadsSource, {
+          team: teamId,
+        });
+        diagnostics.push(diagnostic);
+        for (const [key, roster] of transformApiFootballSquads(data).entries()) {
+          squads.set(key, roster);
+        }
+      } catch (error) {
+        diagnostics.push(error as SourceDiagnostic);
+      }
+    }
+    aux.squads = squads;
+  }
+
+  return mergeApiFootballTeamAuxData(teams, aux);
 }
 
 function parseStringArray(input: string | undefined): string[] {
@@ -1239,13 +1956,16 @@ function isWorldCupPolymarketEvent(event: PolymarketEvent): boolean {
   return /\bfifwc\b|fifa world cup|world cup|世界杯/.test(text);
 }
 
-function transformPolymarketEvents(data: PolymarketEvent[]): RadarMatch[] {
+function transformPolymarketEvents(
+  data: PolymarketEvent[],
+  options: { includeClosedMarkets?: boolean } = {},
+): RadarMatch[] {
   return data.filter(isWorldCupPolymarketEvent).flatMap((event, eventIndex) => {
     const eventTitle = event.title || "World Cup prediction";
     const eventTeams = parseEventTeams(eventTitle);
     const eventVolume = parsePolymarketVolume(event.volume);
     return (event.markets || []).flatMap((market, marketIndex) => {
-      if (market.active === false || market.closed === true) return [];
+      if (market.active === false || (!options.includeClosedMarkets && market.closed === true)) return [];
       const outcomes = parseStringArray(market.outcomes);
       const prices = parseStringArray(market.outcomePrices).map((price) => Number(price));
       const yes = prices[0];
@@ -1283,8 +2003,8 @@ function transformPolymarketEvents(data: PolymarketEvent[]): RadarMatch[] {
         diffTeam: "home" as const,
         diffText: "此卡展示 Polymarket 预测市场价格和资金热度；传统赔率对照源未匹配时，不强行制造分歧。",
         kickoffBj: "",
-        status: "upcoming" as MatchStatus,
-        updatedAt: "Polymarket",
+        status: market.closed === true ? "finished" as MatchStatus : "upcoming" as MatchStatus,
+        updatedAt: market.closed === true ? "Polymarket · closed" : "Polymarket",
         volume: market.volume,
         volumeUsd,
         outcomes: normalizedOutcomes,
@@ -1292,6 +2012,56 @@ function transformPolymarketEvents(data: PolymarketEvent[]): RadarMatch[] {
       }];
     });
   }).sort((left, right) => (right.volumeUsd || 0) - (left.volumeUsd || 0));
+}
+
+function transformApiFootballPredictionsToRadar(
+  matches: Match[],
+  predictionsByFixtureId: Map<number, MatchPrediction>,
+): RadarMatch[] {
+  return matches.flatMap((match) => {
+    const fixtureId = match.providerFixtureId || apiFootballFixtureIdFromMatchId(match.id);
+    const prediction = fixtureId ? predictionsByFixtureId.get(fixtureId) || match.prediction : match.prediction;
+    if (!prediction) return [];
+    const homeProb = prediction.homePercent;
+    const drawProb = prediction.drawPercent;
+    const awayProb = prediction.awayPercent;
+    const awayOrDraw = Math.max(awayProb, drawProb);
+    const diff = Math.abs(homeProb - awayProb);
+    return [{
+      id: `api-football-prediction-${fixtureId || match.id}`,
+      title: `${match.homeTeam} vs ${match.awayTeam}`,
+      eventTitle: `${match.homeTeam} vs ${match.awayTeam}`,
+      category: "moneyline" as const,
+      marketLabel: "Home / Draw / Away prediction",
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      homeFlag: match.homeFlag,
+      awayFlag: match.awayFlag,
+      homeMarketProb: homeProb,
+      awayMarketProb: awayProb,
+      homeOddsProb: match.oddsImpliedHome || homeProb,
+      awayOddsProb: match.oddsImpliedAway || awayProb,
+      diff,
+      diffLabel: diff >= 18 ? "significant" as const : diff >= 10 ? "notable" as const : "aligned" as const,
+      diffTeam: homeProb >= awayOrDraw ? "home" as const : "away" as const,
+      diffText: prediction.advice || `API-Football 预测：主胜 ${homeProb}% / 平 ${drawProb}% / 客胜 ${awayProb}%。`,
+      kickoffBj: match.kickoffBj,
+      status: match.status,
+      updatedAt: prediction.updatedAt || match.updatedAt,
+      volume: "API model",
+      volumeUsd: 0,
+      outcomes: [
+        { label: match.homeTeam, probability: homeProb },
+        { label: "Draw", probability: drawProb },
+        { label: match.awayTeam, probability: awayProb },
+      ],
+      history: [],
+    }];
+  });
+}
+
+function isPolymarketRadarMatch(match: RadarMatch): boolean {
+  return match.id.startsWith("polymarket-") || /polymarket/i.test([match.updatedAt, match.diffText].filter(Boolean).join(" "));
 }
 
 function snapshotKeyFor(prefix: string, value: string, updatedAt: string): string {
@@ -2197,27 +2967,94 @@ export async function getAggregatedOdds(options: AggregationReadOptions = {}): P
   const sources = sortEnabledSources(dataSources, "odds");
   for (const source of sources) {
     try {
-      if (source.adapter !== "the-odds-api") continue;
-      const { data, diagnostic } = await fetchJsonFromSource<TheOddsApiEvent[]>(source, {
-        regions: "eu",
-        markets: "h2h",
-        oddsFormat: "decimal",
-        dateFormat: "iso",
-      });
-      diagnostics.push(diagnostic);
-      const oddsMatches = transformTheOddsApi(data);
-      if (!oddsMatches.length) continue;
-      await recordOddsMarketSnapshots(oddsMatches, source.id);
-      await upsertSnapshotCache({
-        snapshotKey,
-        feature: "odds",
-        sourceMode: "remote",
-        sourceId: source.id,
-        payload: oddsMatches,
-        diagnostics,
-        ttlSeconds: getEffectiveRefreshSeconds(source),
-      });
-      return { oddsMatches, source: "remote", diagnostics };
+      if (source.adapter === "api-football") {
+        if (source.endpointPath === "/odds/live") {
+          const { data, diagnostic } = await fetchJsonFromSource<ApiFootballLiveOddsResponse>(source, {
+            league: 1,
+            season: 2026,
+          });
+          diagnostics.push(diagnostic);
+          const fixtureIds = (data.response || [])
+            .map((record) => record.fixture?.id)
+            .filter((id): id is number => Number.isFinite(id));
+          const fixturesById = await fetchApiFootballFixturesForIds(dataSources, fixtureIds, diagnostics);
+          const oddsMatches = transformApiFootballLiveOdds(data, fixturesById);
+          if (!oddsMatches.length) continue;
+          await recordOddsMarketSnapshots(oddsMatches, source.id);
+          await upsertSnapshotCache({
+            snapshotKey,
+            feature: "odds",
+            sourceMode: "remote",
+            sourceId: source.id,
+            payload: oddsMatches,
+            diagnostics,
+            ttlSeconds: getEffectiveRefreshSeconds(source),
+          });
+          return { oddsMatches, source: "remote", diagnostics };
+        }
+
+        const { data, diagnostic } = await fetchJsonFromSource<ApiFootballOddsResponse>(source, {
+          league: 1,
+          season: 2026,
+        });
+        diagnostics.push(diagnostic);
+        const fixtureIds = (data.response || [])
+          .map((record) => record.fixture?.id)
+          .filter((id): id is number => Number.isFinite(id));
+        const fixturesById = await fetchApiFootballFixturesForIds(dataSources, fixtureIds, diagnostics);
+        const oddsMatches = transformApiFootballPreMatchOdds(data, fixturesById);
+        if (!oddsMatches.length) continue;
+        await recordOddsMarketSnapshots(oddsMatches, source.id);
+        await upsertSnapshotCache({
+          snapshotKey,
+          feature: "odds",
+          sourceMode: "remote",
+          sourceId: source.id,
+          payload: oddsMatches,
+          diagnostics,
+          ttlSeconds: getEffectiveRefreshSeconds(source),
+        });
+        return { oddsMatches, source: "remote", diagnostics };
+      }
+
+      if (source.adapter === "the-odds-api") {
+        const { data, diagnostic } = await fetchJsonFromSource<TheOddsApiEvent[]>(source, {
+          regions: "eu",
+          markets: "h2h",
+          oddsFormat: "decimal",
+          dateFormat: "iso",
+        });
+        diagnostics.push(diagnostic);
+        const oddsMatches = transformTheOddsApi(data);
+        if (!oddsMatches.length) continue;
+        await recordOddsMarketSnapshots(oddsMatches, source.id);
+        await upsertSnapshotCache({
+          snapshotKey,
+          feature: "odds",
+          sourceMode: "remote",
+          sourceId: source.id,
+          payload: oddsMatches,
+          diagnostics,
+          ttlSeconds: getEffectiveRefreshSeconds(source),
+        });
+        return { oddsMatches, source: "remote", diagnostics };
+      }
+
+      if (source.adapter === "odds-api-io") {
+        const oddsMatches = await fetchOddsApiIoOdds(source, diagnostics);
+        if (!oddsMatches.length) continue;
+        await recordOddsMarketSnapshots(oddsMatches, source.id);
+        await upsertSnapshotCache({
+          snapshotKey,
+          feature: "odds",
+          sourceMode: "remote",
+          sourceId: source.id,
+          payload: oddsMatches,
+          diagnostics,
+          ttlSeconds: getEffectiveRefreshSeconds(source),
+        });
+        return { oddsMatches, source: "remote", diagnostics };
+      }
     } catch (error) {
       diagnostics.push(error as SourceDiagnostic);
     }
@@ -2275,6 +3112,7 @@ export async function getAggregatedTeams(options: AggregationReadOptions = {}): 
     try {
       let teams: Team[] = [];
       if (source.adapter === "api-football") {
+        if (source.endpointPath !== "/teams") continue;
         const { data, diagnostic } = await fetchJsonFromSource<ApiFootballResponse<ApiFootballTeamResponse>>(source, {
           league: 1,
           season: 2026,
@@ -2303,7 +3141,11 @@ export async function getAggregatedTeams(options: AggregationReadOptions = {}): 
     }
   }
 
-  const teams = mergeTeamLists(teamLists);
+  const teams = await enrichApiFootballTeamsWithAuxSources(
+    mergeTeamLists(teamLists),
+    dataSources,
+    diagnostics,
+  );
   if (teams.length) {
     await upsertSnapshotCache({
       snapshotKey,
@@ -2407,7 +3249,17 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
             diagnostics.push(error as SourceDiagnostic);
           }
         }
-        matches = transformApiFootballMatches(mergeApiFootballFixtureDetails(data, detailData), dateKey);
+        const predictionSource = enabledSourceById(dataSources, "api-football-worldcup-predictions");
+        const predictionsByFixtureId = await fetchApiFootballPredictionsForFixtureIds(
+          predictionSource,
+          fixtureIds,
+          diagnostics,
+        );
+        matches = transformApiFootballMatches(
+          mergeApiFootballFixtureDetails(data, detailData),
+          dateKey,
+          predictionsByFixtureId,
+        );
       } else if (source.adapter === "football-data-org") {
         const { data, diagnostic } = await fetchJsonFromSource<FootballDataMatchesResponse>(source, {
           season: 2026,
@@ -2543,7 +3395,7 @@ export async function getAggregatedRadar(options: AggregationReadOptions = {}): 
   diagnostics: SourceDiagnostic[];
 }> {
   const { dataSources, updatedAt } = await readAdminConfig();
-  const snapshotKey = `radar:v4:world-cup:${updatedAt}`;
+  const snapshotKey = `radar:v5:polymarket:world-cup:${updatedAt}`;
   const persisted = await readSnapshotCache<RadarMatch[]>(snapshotKey);
   if (shouldUseSnapshot(persisted, (payload) => payload.length > 0, options)) {
     return {
@@ -2565,7 +3417,7 @@ export async function getAggregatedRadar(options: AggregationReadOptions = {}): 
   }
 
   if (isCacheOnly(options)) {
-    const latestRadar = await readLatestRadarMarketSnapshots();
+    const latestRadar = (await readLatestRadarMarketSnapshots()).filter(isPolymarketRadarMatch);
     return {
       radarMatches: latestRadar,
       source: latestRadar.length ? "cache" : "fallback",
@@ -2578,6 +3430,35 @@ export async function getAggregatedRadar(options: AggregationReadOptions = {}): 
 
   for (const source of marketSources) {
     try {
+      if (source.adapter === "api-football") {
+        const matchResults = await Promise.all(
+          (["yesterday", "today", "tomorrow"] as ScheduleDateKey[]).map((dateKey) =>
+            getAggregatedMatches(dateKey, { cacheMode: "cache-first" }),
+          ),
+        );
+        const matches = matchResults.flatMap((result) => result.matches);
+        diagnostics.push(...matchResults.flatMap((result) => result.diagnostics));
+        const fixtureIds = matches
+          .map((match) => match.providerFixtureId || apiFootballFixtureIdFromMatchId(match.id))
+          .filter((id): id is number => Number.isFinite(id));
+        const predictions = await fetchApiFootballPredictionsForFixtureIds(source, fixtureIds, diagnostics);
+        const transformed = transformApiFootballPredictionsToRadar(matches, predictions);
+        if (transformed.length > 0) {
+          await recordRadarMarketSnapshots(transformed, source.id);
+          await upsertSnapshotCache({
+            snapshotKey,
+            feature: "radar",
+            sourceMode: "remote",
+            sourceId: source.id,
+            payload: transformed,
+            diagnostics,
+            ttlSeconds: getEffectiveRefreshSeconds(source),
+          });
+          return { radarMatches: transformed, source: "remote", diagnostics };
+        }
+        continue;
+      }
+
       if (source.adapter !== "polymarket-gamma") continue;
       const { data, diagnostic } = await fetchJsonFromSource<PolymarketEvent[]>(source, {
         tag_id: POLYMARKET_WORLD_CUP_TAG_ID,
@@ -2589,7 +3470,29 @@ export async function getAggregatedRadar(options: AggregationReadOptions = {}): 
         ascending: "false",
       });
       diagnostics.push(diagnostic);
-      const transformed = transformPolymarketEvents(data);
+      let closedData: PolymarketEvent[] = [];
+      try {
+        const closed = await fetchJsonFromSource<PolymarketEvent[]>(source, {
+          tag_id: POLYMARKET_WORLD_CUP_TAG_ID,
+          related_tags: "true",
+          active: "true",
+          closed: "true",
+          limit: 100,
+          order: "volume24hr",
+          ascending: "false",
+        });
+        diagnostics.push(closed.diagnostic);
+        closedData = closed.data;
+      } catch (error) {
+        diagnostics.push(error as SourceDiagnostic);
+      }
+      const transformedById = new Map<string, RadarMatch>();
+      for (const item of transformPolymarketEvents(data)) transformedById.set(item.id, item);
+      for (const item of transformPolymarketEvents(closedData, { includeClosedMarkets: true })) {
+        if (!transformedById.has(item.id)) transformedById.set(item.id, item);
+      }
+      const transformed = Array.from(transformedById.values())
+        .sort((left, right) => (right.volumeUsd || 0) - (left.volumeUsd || 0));
       if (transformed.length > 0) {
         await recordRadarMarketSnapshots(transformed, source.id);
         await upsertSnapshotCache({
