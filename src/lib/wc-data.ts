@@ -9,8 +9,11 @@ export type ScheduleDateKey = "yesterday" | "today" | "tomorrow";
 
 export interface MatchEvent {
   minute: number;
-  type: "goal" | "yellow" | "red" | "penalty" | "og";
+  type: "goal" | "yellow" | "red" | "penalty" | "og" | "subst";
+  playerId?: number;
   player: string;
+  assistPlayerId?: number;
+  assistPlayer?: string;
   team: "home" | "away";
   description?: string;
 }
@@ -18,8 +21,22 @@ export interface MatchEvent {
 export interface MatchLineupPlayer {
   id?: number;
   name: string;
+  nameZh?: string;
+  fullName?: string;
   number?: number;
   position?: string;
+  grid?: string;
+}
+
+export interface MatchKitColorSet {
+  primary?: string;
+  number?: string;
+  border?: string;
+}
+
+export interface MatchKitColors {
+  player?: MatchKitColorSet;
+  goalkeeper?: MatchKitColorSet;
 }
 
 export interface MatchLineup {
@@ -27,6 +44,7 @@ export interface MatchLineup {
   teamName: string;
   formation?: string;
   coach?: string;
+  colors?: MatchKitColors;
   startXI: MatchLineupPlayer[];
   substitutes: MatchLineupPlayer[];
 }
@@ -82,6 +100,8 @@ export interface Match {
   statistics?: MatchStatistic[];
   prediction?: MatchPrediction;
   oddsSource?: string;
+  preMatchProbabilityUpdatedAt?: string;
+  preMatchProbabilityTargetAt?: string;
   previewText: string;
   aiBriefZh?: string;
   aiBriefEn?: string;
@@ -507,6 +527,8 @@ export interface OddsMatch {
   awayProbability: number;
   bookmakerCount: number;
   updatedAt: string;
+  probabilityCapturedAt?: string;
+  preMatchTargetAt?: string;
   source: string;
 }
 

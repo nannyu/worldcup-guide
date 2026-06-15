@@ -1,6 +1,6 @@
 import { getDb, getSql, isDatabaseConfigured } from "../client";
 import { marketSnapshots, type MarketSnapshot } from "../schema/world-cup";
-import type { OddsMatch, RadarMatch } from "@/lib/wc-data";
+import type { Match, OddsMatch, RadarMatch } from "@/lib/wc-data";
 
 type MarketSnapshotInput = {
   matchId?: string | null;
@@ -28,6 +28,26 @@ function rawMatch<T>(row: MarketSnapshot, kind: "odds" | "radar"): T | undefined
   const raw = row.raw as { kind?: string; match?: unknown } | undefined;
   if (!raw || raw.kind !== kind || typeof raw.match !== "object" || raw.match === null) return undefined;
   return raw.match as T;
+}
+
+function dateMs(input: Date | string | undefined): number {
+  const time = input instanceof Date ? input.getTime() : Date.parse(String(input || ""));
+  return Number.isFinite(time) ? time : NaN;
+}
+
+function preKickoffTarget(match: Pick<Match, "kickoffAt">): Date | undefined {
+  const kickoffMs = Date.parse(match.kickoffAt || "");
+  if (!Number.isFinite(kickoffMs)) return undefined;
+  return new Date(kickoffMs - 60 * 1000);
+}
+
+function withPreKickoffMetadata(match: OddsMatch, row: MarketSnapshot, targetAt: Date): OddsMatch {
+  const capturedAt = row.capturedAt instanceof Date ? row.capturedAt.toISOString() : String(row.capturedAt);
+  return {
+    ...match,
+    probabilityCapturedAt: capturedAt,
+    preMatchTargetAt: targetAt.toISOString(),
+  };
 }
 
 export async function recordMarketSnapshots(inputs: MarketSnapshotInput[]): Promise<number> {
@@ -62,6 +82,7 @@ export async function recordMarketSnapshots(inputs: MarketSnapshotInput[]): Prom
 
 export function recordOddsMarketSnapshots(oddsMatches: OddsMatch[], provider: string): Promise<number> {
   return recordMarketSnapshots(oddsMatches.map((match) => ({
+    matchId: match.matchId || null,
     provider,
     externalMarketId: match.id,
     capturedAt: parseCapturedAt(match.updatedAt),
@@ -75,6 +96,57 @@ export function recordOddsMarketSnapshots(oddsMatches: OddsMatch[], provider: st
       bookmakerCount: match.bookmakerCount,
     },
   })));
+}
+
+export async function readPreKickoffOddsMarketSnapshots(matches: Match[]): Promise<OddsMatch[]> {
+  if (!isDatabaseConfigured || !matches.length) return [];
+  const sql = getSql();
+  const results: OddsMatch[] = [];
+
+  for (const match of matches) {
+    const targetAt = preKickoffTarget(match);
+    const kickoffMs = Date.parse(match.kickoffAt || "");
+    if (!targetAt || !Number.isFinite(kickoffMs)) continue;
+
+    try {
+      const rows = await sql<MarketSnapshot[]>`
+        select *
+        from market_snapshots
+        where raw->>'kind' = 'odds'
+          and captured_at <= ${new Date(kickoffMs)}
+          and captured_at >= ${new Date(kickoffMs - 24 * 60 * 60 * 1000)}
+          and (
+            match_id = ${match.id}
+            or raw->'match'->>'matchId' = ${match.id}
+            or (
+              raw->'match'->>'homeTeam' = ${match.homeTeam}
+              and raw->'match'->>'awayTeam' = ${match.awayTeam}
+              and raw->'match'->>'kickoffBj' = ${match.kickoffBj}
+            )
+          )
+        order by captured_at desc, id desc
+        limit 200
+      `;
+      const closest = rows
+        .map((row) => ({ row, match: rawMatch<OddsMatch>(row, "odds") }))
+        .filter((item): item is { row: MarketSnapshot; match: OddsMatch } => Boolean(item.match))
+        .sort((left, right) => {
+          const leftDistance = Math.abs(dateMs(left.row.capturedAt) - targetAt.getTime());
+          const rightDistance = Math.abs(dateMs(right.row.capturedAt) - targetAt.getTime());
+          return leftDistance - rightDistance || dateMs(right.row.capturedAt) - dateMs(left.row.capturedAt);
+        })[0];
+      if (closest) results.push(withPreKickoffMetadata(closest.match, closest.row, targetAt));
+    } catch (error) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(
+          "[market-snapshots] pre-kickoff odds unavailable:",
+          error instanceof Error ? error.message : error,
+        );
+      }
+    }
+  }
+
+  return results;
 }
 
 export function recordRadarMarketSnapshots(radarMatches: RadarMatch[], provider: string): Promise<number> {

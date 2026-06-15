@@ -19,6 +19,7 @@ import { listRecentIngestionRuns } from "@/lib/db/queries/ingestion-runs";
 import {
   readLatestOddsMarketSnapshots,
   readLatestRadarMarketSnapshots,
+  readPreKickoffOddsMarketSnapshots,
   recordOddsMarketSnapshots,
   recordRadarMarketSnapshots,
 } from "@/lib/db/queries/market-snapshots";
@@ -30,7 +31,7 @@ import {
   getStoredCanonicalMatches,
   persistCanonicalMatches,
 } from "@/lib/db/queries/world-cup";
-import { teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
+import { findBuiltInPlayerProfile, teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
 import {
   allMatches,
   ENGLAND_FLAG,
@@ -41,6 +42,7 @@ import {
   scheduleDateMeta,
   type Match,
   type MatchEvent,
+  type MatchKitColors,
   type MatchLineup,
   type MatchPrediction,
   type MatchStatistic,
@@ -158,7 +160,7 @@ interface ApiFootballEvent {
 }
 
 interface ApiFootballLineup {
-  team?: { id?: number; name?: string };
+  team?: { id?: number; name?: string; colors?: MatchKitColors };
   coach?: { id?: number; name?: string };
   formation?: string;
   startXI?: Array<{ player?: ApiFootballLineupPlayer }>;
@@ -170,6 +172,7 @@ interface ApiFootballLineupPlayer {
   name?: string;
   number?: number;
   pos?: string;
+  grid?: string | null;
 }
 
 interface ApiFootballStatisticGroup {
@@ -916,6 +919,7 @@ function apiFootballEventType(event: ApiFootballEvent): MatchEvent["type"] | und
   if (type === "goal") return "goal";
   if (type === "card" && detail.includes("red")) return "red";
   if (type === "card" && detail.includes("yellow")) return "yellow";
+  if (type === "subst") return "subst";
   return undefined;
 }
 
@@ -931,9 +935,20 @@ function transformApiFootballEvents(fixture: ApiFootballFixture): MatchEvent[] {
     return [{
       minute: Number.isFinite(minute) && minute > 0 ? minute : 0,
       type,
+      playerId: event.player?.id,
       player: event.player?.name || "Unknown",
+      assistPlayerId: event.assist?.id,
+      assistPlayer: event.assist?.name || undefined,
       team: apiFootballTeamSide(event.team?.id, fixture),
-      description: [event.detail, event.assist?.name ? `Assist: ${event.assist.name}` : "", event.comments || ""]
+      description: [
+        event.detail,
+        type === "subst" && event.assist?.name
+          ? `On: ${event.assist.name}`
+          : event.assist?.name
+            ? `Assist: ${event.assist.name}`
+            : "",
+        event.comments || "",
+      ]
         .filter(Boolean)
         .join(" · "),
     }];
@@ -942,17 +957,28 @@ function transformApiFootballEvents(fixture: ApiFootballFixture): MatchEvent[] {
 
 function transformApiFootballLineups(fixture: ApiFootballFixture): MatchLineup[] {
   return (fixture.lineups || []).map((lineup) => {
-    const player = (item: { player?: ApiFootballLineupPlayer }): MatchLineup["startXI"][number] => ({
-      id: item.player?.id,
-      name: item.player?.name || "Unknown",
-      number: item.player?.number,
-      position: item.player?.pos,
-    });
+    const teamName = getTeam(lineup.team?.name).name;
+    const player = (item: { player?: ApiFootballLineupPlayer }): MatchLineup["startXI"][number] => {
+      const profile = findBuiltInPlayerProfile(teamName, {
+        number: item.player?.number,
+        name: item.player?.name,
+      });
+      return {
+        id: item.player?.id,
+        name: item.player?.name || profile?.name || "Unknown",
+        nameZh: profile?.nameZh,
+        fullName: profile?.name,
+        number: item.player?.number,
+        position: item.player?.pos,
+        grid: item.player?.grid || undefined,
+      };
+    };
     return {
       team: apiFootballTeamSide(lineup.team?.id, fixture),
-      teamName: getTeam(lineup.team?.name).name,
+      teamName,
       formation: lineup.formation,
       coach: lineup.coach?.name,
+      colors: lineup.team?.colors,
       startXI: (lineup.startXI || []).map(player).filter((item) => item.name !== "Unknown"),
       substitutes: (lineup.substitutes || []).map(player).filter((item) => item.name !== "Unknown"),
     };
@@ -1557,9 +1583,12 @@ async function fetchOddsApiIoOdds(source: DataSourceConfig, diagnostics: SourceD
 function mergeOddsIntoMatches(matches: Match[], odds: OddsMatch[]): Match[] {
   return matches.map((match) => {
     const matched = odds.find((item) =>
-      canonicalTeamName(item.homeTeam) === canonicalTeamName(match.homeTeam)
-      && canonicalTeamName(item.awayTeam) === canonicalTeamName(match.awayTeam)
-      && item.kickoffBj === match.kickoffBj
+      item.matchId === match.id
+      || (
+        canonicalTeamName(item.homeTeam) === canonicalTeamName(match.homeTeam)
+        && canonicalTeamName(item.awayTeam) === canonicalTeamName(match.awayTeam)
+        && item.kickoffBj === match.kickoffBj
+      )
     );
     if (!matched) return match;
     return {
@@ -1568,6 +1597,8 @@ function mergeOddsIntoMatches(matches: Match[], odds: OddsMatch[]): Match[] {
       oddsImpliedDraw: matched.drawProbability,
       oddsImpliedAway: matched.awayProbability,
       oddsSource: matched.source,
+      preMatchProbabilityUpdatedAt: matched.probabilityCapturedAt || matched.updatedAt,
+      preMatchProbabilityTargetAt: matched.preMatchTargetAt,
       updatedAt: `${match.updatedAt} · ${matched.source} ${matched.bookmakerCount} 家均值`,
     };
   });
@@ -1637,6 +1668,20 @@ async function latestCanonicalOdds(): Promise<OddsMatch[]> {
   return latestSnapshot?.payload || [];
 }
 
+async function preMatchCanonicalOdds(matches: Match[]): Promise<OddsMatch[]> {
+  const preKickoffOdds = await enrichOddsMatchesWithStoredMatches(await readPreKickoffOddsMarketSnapshots(matches));
+  const usedMatchIds = new Set(preKickoffOdds.map((odds) => odds.matchId).filter(Boolean));
+  const needsUpcomingFallback = matches.some((match) => match.status === "upcoming" && !usedMatchIds.has(match.id));
+  if (!needsUpcomingFallback) return preKickoffOdds;
+
+  const latestOdds = await latestCanonicalOdds();
+  const fallbackOdds = latestOdds.filter((oddsMatch) => {
+    const match = nearestMatchForOddsMatch(oddsMatch, matches);
+    return match?.status === "upcoming" && !usedMatchIds.has(match.id);
+  });
+  return [...preKickoffOdds, ...fallbackOdds];
+}
+
 function tournamentScheduleUtcBounds(): ScheduleUtcDayBounds | undefined {
   const times = allMatches
     .map((match) => Date.parse(match.kickoffAt || ""))
@@ -1691,7 +1736,7 @@ async function enrichMatchesWithLatestCanonicalOdds(
   options: AggregationReadOptions = {},
 ): Promise<Match[]> {
   if (options.liveScoresOnly || !matches.length) return matches;
-  const odds = await latestCanonicalOdds();
+  const odds = await preMatchCanonicalOdds(matches);
   return odds.length ? mergeOddsIntoMatches(matches, odds) : matches;
 }
 
@@ -3384,7 +3429,7 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
   const sourceDate = sourceDateFor(dateKey, options);
   const dateRange = dateRangeFor(dateKey, options);
   const providerDates = providerDatesForRange(dateRange, sourceDate);
-  const snapshotKey = `matches:v5:${dateKey}:${dateRangeSnapshotKey(dateRange)}:${updatedAt}`;
+  const snapshotKey = `matches:v6:${dateKey}:${dateRangeSnapshotKey(dateRange)}:${updatedAt}`;
   const persisted = await readSnapshotCache<Match[]>(snapshotKey);
   if (shouldUseSnapshot(persisted, (payload) => payload.length > 0, options)) {
     return {
