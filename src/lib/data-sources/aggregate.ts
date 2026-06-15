@@ -1753,6 +1753,11 @@ async function hydrateMorningBriefPayload(payload: MorningBriefStoredPayload): P
   };
 }
 
+async function persistMorningBriefMatches(brief: MorningBrief): Promise<MorningBrief> {
+  await persistCanonicalMatches(brief.matches, "ai-match-briefs");
+  return brief;
+}
+
 function transformFootballDataTeams(data: FootballDataTeamsResponse): Team[] {
   return (data.teams || []).map((team) => {
     const display = getTeam(team.name || team.shortName);
@@ -3941,7 +3946,7 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
   const persisted = await readSnapshotCache<MorningBriefStoredPayload>(snapshotKey);
   if (persisted?.payload && options.cacheMode !== "refresh") {
     return {
-      brief: await hydrateMorningBriefPayload(persisted.payload),
+      brief: await persistMorningBriefMatches(await hydrateMorningBriefPayload(persisted.payload)),
       source: "cache",
       diagnostics: [snapshotDiagnostic(snapshotKey, "news", persisted)],
     };
@@ -3951,7 +3956,7 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
     const stale = await readSnapshotCache<MorningBriefStoredPayload>(snapshotKey, { allowStale: true });
     if (stale?.payload) {
       return {
-        brief: await hydrateMorningBriefPayload(stale.payload),
+        brief: await persistMorningBriefMatches(await hydrateMorningBriefPayload(stale.payload)),
         source: "cache",
         diagnostics: [snapshotDiagnostic(snapshotKey, "news", stale, true)],
       };
@@ -3962,7 +3967,7 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
     const latestSameDay = await readLatestSnapshotCache<MorningBriefStoredPayload>("morning", { allowStale: true });
     if (latestSameDay?.payload && latestSameDay.snapshotKey.startsWith(snapshotPrefix)) {
       return {
-        brief: await hydrateMorningBriefPayload(latestSameDay.payload),
+        brief: await persistMorningBriefMatches(await hydrateMorningBriefPayload(latestSameDay.payload)),
         source: "cache",
         diagnostics: [snapshotDiagnostic(latestSameDay.snapshotKey, "news", latestSameDay, true)],
       };
@@ -4014,7 +4019,7 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
       curation: newsResult.curation,
     });
     return {
-      brief: fallbackBrief,
+      brief: await persistMorningBriefMatches(fallbackBrief),
       source: newsResult.source === "cache" || matchesResult.source === "cache" ? "cache" : "fallback",
       diagnostics: [...matchesResult.diagnostics, ...newsResult.diagnostics],
     };
