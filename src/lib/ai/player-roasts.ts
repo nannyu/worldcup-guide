@@ -4,6 +4,9 @@ import { runAiTaskQueue, type AiTask } from "@/lib/ai/task-orchestrator";
 import { getAggregatedMatches, getAggregatedNews, MORNING_BRIEF_NEWS_LIMIT } from "@/lib/data-sources/aggregate";
 import { readSnapshotCache, upsertSnapshotCache } from "@/lib/db/queries/data-cache";
 import {
+  allScheduleDayGroups,
+  beijingScheduleUtcDayBounds,
+  getScheduleDateMeta,
   matchesByDate,
   type Match,
   type NewsArticle,
@@ -413,13 +416,28 @@ async function generateAiPlayerRoasts(
 }
 
 async function readRoastInputs(): Promise<{ articles: NewsArticle[]; matches: Match[] }> {
-  const [newsResult, yesterday, today, tomorrow] = await Promise.all([
+  const todayDate = getScheduleDateMeta().today.date;
+  const historicalQueries = allScheduleDayGroups.flatMap((day) => {
+    if (day.date >= todayDate) return [];
+    const bounds = beijingScheduleUtcDayBounds(day.date);
+    return bounds
+      ? [getAggregatedMatches("today", { cacheMode: "cache-only", sourceDate: day.date, dateRange: bounds })]
+      : [];
+  });
+  const [newsResult, yesterday, today, tomorrow, ...historicalResults] = await Promise.all([
     getAggregatedNews({ limit: PLAYER_ROAST_NEWS_LIMIT, cacheMode: "cache-only" }),
     getAggregatedMatches("yesterday", { cacheMode: "cache-only" }),
     getAggregatedMatches("today", { cacheMode: "cache-only" }),
     getAggregatedMatches("tomorrow", { cacheMode: "cache-only" }),
+    ...historicalQueries,
   ]);
-  const cachedMatches = [...yesterday.matches, ...today.matches, ...tomorrow.matches];
+  const cachedMatches = Array.from(
+    new Map(
+      [...historicalResults, yesterday, today, tomorrow]
+        .flatMap((result) => result.matches)
+        .map((match) => [match.id, match]),
+    ).values(),
+  );
   return {
     articles: newsResult.articles,
     matches: cachedMatches.length ? cachedMatches : [...matchesByDate.yesterday, ...matchesByDate.today, ...matchesByDate.tomorrow],

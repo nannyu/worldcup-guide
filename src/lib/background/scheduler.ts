@@ -9,7 +9,12 @@ import {
   enqueueTeamsRefresh,
 } from "@/lib/background/tasks";
 import { getWorldCupActivity, type ActivityMode } from "@/lib/data-sources/rate-policy";
-import type { ScheduleDateKey } from "@/lib/wc-data";
+import {
+  allScheduleDayGroups,
+  beijingScheduleUtcDayBounds,
+  getScheduleDateMeta,
+  type ScheduleDateKey,
+} from "@/lib/wc-data";
 
 type ScheduledRefresh = {
   id: string;
@@ -45,6 +50,24 @@ function matchDateKeys(mode: ActivityMode): ScheduleDateKey[] {
   return mode === "match-window" ? ["yesterday", "today", "tomorrow"] : ["today", "tomorrow"];
 }
 
+function historicalMatchRefreshes(mode: ActivityMode): ScheduledRefresh[] {
+  if (mode === "off-season") return [];
+  const today = getScheduleDateMeta().today.date;
+  const intervalMs = envMs("WORKER_HISTORICAL_MATCH_REFRESH_MS", 6 * 60 * 60_000);
+  return allScheduleDayGroups
+    .filter((day) => day.date < today)
+    .flatMap((day) => {
+      const bounds = beijingScheduleUtcDayBounds(day.date);
+      return bounds
+        ? [{
+            id: `matches:history:${day.date}`,
+            intervalMs,
+            enqueue: () => enqueueMatchesRefresh("today", { sourceDate: day.date, dateRange: bounds }),
+          }]
+        : [];
+    });
+}
+
 function scheduledRefreshes(mode: ActivityMode): ScheduledRefresh[] {
   const matchIntervalMs = intervalFor(mode, {
     matchWindow: envMs("WORKER_MATCH_WINDOW_REFRESH_MS", 60_000),
@@ -73,6 +96,7 @@ function scheduledRefreshes(mode: ActivityMode): ScheduledRefresh[] {
       intervalMs: matchIntervalMs,
       enqueue: () => enqueueMatchesRefresh(dateKey),
     })),
+    ...historicalMatchRefreshes(mode),
     {
       id: "news:current",
       intervalMs: newsIntervalMs,

@@ -7,12 +7,14 @@ import { useTranslation } from "react-i18next";
 import {
   allMatches,
   allScheduleDayGroups,
+  beijingScheduleUtcDayBounds,
   createMatchSequenceLookup,
   getCountdownToBj,
   getGroupStandings,
   getMatchSequenceNumber,
   getScheduleDateMeta,
   matchIdentityKey,
+  matchTeamPairKey,
   mergeMatchWithOfficialSource,
   relativeBeijingDayLabel,
   type GroupStanding,
@@ -30,13 +32,12 @@ function beijingToday(now = new Date()): string {
 }
 
 function scheduleDateQueryForBeijingDate(date: string, dateKey: typeof liveDateKeys[number] = "today"): string {
-  const start = new Date(`${date}T00:00:00+08:00`);
-  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  const bounds = beijingScheduleUtcDayBounds(date);
   return new URLSearchParams({
     dateKey,
     date,
-    startUtc: start.toISOString(),
-    endUtc: end.toISOString(),
+    startUtc: bounds?.startUtc || "",
+    endUtc: bounds?.endUtc || "",
   }).toString();
 }
 
@@ -149,10 +150,15 @@ function mergeScheduleGroups(liveMatches: Match[]): ScheduleDayGroup[] {
   if (liveMatches.length === 0) return allScheduleDayGroups;
   const byId = new Map(liveMatches.map((match) => [match.id, match]));
   const byKey = new Map(liveMatches.map((match) => [matchIdentityKey(match), match]));
+  const byPair = new Map(liveMatches.map((match) => [matchTeamPairKey(match), match]));
 
   return allScheduleDayGroups.map((day) => ({
     ...day,
-    matches: day.matches.map((match) => mergeMatchWithOfficialSource(match, byId.get(match.id) || byKey.get(matchIdentityKey(match)))),
+    matches: day.matches.map((match) =>
+      mergeMatchWithOfficialSource(
+        match,
+        byId.get(match.id) || byKey.get(matchIdentityKey(match)) || byPair.get(matchTeamPairKey(match)),
+      )),
   }));
 }
 

@@ -79,6 +79,7 @@ export const matches = pgTable(
     status: varchar("status", { length: 32 }).notNull().default("scheduled"),
     homeScore: integer("home_score"),
     awayScore: integer("away_score"),
+    canonicalPayload: jsonb("canonical_payload").$type<unknown>(),
     sourceId: varchar("source_id", { length: 128 }).notNull(),
     sourceUpdatedAt: timestamp("source_updated_at", { withTimezone: true }).notNull(),
     raw: jsonb("raw").$type<unknown>().notNull(),

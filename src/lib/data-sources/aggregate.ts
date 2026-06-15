@@ -26,13 +26,17 @@ import {
   getCanonicalNewsArticlesByIds,
   upsertCanonicalNewsArticles,
 } from "@/lib/db/queries/news-articles";
-import { getStoredOfficialMatches } from "@/lib/db/queries/world-cup";
+import {
+  getStoredCanonicalMatches,
+  persistCanonicalMatches,
+} from "@/lib/db/queries/world-cup";
 import { teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
 import {
+  allMatches,
   fifaMatchesInUtcDayBounds,
-  fifaRecordToMatch,
+  matchTeamPairKey,
+  mergeMatchWithOfficialSource,
   scheduleDateMeta,
-  type FifaScheduleRecord,
   type Match,
   type MatchEvent,
   type MatchLineup,
@@ -598,6 +602,47 @@ function uniqueMatches(matches: Match[]): Match[] {
     unique.set(match.id || `${match.homeTeam}:${match.awayTeam}:${match.kickoffAt || match.kickoffBj}`, match);
   }
   return Array.from(unique.values());
+}
+
+const officialMatchesByTeamPair = allMatches.reduce<Map<string, Match[]>>((lookup, match) => {
+  const key = matchTeamPairKey(match);
+  lookup.set(key, [...(lookup.get(key) || []), match]);
+  return lookup;
+}, new Map());
+
+function matchKickoffDistance(left: Match, right: Match): number {
+  const leftTime = Date.parse(left.kickoffAt || "");
+  const rightTime = Date.parse(right.kickoffAt || "");
+  if (!Number.isFinite(leftTime) || !Number.isFinite(rightTime)) return Number.MAX_SAFE_INTEGER;
+  return Math.abs(leftTime - rightTime);
+}
+
+function officialMatchForRemoteMatch(match: Match): Match | undefined {
+  const candidates = officialMatchesByTeamPair.get(matchTeamPairKey(match)) || [];
+  if (candidates.length === 0) return undefined;
+  return candidates
+    .slice()
+    .sort((left, right) => matchKickoffDistance(left, match) - matchKickoffDistance(right, match))[0];
+}
+
+function canonicalizeMatchesWithOfficialSchedule(matches: Match[]): Match[] {
+  return uniqueMatches(matches.map((match) => {
+    const official = officialMatchForRemoteMatch(match);
+    return official ? mergeMatchWithOfficialSource(official, match) : match;
+  }));
+}
+
+async function storeAndReadCanonicalMatches(
+  matches: Match[],
+  sourceId: string,
+  dateRange: ScheduleUtcDayBounds,
+): Promise<Match[]> {
+  const canonicalMatches = canonicalizeMatchesWithOfficialSchedule(matches);
+  await persistCanonicalMatches(canonicalMatches, sourceId);
+  const storedMatches = await getStoredCanonicalMatches(dateRange);
+  return storedMatches.length
+    ? storedMatches
+    : canonicalMatches.filter((match) => matchInDateRange(match, dateRange));
 }
 
 const MORNING_NEWS_WINDOW_HOURS = 24;
@@ -3302,9 +3347,7 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
   }
 
   if (isCacheOnly(options)) {
-    const storedOfficialMatches = (
-      await getStoredOfficialMatches<FifaScheduleRecord>(dateRange)
-    ).map(fifaRecordToMatch);
+    const storedOfficialMatches = await getStoredCanonicalMatches(dateRange);
     const fallbackMatches = fifaMatchesInUtcDayBounds(dateRange);
     const canonicalMatches = storedOfficialMatches.length ? storedOfficialMatches : fallbackMatches;
     return {
@@ -3391,18 +3434,19 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
         matches = transformTheSportsDbMatches(data, dateKey, sourceDate, dateRange);
       }
       if (!matches.length) continue;
+      const canonicalMatches = await storeAndReadCanonicalMatches(matches, source.id, dateRange);
 
       await upsertSnapshotCache({
         snapshotKey,
         feature: "matches",
         sourceMode: "remote",
         sourceId: source.id,
-        payload: matches,
+        payload: canonicalMatches,
         diagnostics,
         ttlSeconds: getEffectiveRefreshSeconds(source),
       });
       return {
-        matches: await enrichMatchesWithLatestCanonicalOdds(matches, options),
+        matches: await enrichMatchesWithLatestCanonicalOdds(canonicalMatches, options),
         source: "remote",
         diagnostics,
       };
@@ -3420,17 +3464,18 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
       diagnostics.push(diagnostic);
       const matches = transformOpenFootballMatches(data, dateKey, sourceDate, dateRange);
       if (matches.length > 0) {
+        const canonicalMatches = await storeAndReadCanonicalMatches(matches, source.id, dateRange);
         await upsertSnapshotCache({
           snapshotKey,
           feature: "matches",
           sourceMode: "remote",
           sourceId: source.id,
-          payload: matches,
+          payload: canonicalMatches,
           diagnostics,
           ttlSeconds: getEffectiveRefreshSeconds(source),
         });
         return {
-          matches: await enrichMatchesWithLatestCanonicalOdds(matches, options),
+          matches: await enrichMatchesWithLatestCanonicalOdds(canonicalMatches, options),
           source: "remote",
           diagnostics,
         };
@@ -3452,9 +3497,7 @@ export async function getAggregatedMatches(dateKey: ScheduleDateKey, options: Ag
     };
   }
 
-  const storedOfficialMatches = (
-    await getStoredOfficialMatches<FifaScheduleRecord>(dateRange)
-  ).map(fifaRecordToMatch);
+  const storedOfficialMatches = await getStoredCanonicalMatches(dateRange);
   if (storedOfficialMatches.length > 0) {
     const databaseDiagnostic: SourceDiagnostic = {
       id: "fifa-official-db",
@@ -3954,6 +3997,7 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
     primaryProviderId: primaryAiProviderId,
     disabled: options.useAi === false,
   });
+  await persistCanonicalMatches(matchBriefResult.matches, "ai-match-briefs");
   const brief = buildMorningBrief({
     matches: matchBriefResult.matches,
     news: newsResult.articles,

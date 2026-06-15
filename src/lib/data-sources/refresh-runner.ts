@@ -16,7 +16,13 @@ import { getWorldCupActivity } from "@/lib/data-sources/rate-policy";
 import { recordIngestionRun } from "@/lib/db/queries/ingestion-runs";
 import { teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
 import { morningBriefTranslationArticle, translateArticleAndCache } from "@/lib/translation/article-translation";
-import type { ScheduleDateKey } from "@/lib/wc-data";
+import {
+  allScheduleDayGroups,
+  beijingScheduleUtcDayBounds,
+  getScheduleDateMeta,
+  type ScheduleDateKey,
+  type ScheduleUtcDayBounds,
+} from "@/lib/wc-data";
 
 export interface RefreshTaskResult {
   name: string;
@@ -86,14 +92,26 @@ function dayWindow(daysAgo: number, now = new Date()) {
   return { start, end };
 }
 
-async function refreshMatches(dateKey: ScheduleDateKey): Promise<RefreshTaskResult> {
-  const result = await getAggregatedMatches(dateKey, { cacheMode: "refresh" });
+async function refreshMatches(
+  dateKey: ScheduleDateKey,
+  options: { sourceDate?: string; dateRange?: ScheduleUtcDayBounds } = {},
+): Promise<RefreshTaskResult> {
+  const result = await getAggregatedMatches(dateKey, { cacheMode: "refresh", ...options });
   return {
-    name: `matches:${dateKey}`,
+    name: options.sourceDate ? `matches:${options.sourceDate}` : `matches:${dateKey}`,
     ok: true,
     source: result.source,
     count: result.matches.length,
   };
+}
+
+function historicalScheduleDates(): Array<{ date: string; bounds: ScheduleUtcDayBounds }> {
+  const today = getScheduleDateMeta().today.date;
+  return allScheduleDayGroups.flatMap((day) => {
+    if (day.date >= today) return [];
+    const bounds = beijingScheduleUtcDayBounds(day.date);
+    return bounds ? [{ date: day.date, bounds }] : [];
+  });
 }
 
 async function refreshMorning(dateKey: ScheduleDateKey): Promise<RefreshTaskResult> {
@@ -198,6 +216,13 @@ export async function runDataRefresh(mode: "scheduled" | "initialize" = "schedul
 
   for (const dateKey of scheduleKeys) {
     tasks.push(await task(`matches:${dateKey}`, () => refreshMatches(dateKey)));
+  }
+
+  if (mode === "initialize" || activity.mode !== "off-season") {
+    for (const historical of historicalScheduleDates()) {
+      tasks.push(await task(`matches:history:${historical.date}`, () =>
+        refreshMatches("today", { sourceDate: historical.date, dateRange: historical.bounds })));
+    }
   }
 
   if (mode === "initialize") {

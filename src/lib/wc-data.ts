@@ -612,6 +612,18 @@ export function normalizeScheduleUtcDayBounds(input: {
   return date ? { date, startUtc, endUtc } : { startUtc, endUtc };
 }
 
+export function beijingScheduleUtcDayBounds(date: string): ScheduleUtcDayBounds | undefined {
+  const normalized = normalizeScheduleDate(date);
+  if (!normalized) return undefined;
+  const start = new Date(`${normalized}T00:00:00+08:00`);
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  return {
+    date: normalized,
+    startUtc: start.toISOString(),
+    endUtc: end.toISOString(),
+  };
+}
+
 function scheduleDateMetaFor(dateKey: ScheduleDateKey, now = new Date()) {
   const date = beijingDate(scheduleDateOffsets[dateKey], now);
   return {
@@ -747,6 +759,10 @@ function canonicalMatchName(input: string | undefined) {
 
 export function matchIdentityKey(match: Match): string {
   return `${canonicalMatchName(match.homeTeam)}:${canonicalMatchName(match.awayTeam)}:${match.kickoffBj}`;
+}
+
+export function matchTeamPairKey(match: Pick<Match, "homeTeam" | "awayTeam">): string {
+  return `${canonicalMatchName(match.homeTeam)}:${canonicalMatchName(match.awayTeam)}`;
 }
 
 export function compareMatchesByKickoff(left: Match, right: Match): number {
