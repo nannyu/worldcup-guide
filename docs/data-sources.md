@@ -243,6 +243,20 @@ node --dns-result-order=ipv4first ./node_modules/.bin/tsx scripts/background-wor
 
 The worker uses the same Supabase pooler `DATABASE_URL` and provider environment variables as Vercel.
 
+Docker Compose deployments can run the same queue consumer through the `worker` profile:
+
+```bash
+docker compose --env-file .env.docker --profile worker up -d worker
+```
+
+Before opening the self-hosted frontend, run the Compose `init` service once:
+
+```bash
+docker compose --env-file .env.docker --profile init run --rm init
+```
+
+This service runs migrations and then `data:init` in one container so snapshot warmup cannot start before schema creation completes.
+
 Local scripts:
 
 ```bash

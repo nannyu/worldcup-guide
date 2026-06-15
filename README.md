@@ -120,6 +120,38 @@ ADMIN_SESSION_SECRET=...
 
 按需设置数据源和 AI Provider 的 API Key 环境变量。
 
+### Docker Compose 部署
+
+项目内置 `Dockerfile` 和 `docker-compose.yml`，默认包含 PostgreSQL、Next.js web 服务、可选后台 worker，以及一次性迁移/初始化任务。
+
+首次部署：
+
+```bash
+cp .env.docker.example .env.docker
+# 编辑 .env.docker，至少替换 CRON_SECRET、ADMIN_PASSWORD、ADMIN_SESSION_SECRET。
+
+docker compose --env-file .env.docker --profile init --profile worker build
+docker compose --env-file .env.docker --profile init run --rm init
+docker compose --env-file .env.docker --profile worker up -d web worker
+```
+
+如果暂时不需要后台队列，可只启动 web：
+
+```bash
+docker compose --env-file .env.docker up -d web
+```
+
+默认站点端口是 `3000`，可在 `.env.docker` 里通过 `DOCKER_WEB_PORT` 修改。Compose 使用内置 Postgres 容器和 `postgres_data` volume，数据库端口只绑定到宿主机 `127.0.0.1`；管理员配置文件写入 `app_data` volume，并在 web 与 worker 之间共享。
+
+更新代码后重新构建并重启：
+
+```bash
+docker compose --env-file .env.docker --profile worker build web worker
+docker compose --env-file .env.docker --profile worker up -d web worker
+```
+
+`NEXT_PUBLIC_*` 变量会在 Next.js 构建时写入客户端 bundle，修改这类变量后必须重新 `build` 镜像。公开部署前不要沿用 `.env.docker.example` 里的示例密码。
+
 ## 管理员控制面板
 
 访问 [http://localhost:3000/admin](http://localhost:3000/admin) 配置：

@@ -14,6 +14,14 @@ bun run data:init
 
 `data:init` warms normalized snapshots and raw fetch caches in PostgreSQL. It also refreshes teams, odds, radar, yesterday/today/tomorrow matches, yesterday/today morning briefs, recent news windows, team roasts, and player roasts.
 
+For Docker Compose self-hosting, use the single `init` service instead of running the commands separately:
+
+```bash
+docker compose --env-file .env.docker --profile init run --rm init
+```
+
+The Compose `init` service runs migrations first and then runs `data:init`. `data:init` seeds the FIFA schedule when `DATABASE_URL` is configured, so the initialization path stays idempotent. The Compose Postgres port is bound to `127.0.0.1` by default; web and worker containers reach it through the internal `postgres` service name.
+
 ## Tables
 
 ### Domain Data
@@ -79,6 +87,7 @@ Team and player roast snapshot keys include the admin config `updatedAt`, so cha
 - Run migrations during deployment, not on every request.
 - Run `db:seed:fifa` after the first migration and whenever the bundled official schedule is updated.
 - Run `data:init` after migration/seed to populate `data_snapshots` before opening the frontend.
+- For Docker Compose deployments, run `docker compose --env-file .env.docker --profile init run --rm init` before starting `web` and `worker`.
 - Deploy a Railway worker with the `railway.json` start command and the same database/source/AI environment variables.
 - Schedule Vercel Cron or an external cron to call `/api/data/cron/refresh`. The current Vercel Hobby deployment uses daily cron because sub-daily cron schedules are plan-gated.
 - Do not expose `DATABASE_URL` or provider API keys to client-side code.

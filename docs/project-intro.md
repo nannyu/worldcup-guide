@@ -37,6 +37,26 @@
 - Supabase 项目 `worldcup-guide` 已承载 PostgreSQL，已写入 48 支球队、16 个场馆和 104 场官方赛程。
 - Railway 项目 `worldcup-guide` 部署后台 worker，消费 Supabase 中的持久化任务队列。
 - Vercel 和 Railway 都使用 Supabase pooler 连接数据库，避免 Serverless/容器运行时直连连接数和 IPv6 解析问题。
+- 代码库同时支持 Docker Compose 自托管部署：内置 Postgres、Next.js web、可选 worker 和一次性 `init` 初始化服务。Compose 默认只把数据库端口绑定到宿主机 `127.0.0.1`，避免把开发数据库暴露到公网。
+
+## Docker Compose 自托管
+
+自托管入口文件：
+
+- `Dockerfile`：多阶段构建。web 镜像使用 Next.js standalone 输出；worker/init 镜像使用 Bun 运行后台脚本。
+- `docker-compose.yml`：编排 Postgres、web、worker 和 `init` 服务。
+- `.env.docker.example`：Compose 环境变量模板，实际部署复制为 `.env.docker`。
+
+首次部署顺序：
+
+```bash
+cp .env.docker.example .env.docker
+docker compose --env-file .env.docker --profile init --profile worker build
+docker compose --env-file .env.docker --profile init run --rm init
+docker compose --env-file .env.docker --profile worker up -d web worker
+```
+
+`init` 服务会顺序执行数据库迁移和 `data:init`，后者在数据库可用时会幂等 seed FIFA 官方赛程并预热页面快照。管理员运行时配置写入 `app_data` volume，PostgreSQL 数据写入 `postgres_data` volume。
 
 ## 内容生成原则
 

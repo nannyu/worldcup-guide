@@ -1,0 +1,86 @@
+name: worldcup-guide
+
+x-app-env-file: &app-env-file
+  - path: .env.docker
+    required: false
+
+x-app-environment: &app-environment
+  NODE_ENV: production
+  DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql://worldcup:worldcup@postgres:5432/worldcup}
+  DATABASE_SSL: ${DOCKER_DATABASE_SSL:-disable}
+  DATABASE_PREPARE: ${DOCKER_DATABASE_PREPARE:-false}
+  DATABASE_POOL_MAX: ${DOCKER_DATABASE_POOL_MAX:-5}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-worldcup}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-worldcup}
+      POSTGRES_DB: ${POSTGRES_DB:-worldcup}
+    ports:
+      - "127.0.0.1:${DOCKER_POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: web
+      args:
+        NEXT_PUBLIC_EAZO_APP_ID: ${NEXT_PUBLIC_EAZO_APP_ID:-}
+    restart: unless-stopped
+    env_file: *app-env-file
+    environment:
+      <<: *app-environment
+    ports:
+      - "${DOCKER_WEB_PORT:-3000}:3000"
+    volumes:
+      - app_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    restart: unless-stopped
+    profiles: ["worker"]
+    env_file: *app-env-file
+    environment:
+      <<: *app-environment
+    volumes:
+      - app_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  init:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    profiles: ["init"]
+    restart: "no"
+    env_file: *app-env-file
+    environment:
+      <<: *app-environment
+    command: sh -c "bun run db:migrate && bun run data:init"
+    volumes:
+      - app_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  app_data:
