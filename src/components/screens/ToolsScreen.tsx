@@ -38,6 +38,14 @@ function getOutcomeLabel(match: OddsMatch | undefined, outcome: OutcomeKey, loca
   return match ? teamName(match.awayTeam, locale) : tr(locale, "客胜", "Away");
 }
 
+function oddsMatchOptionLabel(match: OddsMatch, locale: string): string {
+  const teams = `${teamName(match.homeTeam, locale)} vs ${teamName(match.awayTeam, locale)}`;
+  const score = match.status === "finished" && match.homeScore !== null && match.homeScore !== undefined && match.awayScore !== null && match.awayScore !== undefined
+    ? ` · ${match.homeScore}-${match.awayScore}`
+    : "";
+  return `${match.kickoffBj} ${teams}${score}`;
+}
+
 function FieldShell({
   label,
   children,
@@ -124,7 +132,7 @@ function OddsConverter({
           </option>
           {matches.map((match) => (
             <option key={match.id} value={match.id}>
-              {match.kickoffBj} {teamName(match.homeTeam, locale)} vs {teamName(match.awayTeam, locale)}
+              {oddsMatchOptionLabel(match, locale)}
             </option>
           ))}
         </select>

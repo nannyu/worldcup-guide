@@ -484,10 +484,18 @@ export interface RadarMatch {
 
 export interface OddsMatch {
   id: string;
+  matchId?: string;
   homeTeam: string;
   awayTeam: string;
+  homeFlag?: string;
+  awayFlag?: string;
   kickoffAt: string;
   kickoffBj: string;
+  group?: string;
+  round?: string;
+  status?: MatchStatus;
+  homeScore?: number | null;
+  awayScore?: number | null;
   homeOdds?: number;
   drawOdds?: number;
   awayOdds?: number;

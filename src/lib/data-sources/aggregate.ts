@@ -610,7 +610,7 @@ const officialMatchesByTeamPair = allMatches.reduce<Map<string, Match[]>>((looku
   return lookup;
 }, new Map());
 
-function matchKickoffDistance(left: Match, right: Match): number {
+function matchKickoffDistance(left: Pick<Match, "kickoffAt">, right: Pick<Match, "kickoffAt">): number {
   const leftTime = Date.parse(left.kickoffAt || "");
   const rightTime = Date.parse(right.kickoffAt || "");
   if (!Number.isFinite(leftTime) || !Number.isFinite(rightTime)) return Number.MAX_SAFE_INTEGER;
@@ -1633,6 +1633,55 @@ async function latestCanonicalOdds(): Promise<OddsMatch[]> {
   if (marketHistory.length) return marketHistory;
   const latestSnapshot = await readLatestSnapshotCache<OddsMatch[]>("odds", { allowStale: true });
   return latestSnapshot?.payload || [];
+}
+
+function tournamentScheduleUtcBounds(): ScheduleUtcDayBounds | undefined {
+  const times = allMatches
+    .map((match) => Date.parse(match.kickoffAt || ""))
+    .filter((time) => Number.isFinite(time));
+  if (!times.length) return undefined;
+  return {
+    startUtc: new Date(Math.min(...times) - 60 * 60 * 1000).toISOString(),
+    endUtc: new Date(Math.max(...times) + 60 * 60 * 1000).toISOString(),
+  };
+}
+
+function nearestMatchForOddsMatch(oddsMatch: OddsMatch, matches: Match[]): Match | undefined {
+  const teamPair = matchTeamPairKey(oddsMatch);
+  const candidates = matches.filter((match) => matchTeamPairKey(match) === teamPair);
+  if (!candidates.length) return undefined;
+  return candidates
+    .slice()
+    .sort((left, right) => matchKickoffDistance(left, oddsMatch) - matchKickoffDistance(right, oddsMatch))[0];
+}
+
+function enrichOddsMatchWithStoredMatch(oddsMatch: OddsMatch, match: Match): OddsMatch {
+  return {
+    ...oddsMatch,
+    matchId: match.id,
+    homeTeam: match.homeTeam,
+    awayTeam: match.awayTeam,
+    homeFlag: match.homeFlag,
+    awayFlag: match.awayFlag,
+    kickoffAt: match.kickoffAt || oddsMatch.kickoffAt,
+    kickoffBj: match.kickoffBj || oddsMatch.kickoffBj,
+    group: match.group,
+    round: match.round,
+    status: match.status,
+    homeScore: match.homeScore,
+    awayScore: match.awayScore,
+  };
+}
+
+async function enrichOddsMatchesWithStoredMatches(oddsMatches: OddsMatch[]): Promise<OddsMatch[]> {
+  if (!oddsMatches.length) return oddsMatches;
+  const bounds = tournamentScheduleUtcBounds();
+  const storedMatches = bounds ? await getStoredCanonicalMatches(bounds) : [];
+  const canonicalMatches = storedMatches.length ? storedMatches : allMatches;
+  return oddsMatches.map((oddsMatch) => {
+    const match = nearestMatchForOddsMatch(oddsMatch, canonicalMatches);
+    return match ? enrichOddsMatchWithStoredMatch(oddsMatch, match) : oddsMatch;
+  });
 }
 
 async function enrichMatchesWithLatestCanonicalOdds(
@@ -3074,8 +3123,9 @@ export async function getAggregatedOdds(options: AggregationReadOptions = {}): P
   const snapshotKey = `odds:v2:world-cup:${updatedAt}`;
   const persisted = await readSnapshotCache<OddsMatch[]>(snapshotKey);
   if (shouldUseSnapshot(persisted, (payload) => payload.length > 0, options)) {
+    const oddsMatches = await enrichOddsMatchesWithStoredMatches(persisted.payload);
     return {
-      oddsMatches: persisted.payload,
+      oddsMatches,
       source: "cache",
       diagnostics: [snapshotDiagnostic(snapshotKey, "odds", persisted)],
     };
@@ -3084,8 +3134,9 @@ export async function getAggregatedOdds(options: AggregationReadOptions = {}): P
   if (isCacheFirst(options)) {
     const stale = await readSnapshotCache<OddsMatch[]>(snapshotKey, { allowStale: true });
     if (stale) {
+      const oddsMatches = await enrichOddsMatchesWithStoredMatches(stale.payload);
       return {
-        oddsMatches: stale.payload,
+        oddsMatches,
         source: "cache",
         diagnostics: [snapshotDiagnostic(snapshotKey, "odds", stale, true)],
       };
@@ -3093,7 +3144,7 @@ export async function getAggregatedOdds(options: AggregationReadOptions = {}): P
   }
 
   if (isCacheOnly(options)) {
-    const latestOdds = await readLatestOddsMarketSnapshots();
+    const latestOdds = await enrichOddsMatchesWithStoredMatches(await readLatestOddsMarketSnapshots());
     return {
       oddsMatches: latestOdds,
       source: latestOdds.length ? "cache" : "fallback",
@@ -3116,7 +3167,7 @@ export async function getAggregatedOdds(options: AggregationReadOptions = {}): P
             .map((record) => record.fixture?.id)
             .filter((id): id is number => Number.isFinite(id));
           const fixturesById = await fetchApiFootballFixturesForIds(dataSources, fixtureIds, diagnostics);
-          const oddsMatches = transformApiFootballLiveOdds(data, fixturesById);
+          const oddsMatches = await enrichOddsMatchesWithStoredMatches(transformApiFootballLiveOdds(data, fixturesById));
           if (!oddsMatches.length) continue;
           await recordOddsMarketSnapshots(oddsMatches, source.id);
           await upsertSnapshotCache({
@@ -3140,7 +3191,7 @@ export async function getAggregatedOdds(options: AggregationReadOptions = {}): P
           .map((record) => record.fixture?.id)
           .filter((id): id is number => Number.isFinite(id));
         const fixturesById = await fetchApiFootballFixturesForIds(dataSources, fixtureIds, diagnostics);
-        const oddsMatches = transformApiFootballPreMatchOdds(data, fixturesById);
+        const oddsMatches = await enrichOddsMatchesWithStoredMatches(transformApiFootballPreMatchOdds(data, fixturesById));
         if (!oddsMatches.length) continue;
         await recordOddsMarketSnapshots(oddsMatches, source.id);
         await upsertSnapshotCache({
@@ -3163,7 +3214,7 @@ export async function getAggregatedOdds(options: AggregationReadOptions = {}): P
           dateFormat: "iso",
         });
         diagnostics.push(diagnostic);
-        const oddsMatches = transformTheOddsApi(data);
+        const oddsMatches = await enrichOddsMatchesWithStoredMatches(transformTheOddsApi(data));
         if (!oddsMatches.length) continue;
         await recordOddsMarketSnapshots(oddsMatches, source.id);
         await upsertSnapshotCache({
@@ -3179,7 +3230,7 @@ export async function getAggregatedOdds(options: AggregationReadOptions = {}): P
       }
 
       if (source.adapter === "odds-api-io") {
-        const oddsMatches = await fetchOddsApiIoOdds(source, diagnostics);
+        const oddsMatches = await enrichOddsMatchesWithStoredMatches(await fetchOddsApiIoOdds(source, diagnostics));
         if (!oddsMatches.length) continue;
         await recordOddsMarketSnapshots(oddsMatches, source.id);
         await upsertSnapshotCache({
@@ -3200,8 +3251,9 @@ export async function getAggregatedOdds(options: AggregationReadOptions = {}): P
 
   const stale = await readSnapshotCache<OddsMatch[]>(snapshotKey, { allowStale: true });
   if (stale?.payload.length) {
+    const oddsMatches = await enrichOddsMatchesWithStoredMatches(stale.payload);
     return {
-      oddsMatches: stale.payload,
+      oddsMatches,
       source: "cache",
       diagnostics: [...diagnostics, snapshotDiagnostic(snapshotKey, "odds", stale, true)],
     };
