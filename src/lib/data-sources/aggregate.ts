@@ -3841,7 +3841,8 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
   const newsWindow = rollingRecentNewsWindow();
   const sourceDate = sourceDateFor(dateKey, options);
   const dateRange = dateRangeFor(dateKey, options);
-  const snapshotKey = `morning:v18:${dateKey}:${dateRangeSnapshotKey(dateRange)}:${newsWindow.cacheKey}:${updatedAt}`;
+  const snapshotPrefix = `morning:v18:${dateKey}:${dateRangeSnapshotKey(dateRange)}:`;
+  const snapshotKey = `${snapshotPrefix}${newsWindow.cacheKey}:${updatedAt}`;
   const persisted = await readSnapshotCache<MorningBriefStoredPayload>(snapshotKey);
   if (persisted?.payload && options.cacheMode !== "refresh") {
     return {
@@ -3863,6 +3864,15 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
   }
 
   if (isCacheOnly(options)) {
+    const latestSameDay = await readLatestSnapshotCache<MorningBriefStoredPayload>("morning", { allowStale: true });
+    if (latestSameDay?.payload && latestSameDay.snapshotKey.startsWith(snapshotPrefix)) {
+      return {
+        brief: await hydrateMorningBriefPayload(latestSameDay.payload),
+        source: "cache",
+        diagnostics: [snapshotDiagnostic(latestSameDay.snapshotKey, "news", latestSameDay, true)],
+      };
+    }
+
     const matchesResult = await getAggregatedMatches(dateKey, {
       cacheMode: "cache-only",
       sourceDate,
