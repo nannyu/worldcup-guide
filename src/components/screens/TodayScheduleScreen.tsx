@@ -9,7 +9,6 @@ import {
   allScheduleDayGroups,
   beijingScheduleUtcDayBounds,
   createMatchSequenceLookup,
-  getCountdownToBj,
   getGroupStandings,
   getMatchSequenceNumber,
   getScheduleDateMeta,
@@ -26,6 +25,12 @@ import { dateLabel, groupLabel, isZh, teamLabel, teamName, tr } from "@/lib/i18n
 type PageTab = "schedule" | "standings";
 type ScheduleSubTab = "current" | "history";
 const liveDateKeys = ["yesterday", "today", "tomorrow"] as const;
+const finalKickoffAt = new Date(
+  allMatches.find((match) => match.round === "决赛")?.kickoffAt || "2026-07-20T03:00:00+08:00",
+);
+const minuteMs = 60 * 1000;
+const hourMs = 60 * minuteMs;
+const dayMs = 24 * hourMs;
 
 function beijingToday(now = new Date()): string {
   return getScheduleDateMeta(now).today.date;
@@ -43,15 +48,6 @@ function scheduleDateQueryForBeijingDate(date: string, dateKey: typeof liveDateK
 
 function kickoffTime(match: Match): string {
   return match.kickoffBj.split(" ")[1] || match.kickoffBj;
-}
-
-function countdownText(input: string, locale: string): string {
-  if (isZh(locale)) return input;
-  if (input === "已开赛") return "started";
-  return input
-    .replace(/天/g, "d")
-    .replace(/小时/g, "h")
-    .replace(/分钟/g, "m");
 }
 
 function groupRoundLabel(match: Match, locale: string): string {
@@ -201,8 +197,30 @@ function historicalScheduleDates(now = new Date()): string[] {
     .map((day) => day.date);
 }
 
+function finalCountdownLabel(now: Date, locale: string): string {
+  const diff = finalKickoffAt.getTime() - now.getTime();
+  if (diff <= 0) return tr(locale, "决赛已开赛", "Final started");
+
+  const days = Math.floor(diff / dayMs);
+  if (days >= 1) return isZh(locale) ? `距决赛${days}天` : `Final in ${days}d`;
+
+  const hours = Math.floor(diff / hourMs);
+  if (hours >= 1) return isZh(locale) ? `距决赛${hours}小时` : `Final in ${hours}h`;
+
+  const minutes = Math.max(1, Math.ceil(diff / minuteMs));
+  return isZh(locale) ? `距决赛${minutes}分` : `Final in ${minutes}m`;
+}
+
 function CountdownBadge({ locale }: { locale: string }) {
-  const [countdown] = useState(getCountdownToBj);
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const update = () => setNow(new Date());
+    update();
+    const timer = window.setInterval(update, minuteMs);
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <motion.div
       className="border border-[#241A14] bg-[#D36E52] px-2 py-0.5 text-[10px] font-bold tracking-tight text-white"
@@ -210,7 +228,7 @@ function CountdownBadge({ locale }: { locale: string }) {
       animate={{ rotate: [-2, 1, -2] }}
       transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
     >
-      {tr(locale, "距首场", "Opener in")} {countdownText(countdown, locale)}
+      {finalCountdownLabel(now, locale)}
     </motion.div>
   );
 }
