@@ -26,6 +26,7 @@ import {
   upsertCanonicalNewsArticles,
 } from "@/lib/db/queries/news-articles";
 import { getStoredOfficialMatches } from "@/lib/db/queries/world-cup";
+import { teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
 import {
   fifaMatchesInUtcDayBounds,
   fifaRecordToMatch,
@@ -1814,7 +1815,10 @@ function mergeApiFootballTeamAuxData(
     const injuries = keys.map((key) => input.injuries?.get(key)).find(Boolean);
     return {
       ...team,
-      ...standings,
+      providerTeamId: team.providerTeamId || standings?.providerTeamId,
+      group: team.group || standings?.group || "",
+      rank: standings?.rank || team.rank,
+      crestUrl: team.crestUrl || standings?.crestUrl,
       groupStandings: standings?.groupStandings || team.groupStandings,
       formSummary: standings?.formSummary || team.formSummary,
       roster: roster?.length ? roster : team.roster,
@@ -1854,19 +1858,33 @@ function transformTheSportsDbTeams(data: TheSportsDbTeamsResponse): Team[] {
   });
 }
 
+function teamIdentityKeys(team: Partial<Pick<Team, "providerTeamId" | "code" | "name" | "nameEn">>): string[] {
+  return Array.from(new Set([
+    team.providerTeamId ? `id:${team.providerTeamId}` : "",
+    team.code ? `code:${team.code}` : "",
+    canonicalTeamName(team.nameEn),
+    canonicalTeamName(team.name),
+  ].filter(Boolean)));
+}
+
 function mergeTeamLists(lists: Team[][]): Team[] {
   const merged = new Map<string, Team>();
+  const keyIndex = new Map<string, string>();
   for (const teams of lists) {
     for (const team of teams) {
-      const key = canonicalTeamName(team.nameEn || team.name);
+      const keys = teamIdentityKeys(team);
+      const key = keys.map((item) => keyIndex.get(item)).find(Boolean) || keys[0];
+      if (!key) continue;
       const existing = merged.get(key);
       if (!existing) {
         merged.set(key, team);
+        for (const item of keys) keyIndex.set(item, key);
         continue;
       }
-      merged.set(key, {
+      const nextTeam = {
         ...existing,
         providerTeamId: existing.providerTeamId || team.providerTeamId,
+        code: existing.code || team.code,
         coach: existing.coach || team.coach,
         formation: existing.formation || team.formation,
         style: existing.style || team.style,
@@ -1884,7 +1902,9 @@ function mergeTeamLists(lists: Team[][]): Team[] {
         formSummary: existing.formSummary || team.formSummary,
         sourceUpdatedAt: existing.sourceUpdatedAt || team.sourceUpdatedAt,
         source: Array.from(new Set([existing.source, team.source].filter(Boolean))).join(" + "),
-      });
+      };
+      merged.set(key, nextTeam);
+      for (const item of teamIdentityKeys(nextTeam)) keyIndex.set(item, key);
     }
   }
   return Array.from(merged.values());
@@ -3150,7 +3170,7 @@ export async function getAggregatedTeams(options: AggregationReadOptions = {}): 
   diagnostics: SourceDiagnostic[];
 }> {
   const { dataSources, updatedAt } = await readAdminConfig();
-  const snapshotKey = `teams:v4:world-cup:${updatedAt}`;
+  const snapshotKey = `teams:v5:world-cup:${updatedAt}`;
   const persisted = await readSnapshotCache<Team[]>(snapshotKey);
   if (shouldUseSnapshot(persisted, (payload) => payload.length > 0, options)) {
     return {
@@ -3172,7 +3192,7 @@ export async function getAggregatedTeams(options: AggregationReadOptions = {}): 
   }
 
   if (isCacheOnly(options)) {
-    return { teams: [], source: "fallback", diagnostics: [] };
+    return { teams: teamsWithBuiltInProfilesFromOfficialSchedule(), source: "fallback", diagnostics: [] };
   }
 
   const diagnostics: SourceDiagnostic[] = [];
@@ -3213,24 +3233,27 @@ export async function getAggregatedTeams(options: AggregationReadOptions = {}): 
     }
   }
 
+  const officialTeams = teamsWithBuiltInProfilesFromOfficialSchedule();
   const teams = await enrichApiFootballTeamsWithAuxSources(
-    mergeTeamLists(teamLists),
+    mergeTeamLists([officialTeams, ...teamLists]),
     dataSources,
     diagnostics,
   );
   if (teams.length) {
+    const remoteSucceeded = diagnostics.some((diagnostic) => diagnostic.ok && !diagnostic.fromCache);
+    const ttlSeconds = sources.length
+      ? Math.min(...sources.map((source) => getEffectiveRefreshSeconds(source)))
+      : 86400;
     await upsertSnapshotCache({
       snapshotKey,
       feature: "teams",
-      sourceMode: "remote",
-      sourceId: primarySourceId || "multi-source-teams",
+      sourceMode: remoteSucceeded ? "remote" : "fallback",
+      sourceId: primarySourceId || "fifa-official-schedule",
       payload: teams,
       diagnostics,
-      ttlSeconds: Math.min(
-        ...sources.map((source) => getEffectiveRefreshSeconds(source)),
-      ),
+      ttlSeconds,
     });
-    return { teams, source: "remote", diagnostics };
+    return { teams, source: remoteSucceeded ? "remote" : "fallback", diagnostics };
   }
 
   const stale = await readSnapshotCache<Team[]>(snapshotKey, { allowStale: true });
