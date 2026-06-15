@@ -14,7 +14,6 @@ import {
   getMatchSequenceNumber,
   matchIdentityKey,
   mergeMatchWithOfficialSource,
-  relativeBeijingDayLabel,
   type GroupStanding,
   type Match,
   type ScheduleDayGroup,
@@ -22,7 +21,50 @@ import {
 import { dateLabel, groupLabel, isZh, teamLabel, teamName, tr } from "@/lib/i18n/content";
 
 type PageTab = "schedule" | "standings";
+type ScheduleSubTab = "current" | "history";
 const liveDateKeys = ["yesterday", "today", "tomorrow"] as const;
+
+function formatBrowserDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function browserToday(now = new Date()): string {
+  return formatBrowserDate(now);
+}
+
+function offsetBrowserDate(date: string, offsetDays: number): string {
+  const [year, month, day] = date.split("-").map(Number);
+  return formatBrowserDate(new Date(year, month - 1, day + offsetDays));
+}
+
+function browserDateMs(date: string): number {
+  const [year, month, day] = date.split("-").map(Number);
+  return new Date(year, month - 1, day).getTime();
+}
+
+function relativeBrowserDayLabel(date: string): string {
+  const diffDays = Math.round((browserDateMs(date) - browserDateMs(browserToday())) / (24 * 60 * 60 * 1000));
+  if (diffDays === -1) return "昨天";
+  if (diffDays === 0) return "今天";
+  if (diffDays === 1) return "明天";
+  if (diffDays === 2) return "后天";
+  return "";
+}
+
+function scheduleDateQueryForBrowserDate(date: string): string {
+  const [year, month, day] = date.split("-").map(Number);
+  const start = new Date(year, month - 1, day);
+  const end = new Date(year, month - 1, day + 1);
+  return new URLSearchParams({
+    dateKey: "today",
+    date,
+    startUtc: start.toISOString(),
+    endUtc: end.toISOString(),
+  }).toString();
+}
 
 function kickoffTime(match: Match): string {
   return match.kickoffBj.split(" ")[1] || match.kickoffBj;
@@ -55,7 +97,11 @@ function statusText(match: Match, locale: string): string {
     const elapsed = match.updatedAt.match(/·\s*(\d+')/)?.[1];
     return elapsed ? `${tr(locale, "进行中", "Live")} ${elapsed}` : tr(locale, "进行中", "Live");
   }
-  if (match.status === "finished") return tr(locale, "已完赛", "FT");
+  if (match.status === "finished") {
+    return match.homeScore !== null && match.awayScore !== null
+      ? tr(locale, "已完赛", "FT")
+      : tr(locale, "已结束", "Finished");
+  }
   return tr(locale, "未开赛", "Upcoming");
 }
 
@@ -136,6 +182,45 @@ function mergeScheduleGroups(liveMatches: Match[]): ScheduleDayGroup[] {
   }));
 }
 
+function markHistoricalMatch(match: Match): Match {
+  return match.status === "upcoming" ? { ...match, status: "finished" } : match;
+}
+
+function splitScheduleGroups(groups: ScheduleDayGroup[], now = new Date()) {
+  const today = browserToday(now);
+  const currentGroups: ScheduleDayGroup[] = [];
+  const historyGroups: ScheduleDayGroup[] = [];
+
+  for (const day of groups) {
+    const currentMatches: Match[] = [];
+    const historyMatches: Match[] = [];
+
+    for (const match of day.matches) {
+      const matchDate = match.kickoffAt?.slice(0, 10) || day.date;
+      if (match.status === "finished" || matchDate < today) {
+        historyMatches.push(markHistoricalMatch(match));
+      } else {
+        currentMatches.push(match);
+      }
+    }
+
+    if (currentMatches.length) currentGroups.push({ ...day, matches: currentMatches });
+    if (historyMatches.length) historyGroups.push({ ...day, matches: historyMatches });
+  }
+
+  return {
+    currentGroups,
+    historyGroups: historyGroups.reverse(),
+  };
+}
+
+function historicalScheduleDates(now = new Date()): string[] {
+  const today = browserToday(now);
+  return allScheduleDayGroups
+    .filter((day) => day.date < today)
+    .map((day) => day.date);
+}
+
 function CountdownBadge({ locale }: { locale: string }) {
   const [countdown] = useState(getCountdownToBj);
   return (
@@ -175,6 +260,48 @@ function PageTabs({ active, onChange, locale }: { active: PageTab; onChange: (ta
         ))}
       </div>
       <CountdownBadge locale={locale} />
+    </div>
+  );
+}
+
+function ScheduleSubTabs({
+  active,
+  onChange,
+  currentCount,
+  historyCount,
+  locale,
+}: {
+  active: ScheduleSubTab;
+  onChange: (tab: ScheduleSubTab) => void;
+  currentCount: number;
+  historyCount: number;
+  locale: string;
+}) {
+  const tabs: Array<{ key: ScheduleSubTab; label: string; count: number }> = [
+    { key: "current", label: tr(locale, "当前赛程", "Current"), count: currentCount },
+    { key: "history", label: tr(locale, "历史赛程", "History"), count: historyCount },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {tabs.map((tab) => (
+        <motion.button
+          key={tab.key}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => onChange(tab.key)}
+          className={`border border-[#241A14] px-3 py-2 text-left transition-colors ${
+            active === tab.key
+              ? "bg-[#241A14] text-white"
+              : "bg-[#FAF7F0] text-[#241A14] hover:bg-white"
+          }`}
+          style={{ boxShadow: active === tab.key ? "2px 2px 0 0 #D36E52" : "2px 2px 0 0 #241A14" }}
+        >
+          <span className="block text-xs font-black" style={{ fontFamily: "var(--font-heading)" }}>{tab.label}</span>
+          <span className={`mt-0.5 block text-[10px] font-bold ${active === tab.key ? "text-white/70" : "text-[#9E948C]"}`}>
+            {tab.count} {tr(locale, "场", "matches")}
+          </span>
+        </motion.button>
+      ))}
     </div>
   );
 }
@@ -253,7 +380,7 @@ function MatchRow({ match, locale, matchNo }: { match: Match; locale: string; ma
 }
 
 function ScheduleDay({ day, locale, matchSequence }: { day: ScheduleDayGroup; locale: string; matchSequence: Map<string, number> }) {
-  const relative = relativeBeijingDayLabel(day.date);
+  const relative = relativeBrowserDayLabel(day.date);
   return (
     <section className="space-y-2">
       <div className="-mx-4 border-y border-[#241A14] bg-[#EDE9E0] px-4 py-2">
@@ -270,6 +397,21 @@ function ScheduleDay({ day, locale, matchSequence }: { day: ScheduleDayGroup; lo
         ))}
       </div>
     </section>
+  );
+}
+
+function EmptyScheduleState({ tab, locale }: { tab: ScheduleSubTab; locale: string }) {
+  return (
+    <div className="border border-[#241A14] bg-[#FAF7F0] p-4 text-sm text-[#5C524C]" style={{ boxShadow: "3px 3px 0 0 #241A14" }}>
+      <div className="font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
+        {tab === "history" ? tr(locale, "暂无历史赛程", "No historical fixtures") : tr(locale, "暂无当前赛程", "No current fixtures")}
+      </div>
+      <p className="mt-1 text-xs text-[#9E948C]">
+        {tab === "history"
+          ? tr(locale, "比赛结束后会自动移入这里。", "Finished matches will move here.")
+          : tr(locale, "今天及之后的比赛会显示在这里。", "Today's and upcoming matches appear here.")}
+      </p>
+    </div>
   );
 }
 
@@ -321,12 +463,17 @@ function StandingGroup({ group, locale }: { group: GroupStanding; locale: string
 
 export function TodayScheduleScreen() {
   const [activeTab, setActiveTab] = useState<PageTab>("schedule");
+  const [scheduleTab, setScheduleTab] = useState<ScheduleSubTab>("current");
   const [liveMatches, setLiveMatches] = useState<Match[]>([]);
   const [sourceLabel, setSourceLabel] = useState("FIFA 官方赛程 · 本地/数据库数据源");
   const { i18n } = useTranslation();
   const locale = i18n.resolvedLanguage || i18n.language;
   const displayGroups = useMemo(() => mergeScheduleGroups(liveMatches), [liveMatches]);
   const displayMatches = useMemo(() => displayGroups.flatMap((day) => day.matches), [displayGroups]);
+  const { currentGroups, historyGroups } = useMemo(() => splitScheduleGroups(displayGroups), [displayGroups]);
+  const currentMatchCount = currentGroups.reduce((sum, day) => sum + day.matches.length, 0);
+  const historyMatchCount = historyGroups.reduce((sum, day) => sum + day.matches.length, 0);
+  const visibleScheduleGroups = scheduleTab === "history" ? historyGroups : currentGroups;
   const matchSequence = useMemo(() => createMatchSequenceLookup(displayMatches), [displayMatches]);
   const standings = useMemo(() => getGroupStandings(displayMatches), [displayMatches]);
   const totalMatches = displayGroups.reduce((sum, day) => sum + day.matches.length, 0);
@@ -335,9 +482,21 @@ export function TodayScheduleScreen() {
     let cancelled = false;
     async function loadLiveMatches() {
       const browserNow = new Date();
+      const today = browserToday(browserNow);
+      const recentDates = new Set([
+        offsetBrowserDate(today, -1),
+        today,
+        offsetBrowserDate(today, 1),
+      ]);
+      const historyQueries = historicalScheduleDates(browserNow)
+        .filter((date) => !recentDates.has(date))
+        .map((date) => scheduleDateQueryForBrowserDate(date));
       const responses = await Promise.all(
-        liveDateKeys.map(async (dateKey) => {
-          const response = await fetch(`/api/data/matches?${browserScheduleDateQuery(dateKey, browserNow)}`);
+        [
+          ...liveDateKeys.map((dateKey) => browserScheduleDateQuery(dateKey, browserNow)),
+          ...historyQueries,
+        ].map(async (query) => {
+          const response = await fetch(`/api/data/matches?${query}`);
           if (!response.ok) return { matches: [] as Match[], source: undefined as "remote" | "fallback" | "cache" | undefined, diagnostics: [] as Array<{ name: string; ok: boolean }> };
           return (await response.json()) as {
             matches?: Match[];
@@ -388,9 +547,20 @@ export function TodayScheduleScreen() {
               transition={{ duration: 0.2 }}
               className="space-y-5"
             >
-              {displayGroups.map((day) => (
-                <ScheduleDay key={day.date} day={day} locale={locale} matchSequence={matchSequence} />
-              ))}
+              <ScheduleSubTabs
+                active={scheduleTab}
+                onChange={setScheduleTab}
+                currentCount={currentMatchCount}
+                historyCount={historyMatchCount}
+                locale={locale}
+              />
+              {visibleScheduleGroups.length ? (
+                visibleScheduleGroups.map((day) => (
+                  <ScheduleDay key={day.date} day={day} locale={locale} matchSequence={matchSequence} />
+                ))
+              ) : (
+                <EmptyScheduleState tab={scheduleTab} locale={locale} />
+              )}
             </motion.div>
           ) : (
             <motion.div
