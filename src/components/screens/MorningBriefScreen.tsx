@@ -66,6 +66,22 @@ function matchDigest(match: Match, locale: string): string {
   );
 }
 
+function matchQuickRead(match: Match, locale: string, now: Date): string {
+  const isZhLocale = locale.toLowerCase().startsWith("zh");
+  const aiText = isZhLocale
+    ? match.aiBriefZh || match.aiBriefEn
+    : match.aiBriefEn || match.aiBriefZh;
+  if (aiText) return aiText;
+  if (hasMatchStarted(match, now) && match.status === "upcoming") {
+    return tr(
+      locale,
+      "比赛已到开赛时间，正在等待比分源推送比分、事件和赛果。",
+      "Kickoff time has arrived. Waiting for the score feed to push score, events, and result.",
+    );
+  }
+  return matchDigest(match, locale);
+}
+
 function matchKickoffDate(match: Match): Date | undefined {
   if (match.kickoffAt) {
     const parsed = new Date(match.kickoffAt);
@@ -164,6 +180,7 @@ function MatchResultCard({ match, locale, now = new Date() }: { match: Match; lo
   const displayAwayScore = match.awayScore ?? 0;
   const eventCount = match.events?.length || 0;
   const analysisItems = preMatchAnalysis(match, locale);
+  const quickRead = matchQuickRead(match, locale, now);
 
   return (
     <motion.div
@@ -214,13 +231,7 @@ function MatchResultCard({ match, locale, now = new Date() }: { match: Match; lo
       {/* 30s digest */}
       <div className="mx-3 mb-3 bg-[#EDE9E0] border-l-2 border-[#D36E52] p-2.5 text-xs text-[#5C524C]">
         <strong className="text-[#241A14]">{tr(locale, "30秒看懂：", "30-second read:")}</strong>
-        {inActualPhase && match.status === "upcoming"
-          ? tr(
-              locale,
-              "比赛已到开赛时间，正在等待比分源推送比分、事件和赛果。",
-              "Kickoff time has arrived. Waiting for the score feed to push score, events, and result.",
-            )
-          : matchDigest(match, locale)}
+        {quickRead}
       </div>
 
       {!inActualPhase && (
@@ -681,7 +692,7 @@ export function MorningBriefScreen() {
             className="font-bold text-xs tracking-wider uppercase text-[#241A14]"
             style={{ fontFamily: "var(--font-heading)" }}
           >
-            {tr(locale, "战局深度拆解", "Match Breakdown")}
+            {tr(locale, "战局快报", "Match Briefs")}
           </span>
           <div className="flex-grow border-b border-double border-[#241A14]/30" />
         </div>

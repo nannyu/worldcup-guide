@@ -83,6 +83,9 @@ export interface Match {
   prediction?: MatchPrediction;
   oddsSource?: string;
   previewText: string;
+  aiBriefZh?: string;
+  aiBriefEn?: string;
+  aiBriefProvider?: string;
   updatedAt: string;
 }
 

@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { readAdminConfig, type DataSourceConfig } from "@/lib/admin/config";
+import { addAiMatchBriefsToMorningMatches } from "@/lib/ai/match-briefs";
 import { curateNewsWithAi, type AiNewsCuration } from "@/lib/ai/news-curation";
 import {
   fetchJsonFromSource,
@@ -3000,7 +3001,7 @@ function buildMorningBrief(input: {
   const matchSummary = input.matches.length
     ? finishedMatches.length
       ? `${scheduleDateMeta[input.dateKey].listLabel}共 ${input.matches.length} 场，已完赛 ${finishedMatches.length} 场。`
-      : `${scheduleDateMeta[input.dateKey].listLabel}共 ${input.matches.length} 场，赛况更新后进入战局拆解。`
+      : `${scheduleDateMeta[input.dateKey].listLabel}共 ${input.matches.length} 场，赛况更新后进入战局快报。`
     : "";
   const newsSummary = buildFallbackNewsSummary(input.news, input.aggregation);
   const fallbackSummary = [newsSummary, matchSummary].filter(Boolean).join(" ");
@@ -3836,11 +3837,11 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
   source: "remote" | "fallback" | "cache";
   diagnostics: SourceDiagnostic[];
 }> {
-  const { updatedAt } = await readAdminConfig();
+  const { updatedAt, aiProviders, primaryAiProviderId } = await readAdminConfig();
   const newsWindow = rollingRecentNewsWindow();
   const sourceDate = sourceDateFor(dateKey, options);
   const dateRange = dateRangeFor(dateKey, options);
-  const snapshotKey = `morning:v17:${dateKey}:${dateRangeSnapshotKey(dateRange)}:${newsWindow.cacheKey}:${updatedAt}`;
+  const snapshotKey = `morning:v18:${dateKey}:${dateRangeSnapshotKey(dateRange)}:${newsWindow.cacheKey}:${updatedAt}`;
   const persisted = await readSnapshotCache<MorningBriefStoredPayload>(snapshotKey);
   if (persisted?.payload && options.cacheMode !== "refresh") {
     return {
@@ -3937,8 +3938,14 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
     : matchesResult.source === "remote"
       ? "赛程远端源 · 新闻源为空"
       : "本地/数据库兜底";
-  const brief = buildMorningBrief({
+  const matchBriefResult = await addAiMatchBriefsToMorningMatches({
     matches: matchesResult.matches,
+    providers: aiProviders,
+    primaryProviderId: primaryAiProviderId,
+    disabled: options.useAi === false,
+  });
+  const brief = buildMorningBrief({
+    matches: matchBriefResult.matches,
     news: newsResult.articles,
     sourceLabel,
     dateKey,
