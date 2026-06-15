@@ -7,13 +7,14 @@ import { useTranslation } from "react-i18next";
 import {
   allMatches,
   allScheduleDayGroups,
-  browserScheduleDateQuery,
   createMatchSequenceLookup,
   getCountdownToBj,
   getGroupStandings,
   getMatchSequenceNumber,
+  getScheduleDateMeta,
   matchIdentityKey,
   mergeMatchWithOfficialSource,
+  relativeBeijingDayLabel,
   type GroupStanding,
   type Match,
   type ScheduleDayGroup,
@@ -24,42 +25,15 @@ type PageTab = "schedule" | "standings";
 type ScheduleSubTab = "current" | "history";
 const liveDateKeys = ["yesterday", "today", "tomorrow"] as const;
 
-function formatBrowserDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+function beijingToday(now = new Date()): string {
+  return getScheduleDateMeta(now).today.date;
 }
 
-function browserToday(now = new Date()): string {
-  return formatBrowserDate(now);
-}
-
-function offsetBrowserDate(date: string, offsetDays: number): string {
-  const [year, month, day] = date.split("-").map(Number);
-  return formatBrowserDate(new Date(year, month - 1, day + offsetDays));
-}
-
-function browserDateMs(date: string): number {
-  const [year, month, day] = date.split("-").map(Number);
-  return new Date(year, month - 1, day).getTime();
-}
-
-function relativeBrowserDayLabel(date: string): string {
-  const diffDays = Math.round((browserDateMs(date) - browserDateMs(browserToday())) / (24 * 60 * 60 * 1000));
-  if (diffDays === -1) return "昨天";
-  if (diffDays === 0) return "今天";
-  if (diffDays === 1) return "明天";
-  if (diffDays === 2) return "后天";
-  return "";
-}
-
-function scheduleDateQueryForBrowserDate(date: string): string {
-  const [year, month, day] = date.split("-").map(Number);
-  const start = new Date(year, month - 1, day);
-  const end = new Date(year, month - 1, day + 1);
+function scheduleDateQueryForBeijingDate(date: string, dateKey: typeof liveDateKeys[number] = "today"): string {
+  const start = new Date(`${date}T00:00:00+08:00`);
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
   return new URLSearchParams({
-    dateKey: "today",
+    dateKey,
     date,
     startUtc: start.toISOString(),
     endUtc: end.toISOString(),
@@ -187,7 +161,7 @@ function markHistoricalMatch(match: Match): Match {
 }
 
 function splitScheduleGroups(groups: ScheduleDayGroup[], now = new Date()) {
-  const today = browserToday(now);
+  const today = beijingToday(now);
   const currentGroups: ScheduleDayGroup[] = [];
   const historyGroups: ScheduleDayGroup[] = [];
 
@@ -197,7 +171,7 @@ function splitScheduleGroups(groups: ScheduleDayGroup[], now = new Date()) {
 
     for (const match of day.matches) {
       const matchDate = match.kickoffAt?.slice(0, 10) || day.date;
-      if (match.status === "finished" || matchDate < today) {
+      if (matchDate < today) {
         historyMatches.push(markHistoricalMatch(match));
       } else {
         currentMatches.push(match);
@@ -215,7 +189,7 @@ function splitScheduleGroups(groups: ScheduleDayGroup[], now = new Date()) {
 }
 
 function historicalScheduleDates(now = new Date()): string[] {
-  const today = browserToday(now);
+  const today = beijingToday(now);
   return allScheduleDayGroups
     .filter((day) => day.date < today)
     .map((day) => day.date);
@@ -380,7 +354,7 @@ function MatchRow({ match, locale, matchNo }: { match: Match; locale: string; ma
 }
 
 function ScheduleDay({ day, locale, matchSequence }: { day: ScheduleDayGroup; locale: string; matchSequence: Map<string, number> }) {
-  const relative = relativeBrowserDayLabel(day.date);
+  const relative = relativeBeijingDayLabel(day.date);
   return (
     <section className="space-y-2">
       <div className="-mx-4 border-y border-[#241A14] bg-[#EDE9E0] px-4 py-2">
@@ -481,19 +455,19 @@ export function TodayScheduleScreen() {
   useEffect(() => {
     let cancelled = false;
     async function loadLiveMatches() {
-      const browserNow = new Date();
-      const today = browserToday(browserNow);
+      const now = new Date();
+      const scheduleDates = getScheduleDateMeta(now);
       const recentDates = new Set([
-        offsetBrowserDate(today, -1),
-        today,
-        offsetBrowserDate(today, 1),
+        scheduleDates.yesterday.date,
+        scheduleDates.today.date,
+        scheduleDates.tomorrow.date,
       ]);
-      const historyQueries = historicalScheduleDates(browserNow)
+      const historyQueries = historicalScheduleDates(now)
         .filter((date) => !recentDates.has(date))
-        .map((date) => scheduleDateQueryForBrowserDate(date));
+        .map((date) => scheduleDateQueryForBeijingDate(date));
       const responses = await Promise.all(
         [
-          ...liveDateKeys.map((dateKey) => browserScheduleDateQuery(dateKey, browserNow)),
+          ...liveDateKeys.map((dateKey) => scheduleDateQueryForBeijingDate(scheduleDates[dateKey].date, dateKey)),
           ...historyQueries,
         ].map(async (query) => {
           const response = await fetch(`/api/data/matches?${query}`);
