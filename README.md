@@ -78,7 +78,7 @@ bun run data:init
 
 新闻不会在第一个成功源处停止：所有启用新闻源会并行抓取，后台按 URL 和标题相似度去重，再由已配置的 AI Provider 做事件合并、中文摘要和要点整理。未配置模型 Key 时只执行规则去重，不生成模拟摘要。
 
-AI Provider 支持 OpenAI、Gemini、DeepSeek、Xiaomi MiMo、Kimi Coding、BigModel/智谱和自定义 OpenAI-compatible Provider。当前默认主模型配置为 Xiaomi MiMo `mimo-v2.5-pro`，DeepSeek `deepseek-v4-flash` 可作为备用。Kimi Code 会员接口仅面向受支持的 Coding Agent；网站后台若使用 Kimi，应配置 Moonshot/Kimi 开放平台 `https://api.moonshot.cn/v1`。
+AI Provider 支持 OpenAI、Gemini、DeepSeek、Xiaomi MiMo、Kimi Coding、BigModel/智谱和自定义 OpenAI-compatible Provider。当前默认主模型配置为 Xiaomi MiMo `mimo-v2.5-pro`，DeepSeek `deepseek-v4-flash` 可作为备用。Kimi Coding Plan 使用 Anthropic Messages 协议，默认 endpoint 为 `https://api.kimi.com/coding/v1/messages`，模型为 `kimi-for-coding`，服务端请求保持 `user-agent: claude-cli/2.1.170 (external, cli)`。
 
 数据抓取、缓存、刷新和 API 说明见 [docs/data-sources.md](docs/data-sources.md)。
 

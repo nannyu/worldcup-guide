@@ -166,11 +166,11 @@ The response includes:
 
 Morning briefs request every enabled news source for the selected Beijing calendar day, keep up to 60 deduplicated records, and display the full retained `brief.news` list. The leading headline block is only a compact highlight summary and should not cap the underlying fetched news set.
 
-AI curation supports enabled OpenAI-compatible providers and Gemini. Provider failure does not remove or replace factual source records.
+AI curation supports enabled OpenAI-compatible providers, Gemini, and Kimi Coding through the Anthropic Messages protocol. Provider failure does not remove or replace factual source records.
 
-The admin config stores `primaryAiProviderId`. The selected provider is tried first, followed by other enabled providers in configuration order. AI Provider API keys use the same env-var mechanism as data sources: config JSON stores only `apiKeyEnvName`, server-side reads the real value from `.env`, and admin API responses always redact `apiKey`. The current preferred provider is Xiaomi MiMo Token Plan through its OpenAI-compatible endpoint with `mimo-v2.5-pro`; DeepSeek `deepseek-v4-flash` remains enabled as fallback.
+The admin config stores `primaryAiProviderId`. The selected provider is tried first, followed by other enabled providers in configuration order. AI Provider API keys use the same env-var mechanism as data sources: config JSON stores only `apiKeyEnvName`, server-side reads the real value from `.env`, and admin API responses always redact `apiKey`. The current default provider is Xiaomi MiMo Token Plan through its OpenAI-compatible endpoint with `mimo-v2.5-pro`; DeepSeek `deepseek-v4-flash` remains enabled as fallback.
 
-Kimi Code (`https://api.kimi.com/coding/v1`, model `kimi-for-coding`) is restricted to supported Coding Agent clients and returns `403` for this web backend. Use a Kimi Platform key with `https://api.moonshot.cn/v1` for production news curation.
+Kimi Coding Plan is configured as `kimi-coding` with `https://api.kimi.com/coding/v1/messages`, model `kimi-for-coding`, and the Anthropic `x-api-key` + `anthropic-version` request headers. Requests keep the Claude CLI environment identifier through `user-agent: claude-cli/2.1.170 (external, cli)`. The persisted config stores only `AI_PROVIDER_KIMI_CODING_API_KEY`; the real key stays in `.env`.
 
 ## Team And Player Roasts
 

@@ -1,4 +1,5 @@
 import { readAdminConfig, type AiProviderConfig } from "@/lib/admin/config";
+import { callAnthropicMessagesJson } from "@/lib/ai/anthropic-messages";
 import { runAiTaskQueue, type AiTask } from "@/lib/ai/task-orchestrator";
 import { getAggregatedMatches, getAggregatedNews, MORNING_BRIEF_NEWS_LIMIT } from "@/lib/data-sources/aggregate";
 import { readSnapshotCache, upsertSnapshotCache } from "@/lib/db/queries/data-cache";
@@ -361,6 +362,18 @@ async function callGemini(provider: AiProviderConfig, prompt: string, context: P
   return normalizeAiItem(extractJson(content), context, provider.name);
 }
 
+async function callKimiCoding(provider: AiProviderConfig, prompt: string, context: PlayerContext): Promise<PlayerRoastItem> {
+  const content = await callAnthropicMessagesJson({
+    provider,
+    system: "You write concise Chinese football player commentary and return accurate JSON only.",
+    prompt,
+    temperature: 0.8,
+    maxTokens: 1200,
+    timeoutMs: PLAYER_ROAST_AI_TIMEOUT_MS,
+  });
+  return normalizeAiItem(extractJson(content), context, provider.name);
+}
+
 async function generateAiPlayerRoasts(
   providers: AiProviderConfig[],
   contexts: PlayerContext[],
@@ -373,6 +386,8 @@ async function generateAiPlayerRoasts(
       const prompt = buildPrompt(context);
       return provider.provider === "gemini"
         ? callGemini(provider, prompt, context)
+        : provider.provider === "kimi-coding"
+          ? callKimiCoding(provider, prompt, context)
         : callOpenAiCompatible(provider, prompt, context);
     },
     fallback() {

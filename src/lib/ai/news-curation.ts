@@ -1,4 +1,5 @@
 import type { AiProviderConfig } from "@/lib/admin/config";
+import { callAnthropicMessagesJson } from "@/lib/ai/anthropic-messages";
 import type { NewsArticle } from "@/lib/wc-data";
 
 const NEWS_AI_ANALYSIS_LIMIT = 20;
@@ -174,6 +175,21 @@ async function callGemini(
   return normalizeCuration(extractJson(content), provider.name);
 }
 
+async function callKimiCoding(
+  provider: AiProviderConfig,
+  prompt: string,
+): Promise<AiNewsCuration> {
+  const content = await callAnthropicMessagesJson({
+    provider,
+    system: "You return accurate JSON only.",
+    prompt,
+    temperature: 0.2,
+    maxTokens: 4096,
+    timeoutMs: 30000,
+  });
+  return normalizeCuration(extractJson(content), provider.name);
+}
+
 export async function curateNewsWithAi(
   providers: AiProviderConfig[],
   articles: NewsArticle[],
@@ -195,7 +211,9 @@ export async function curateNewsWithAi(
     try {
       const curation = provider.provider === "gemini"
         ? await callGemini(provider, prompt)
-        : await callOpenAiCompatible(provider, prompt);
+        : provider.provider === "kimi-coding"
+          ? await callKimiCoding(provider, prompt)
+          : await callOpenAiCompatible(provider, prompt);
       return { curation, message: `${provider.name} 已完成后台整理。` };
     } catch (error) {
       errors.push(`${provider.name}: ${error instanceof Error ? error.message : "unknown error"}`);

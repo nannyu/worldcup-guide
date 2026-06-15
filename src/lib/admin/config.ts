@@ -675,11 +675,11 @@ export const defaultAdminConfig: AdminConfig = {
       id: "kimi-coding",
       name: "Kimi Coding",
       provider: "kimi-coding",
-      baseUrl: "https://api.kimi.com/coding/v1",
+      baseUrl: "https://api.kimi.com/coding/v1/messages",
       apiKey: "",
       defaultModel: "kimi-for-coding",
       enabled: false,
-      notes: "Kimi Code 官方 OpenAI-compatible 地址。该服务仅允许已认证 Coding Agent，不适合网站后台内容生成。",
+      notes: "Kimi Code Coding Plan Anthropic Messages endpoint。请求保持 Claude CLI User-Agent。",
     },
     {
       id: "bigmodel",

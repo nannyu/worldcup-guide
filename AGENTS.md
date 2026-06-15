@@ -117,7 +117,7 @@ Run migrations with `bun run db:migrate`. Seed the official FIFA schedule with `
 - News curation reads factual news records, then uses the selected AI Provider to group events, summarize, and generate key points.
 - Team roasts and player roasts read cached news plus yesterday/today/tomorrow matches as context.
 - Xiaomi MiMo `mimo-v2.5-pro` is the default primary Provider in config; DeepSeek `deepseek-v4-flash` can be enabled as fallback.
-- Kimi Code is for supported Coding Agent clients. For this web backend, use Moonshot/Kimi Platform compatible API if Kimi is required.
+- Kimi Coding Plan uses Anthropic Messages protocol (`https://api.kimi.com/coding/v1/messages`, model `kimi-for-coding`). Server requests must keep `user-agent: claude-cli/2.1.170 (external, cli)`.
 - AI output must be treated as expression over existing facts, not as a source of new facts.
 
 ## Frontend Conventions
