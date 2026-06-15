@@ -103,12 +103,39 @@ function storedStatus(match: Match): "scheduled" | "live" | "finished" {
   return "scheduled";
 }
 
+function storedPayload(input: unknown): Partial<Match> | undefined {
+  return input && typeof input === "object" ? input as Partial<Match> : undefined;
+}
+
+function mergePersistentMatchPayload(existing: Partial<Match> | undefined, incoming: Match): Match {
+  if (!existing) return incoming;
+  return {
+    ...existing,
+    ...incoming,
+    events: incoming.events?.length ? incoming.events : existing.events || incoming.events,
+    lineups: incoming.lineups?.length ? incoming.lineups : existing.lineups || incoming.lineups,
+    statistics: incoming.statistics?.length ? incoming.statistics : existing.statistics || incoming.statistics,
+    prediction: incoming.prediction || existing.prediction,
+    previewText: incoming.previewText || existing.previewText || "",
+    oddsSource: incoming.oddsSource || existing.oddsSource,
+    aiBriefZh: incoming.aiBriefZh || existing.aiBriefZh,
+    aiBriefEn: incoming.aiBriefEn || existing.aiBriefEn,
+    aiBriefProvider: incoming.aiBriefProvider || existing.aiBriefProvider,
+  };
+}
+
 export async function persistCanonicalMatches(matchesToPersist: Match[], sourceId: string): Promise<number> {
   if (!isDatabaseConfigured) return 0;
   const now = new Date();
   let written = 0;
   for (const match of matchesToPersist) {
     if (!match.id.startsWith("fifa-") || !hasPersistentMatchData(match)) continue;
+    const [existingRow] = await getDb()
+      .select({ canonicalPayload: matches.canonicalPayload })
+      .from(matches)
+      .where(eq(matches.id, match.id))
+      .limit(1);
+    const canonicalPayload = mergePersistentMatchPayload(storedPayload(existingRow?.canonicalPayload), match);
     const values: {
       status: "scheduled" | "live" | "finished";
       canonicalPayload: Match;
@@ -119,7 +146,7 @@ export async function persistCanonicalMatches(matchesToPersist: Match[], sourceI
       awayScore?: number;
     } = {
       status: storedStatus(match),
-      canonicalPayload: match,
+      canonicalPayload,
       sourceId,
       sourceUpdatedAt: now,
       updatedAt: now,
