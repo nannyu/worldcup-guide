@@ -125,6 +125,9 @@ interface FifaScheduleData {
 
 const fifaSchedule = fifaScheduleData as FifaScheduleData;
 
+export const SCOTLAND_FLAG = "\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}";
+export const ENGLAND_FLAG = "\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}";
+
 const teamDisplay: Record<string, { name: string; flag: string }> = {
   MEX: { name: "墨西哥", flag: "🇲🇽" },
   RSA: { name: "南非", flag: "🇿🇦" },
@@ -135,7 +138,7 @@ const teamDisplay: Record<string, { name: string; flag: string }> = {
   USA: { name: "美国", flag: "🇺🇸" },
   PAR: { name: "巴拉圭", flag: "🇵🇾" },
   HAI: { name: "海地", flag: "🇭🇹" },
-  SCO: { name: "苏格兰", flag: "🏴" },
+  SCO: { name: "苏格兰", flag: SCOTLAND_FLAG },
   AUS: { name: "澳大利亚", flag: "🇦🇺" },
   TUR: { name: "土耳其", flag: "🇹🇷" },
   BRA: { name: "巴西", flag: "🇧🇷" },
@@ -168,7 +171,7 @@ const teamDisplay: Record<string, { name: string; flag: string }> = {
   JOR: { name: "约旦", flag: "🇯🇴" },
   GHA: { name: "加纳", flag: "🇬🇭" },
   PAN: { name: "巴拿马", flag: "🇵🇦" },
-  ENG: { name: "英格兰", flag: "🏴" },
+  ENG: { name: "英格兰", flag: ENGLAND_FLAG },
   CRO: { name: "克罗地亚", flag: "🇭🇷" },
   POR: { name: "葡萄牙", flag: "🇵🇹" },
   COD: { name: "刚果民主共和国", flag: "🇨🇩" },
