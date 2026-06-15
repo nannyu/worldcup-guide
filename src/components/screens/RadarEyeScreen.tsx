@@ -7,11 +7,14 @@ import type { LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   allMatches,
-  browserScheduleDateQuery,
+  allScheduleDayGroups,
+  beijingScheduleUtcDayBounds,
   createMatchSequenceLookup,
   getGroupStandings,
   getMatchSequenceNumber,
+  getScheduleDateMeta,
   matchIdentityKey,
+  matchTeamPairKey,
   mergeMatchWithOfficialSource,
   type GroupStanding,
   type Match,
@@ -94,6 +97,23 @@ type LineMarketGroup = {
 
 const beijingTimeZone = "Asia/Shanghai";
 const dateKeys = ["yesterday", "today", "tomorrow"] as const;
+
+function scheduleDateQueryForBeijingDate(date: string, dateKey: typeof dateKeys[number] = "today"): string {
+  const bounds = beijingScheduleUtcDayBounds(date);
+  return new URLSearchParams({
+    dateKey,
+    date,
+    startUtc: bounds?.startUtc || "",
+    endUtc: bounds?.endUtc || "",
+  }).toString();
+}
+
+function historicalScheduleDates(now = new Date()): string[] {
+  const today = getScheduleDateMeta(now).today.date;
+  return allScheduleDayGroups
+    .filter((day) => day.date < today)
+    .map((day) => day.date);
+}
 
 const tabDefinitions: Array<{ key: TabKey; label: LocalizedText; Icon: LucideIcon }> = [
   { key: "games", label: { zh: "比赛", en: "Games" }, Icon: CalendarDays },
@@ -270,39 +290,47 @@ function teamCode(name: string, code?: string) {
 function mergeLiveMatches(liveMatches: Match[]) {
   const byId = new Map<string, Match[]>();
   const byKey = new Map<string, Match[]>();
+  const byPair = new Map<string, Match[]>();
 
   for (const match of liveMatches) {
     byId.set(match.id, [...(byId.get(match.id) || []), match]);
     const key = matchIdentityKey(match);
     byKey.set(key, [...(byKey.get(key) || []), match]);
+    const pair = matchTeamPairKey(match);
+    byPair.set(pair, [...(byPair.get(pair) || []), match]);
   }
 
   const usedIds = new Set<string>();
   const usedKeys = new Set<string>();
+  const usedPairs = new Set<string>();
 
   const markUsed = (matches: Match[]) => {
     for (const match of matches) {
       usedIds.add(match.id);
       usedKeys.add(matchIdentityKey(match));
+      usedPairs.add(matchTeamPairKey(match));
     }
   };
 
   const merged = allMatches.map((base) => {
     const exactMatches = byId.get(base.id) || [];
     const identityMatches = byKey.get(matchIdentityKey(base)) || [];
-    const live = exactMatches[0] || identityMatches[0];
+    const pairMatches = byPair.get(matchTeamPairKey(base)) || [];
+    const live = exactMatches[0] || identityMatches[0] || pairMatches[0];
     if (!live) return base;
-    markUsed([...exactMatches, ...identityMatches]);
+    markUsed([...exactMatches, ...identityMatches, ...pairMatches]);
     return mergeMatchWithOfficialSource(base, live);
   });
 
   const mergedKeys = new Set(merged.map(matchIdentityKey));
   for (const match of liveMatches) {
     const key = matchIdentityKey(match);
-    if (usedIds.has(match.id) || usedKeys.has(key) || mergedKeys.has(key)) continue;
+    const pair = matchTeamPairKey(match);
+    if (usedIds.has(match.id) || usedKeys.has(key) || usedPairs.has(pair) || mergedKeys.has(key)) continue;
     merged.push(match);
     usedIds.add(match.id);
     usedKeys.add(key);
+    usedPairs.add(pair);
     mergedKeys.add(key);
   }
 
@@ -751,12 +779,24 @@ export function RadarEyeScreen() {
 
     async function loadData() {
       try {
-        const browserNow = new Date();
+        const now = new Date();
+        const scheduleDates = getScheduleDateMeta(now);
+        const recentDates = new Set([
+          scheduleDates.yesterday.date,
+          scheduleDates.today.date,
+          scheduleDates.tomorrow.date,
+        ]);
+        const matchQueries = [
+          ...dateKeys.map((dateKey) => scheduleDateQueryForBeijingDate(scheduleDates[dateKey].date, dateKey)),
+          ...historicalScheduleDates(now)
+            .filter((date) => !recentDates.has(date))
+            .map((date) => scheduleDateQueryForBeijingDate(date)),
+        ];
         const [radarResponse, matchResponses] = await Promise.all([
           fetch("/api/data/radar"),
           Promise.all(
-            dateKeys.map(async (dateKey) => {
-              const response = await fetch(`/api/data/matches?${browserScheduleDateQuery(dateKey, browserNow)}`);
+            matchQueries.map(async (query) => {
+              const response = await fetch(`/api/data/matches?${query}`);
               if (!response.ok) return { matches: [] as Match[], source: undefined as DataSourceMode | undefined, diagnostics: [] };
               return (await response.json()) as {
                 matches?: Match[];
