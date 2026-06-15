@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { enqueueArticleTranslations } from "@/lib/background/news-translation-jobs";
 import { getPlayerRoastSnapshot } from "@/lib/ai/player-roasts";
 import { getTeamRoastSnapshot } from "@/lib/ai/team-roasts";
 import {
@@ -22,8 +23,15 @@ import {
   type BackgroundJobType,
 } from "@/lib/db/queries/background-jobs";
 import { recordIngestionRun } from "@/lib/db/queries/ingestion-runs";
+import {
+  getCanonicalNewsArticlesByIds,
+  upsertCanonicalNewsArticles,
+} from "@/lib/db/queries/news-articles";
 import { teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
-import { morningBriefTranslationArticle, translateArticleAndCache } from "@/lib/translation/article-translation";
+import {
+  morningBriefTranslationArticle,
+  translateArticleAndCache,
+} from "@/lib/translation/article-translation";
 import {
   normalizeScheduleDate,
   normalizeScheduleUtcDayBounds,
@@ -32,10 +40,10 @@ import {
   type ScheduleUtcDayBounds,
 } from "@/lib/wc-data";
 
+export { enqueueArticleTranslation } from "@/lib/background/news-translation-jobs";
+
 const MAX_BACKGROUND_JOB_ID_LENGTH = 240;
 const MAX_NEWS_QUERY_LENGTH = 180;
-const MAX_BACKGROUND_ARTICLE_TEXT_LENGTH = 4000;
-const MAX_BACKGROUND_ARTICLE_PARAGRAPHS = 8;
 
 function stableJobId(type: BackgroundJobType, parts: Array<string | number | undefined>) {
   const raw = [type, ...parts.map((part) => String(part || ""))].join(":");
@@ -65,35 +73,6 @@ function normalizeDateString(value: string | undefined): string | undefined {
   if (!value) return undefined;
   const parsed = new Date(value);
   return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : undefined;
-}
-
-function trimTextList(values: string[] | undefined, maxLength: number): string[] | undefined {
-  const trimmed = values
-    ?.map((value) => truncateText(value, maxLength))
-    .filter((value): value is string => Boolean(value))
-    .slice(0, MAX_BACKGROUND_ARTICLE_PARAGRAPHS);
-  return trimmed?.length ? trimmed : undefined;
-}
-
-function trimArticleForBackground(article: NewsArticle): NewsArticle {
-  return {
-    ...article,
-    id: truncateText(article.id, 256) || article.id,
-    title: truncateText(article.title, 500) || article.title,
-    url: truncateText(article.url, 1000) || article.url,
-    source: truncateText(article.source, 128) || article.source,
-    summary: truncateText(article.summary, 1200) || "",
-    sourceText: truncateText(article.sourceText, MAX_BACKGROUND_ARTICLE_TEXT_LENGTH),
-    aiSummary: truncateText(article.aiSummary, 1200),
-    imageUrl: truncateText(article.imageUrl, 1000),
-    domain: truncateText(article.domain, 256),
-    body: trimTextList(article.body, 1400),
-    bodyEn: trimTextList(article.bodyEn, 1400),
-    bodyZh: trimTextList(article.bodyZh, 1400),
-    keyPointsEn: trimTextList(article.keyPointsEn, 300),
-    keyPointsZh: trimTextList(article.keyPointsZh, 300),
-    aiKeyPoints: trimTextList(article.aiKeyPoints, 300),
-  };
 }
 
 function normalizeNewsRefreshOptions(options: {
@@ -156,10 +135,16 @@ function payloadArticle(payload: unknown): NewsArticle {
   return article as NewsArticle;
 }
 
-async function translateNewsArticles(articles: NewsArticle[], limit = NEWS_TRANSLATION_LIMIT) {
-  for (const article of articles.slice(0, limit)) {
-    await translateArticleAndCache(article);
-  }
+function applyTranslationResult(article: NewsArticle, result: Awaited<ReturnType<typeof translateArticleAndCache>>): NewsArticle {
+  const translation = result.translation;
+  if (!translation) return article;
+  return {
+    ...article,
+    titleZh: translation.titleZh || article.titleZh,
+    summaryZh: translation.summaryZh || article.summaryZh,
+    keyPointsZh: translation.keyPointsZh?.length ? translation.keyPointsZh : article.keyPointsZh,
+    bodyZh: translation.bodyZh?.length ? translation.bodyZh : article.bodyZh,
+  };
 }
 
 function featureForJobType(type: BackgroundJobType): string {
@@ -313,16 +298,6 @@ export function enqueueNewsRefresh(options: {
   });
 }
 
-export function enqueueArticleTranslation(article: NewsArticle) {
-  const backgroundArticle = trimArticleForBackground(article);
-  return enqueueBackgroundJob({
-    id: stableJobId("news.translate", [backgroundArticle.id]),
-    type: "news.translate",
-    payload: { article: backgroundArticle as unknown as Record<string, unknown> },
-    priority: 20,
-  });
-}
-
 export function enqueueFullDataRefresh(mode: "scheduled" | "initialize" = "scheduled") {
   return enqueueBackgroundJob({
     id: stableJobId("refresh.full", [mode]),
@@ -362,8 +337,8 @@ async function executeBackgroundJobPayload(type: BackgroundJobType, payload: unk
       cacheMode: "refresh",
       ...payloadScheduleOptions(payload),
     });
-    await translateArticleAndCache(morningBriefTranslationArticle(result.brief));
-    await translateNewsArticles(result.brief.news);
+    await enqueueArticleTranslations([morningBriefTranslationArticle(result.brief)], 1);
+    await enqueueArticleTranslations(result.brief.news, NEWS_TRANSLATION_LIMIT);
     return result;
   }
 
@@ -376,12 +351,19 @@ async function executeBackgroundJobPayload(type: BackgroundJobType, payload: unk
       publishedBefore: normalizeDateString(payloadString(payload, "publishedBefore")),
       cacheMode: "refresh",
     });
-    await translateNewsArticles(result.articles, limit);
+    await enqueueArticleTranslations(result.articles, limit);
     return result;
   }
 
   if (type === "news.translate") {
-    return translateArticleAndCache(payloadArticle(payload));
+    const article = payloadArticle(payload);
+    const result = await translateArticleAndCache(article);
+    if (result.translation && /^https?:\/\//i.test(article.url)) {
+      const [canonical] = await getCanonicalNewsArticlesByIds([article.id]);
+      const translated = applyTranslationResult(canonical || article, result);
+      await upsertCanonicalNewsArticles([translated]);
+    }
+    return result;
   }
 
   if (type === "team-roasts.refresh") {

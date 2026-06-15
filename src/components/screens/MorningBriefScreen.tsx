@@ -447,7 +447,7 @@ function NewsCard({ item, locale }: { item: NewsArticle; locale: string }) {
         {item.language && <span>· {item.language}</span>}
         {item.country && <span>· {item.country}</span>}
         {translationLabel && <span>· {translationLabel}</span>}
-        {item.bodySource && <span>· {item.bodySource === "original-page" ? tr(locale, "已抓全文", "full text") : tr(locale, "正文预览", "body preview")}</span>}
+        {item.bodySource && <span>· {item.bodySource === "original-page" || item.bodySource === "provider-api" ? tr(locale, "已抓全文", "full text") : tr(locale, "正文预览", "body preview")}</span>}
       </div>
     </motion.div>
   );
@@ -481,7 +481,7 @@ function articleHeatScore(article: NewsArticle, index: number): number {
   if (explicitViews !== undefined) return explicitViews * 1_000_000 + recency - index / 1000;
   const sourceCount = article.sourceCount || article.relatedSources?.length || 1;
   const aiScore = article.aiScore || 0;
-  const bodyWeight = article.bodySource === "original-page" ? 30 : article.bodySource === "source-api" ? 12 : 0;
+  const bodyWeight = article.bodySource === "original-page" || article.bodySource === "provider-api" ? 30 : article.bodySource === "source-api" ? 12 : 0;
   return sourceCount * 1000 + aiScore * 10 + articleSourceWeight(article) + bodyWeight + recency - index / 1000;
 }
 

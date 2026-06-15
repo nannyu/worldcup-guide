@@ -151,8 +151,8 @@ export function NewsDetailScreen() {
     ? bodyPairs.length > visibleBodyPairs.length
     : bodyParagraphs.join("\n\n").length > visibleBodyParagraphs.join("\n\n").length
       || bodyParagraphs.length > visibleBodyParagraphs.length;
-  const bodySourceLabel = article.bodySource === "original-page"
-    ? tr(locale, "原始页面已抓取并存入本地快照", "Original page captured in local snapshot")
+  const bodySourceLabel = article.bodySource === "original-page" || article.bodySource === "provider-api"
+    ? tr(locale, "全文已抓取并存入本地快照", "Full text captured in local snapshot")
     : article.bodySource === "source-api"
       ? tr(locale, "来自数据源正文/摘要字段", "From source content fields")
       : tr(locale, "基于来源摘要生成预览", "Preview generated from source summary");

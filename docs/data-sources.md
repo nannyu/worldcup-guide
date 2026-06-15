@@ -23,10 +23,13 @@ News uses a multi-source path instead of first-success fallback:
 
 1. Fetch every enabled news source concurrently.
 2. Normalize RSS and JSON payloads into `NewsArticle[]`.
-3. Remove tracking parameters and cluster matching URLs or similar titles.
-4. Merge source attribution into each retained article.
-5. Send the compact factual set to an enabled backend AI provider for final grouping, summaries and key points.
-6. If AI is unavailable, return the deterministic deduplication result without generated text.
+3. Enrich article bodies before writing snapshots. ESPN list items use the official ESPN Core API story endpoint for full article HTML; other short records try the original article page when the current source text is only a summary.
+4. Remove tracking parameters and cluster matching URLs or similar titles.
+5. Merge source attribution into each retained article.
+6. Persist retained articles in `news_articles`, then write page-ready snapshots into `data_snapshots`.
+7. Send the compact factual set to an enabled backend AI provider for final grouping, summaries and key points.
+8. If AI is unavailable, return the deterministic deduplication result without generated text.
+9. Queue article translation through `background_jobs`; `news.translate` writes translation cache entries and updates the matching canonical `news_articles.payload`, so cache-only page reads pick up translations without re-fetching remote sources.
 
 Team roasts and player roasts use the same cached snapshot pattern. They read cached news and yesterday/today/tomorrow matches as context, then generate a `team-roasts` or `player-roasts` snapshot through the selected AI Provider. If AI is unavailable or returns unusable text, rule-based fallback text is written instead.
 
@@ -136,7 +139,7 @@ Append `refresh=1` to selected data APIs to bypass normalized snapshots and refr
 - `openfootball-worldcup-json`: implemented and normalized into `Match[]`.
 - `polymarket-gamma`: implemented and normalized into `RadarMatch[]` when World Cup/FIFA markets are present.
 - `rss-feed`: implemented as a text/RSS source and normalized into `NewsArticle[]`.
-- `espn-site-api`: implemented for `site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/news`. The previous `www.espn.com/espn/rss/soccer/news` endpoint returns CloudFront WAF challenge responses in server-side fetches, so existing `espn-soccer-rss` configs are normalized to this JSON API.
+- `espn-site-api`: implemented for `site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/news`. The previous `www.espn.com/espn/rss/soccer/news` endpoint returns CloudFront WAF challenge responses in server-side fetches, so existing `espn-soccer-rss` configs are normalized to this JSON API. Article bodies are enriched from `content.core.api.espn.com/v1/sports/news/{id}` and marked as `provider-api` full text.
 - `currents-api`: implemented with the V2 search endpoint, `sport` category and World Cup query.
 - `gdelt-doc`: implemented and normalized into `NewsArticle[]`; keep RSS/NewsAPI enabled as redundancy because GDELT can return 429 under rate pressure.
 - `newsapi-org`: implemented and normalized into `NewsArticle[]`, disabled until an API key is configured.
@@ -165,6 +168,8 @@ The response includes:
 - `aggregation.aiMessage`
 
 Morning briefs request every enabled news source for the selected Beijing calendar day, keep up to 60 deduplicated records, and display the full retained `brief.news` list. The leading headline block is only a compact highlight summary and should not cap the underlying fetched news set.
+
+Page APIs remain `cache-only` by default. News snapshots are hydrated from `news_articles` by article ID before returning, so background body enrichment and queued translations can update the frontend even when the page hits an older normalized snapshot. If no news snapshot exists, `/api/data/news` and morning-news fallback read the latest canonical articles sorted by `publishedAt` descending.
 
 AI curation supports enabled OpenAI-compatible providers, Gemini, and Kimi Coding through the Anthropic Messages protocol. Provider failure does not remove or replace factual source records.
 

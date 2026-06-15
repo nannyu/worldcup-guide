@@ -25,6 +25,7 @@ import {
 } from "@/lib/db/queries/market-snapshots";
 import {
   getCanonicalNewsArticlesByIds,
+  getLatestCanonicalNewsArticles,
   upsertCanonicalNewsArticles,
 } from "@/lib/db/queries/news-articles";
 import {
@@ -446,6 +447,11 @@ interface EspnSiteNewsResponse {
       description?: string;
     }>;
     links?: {
+      api?: {
+        self?: {
+          href?: string;
+        };
+      };
       web?: {
         href?: string;
       };
@@ -453,6 +459,22 @@ interface EspnSiteNewsResponse {
         href?: string;
       };
     };
+  }>;
+}
+
+interface EspnCoreNewsResponse {
+  headlines?: Array<{
+    id?: number | string;
+    headline?: string;
+    title?: string;
+    description?: string;
+    story?: string;
+    images?: Array<{
+      url?: string;
+      type?: string;
+      name?: string;
+      caption?: string;
+    }>;
   }>;
 }
 
@@ -1806,6 +1828,39 @@ async function hydrateMorningBriefPayload(payload: MorningBriefStoredPayload): P
   };
 }
 
+async function hydrateNewsSnapshotPayload(payload: NewsSnapshotPayload): Promise<NewsSnapshotPayload> {
+  const articleIds = payload.articleIds?.length
+    ? payload.articleIds
+    : payload.articles.map((article) => article.id);
+  const canonical = await getCanonicalNewsArticlesByIds(articleIds);
+  if (!canonical.length) {
+    return {
+      ...payload,
+      articles: payload.articles.map(ensureArticleBody),
+    };
+  }
+
+  const canonicalById = new Map(canonical.map((article) => [article.id, article]));
+  return {
+    ...payload,
+    articles: payload.articles
+      .map((article) => ensureArticleBody(canonicalById.get(article.id) || article)),
+  };
+}
+
+function canonicalNewsDiagnostic(count: number): SourceDiagnostic {
+  return {
+    id: "news-articles",
+    name: "Persistent news articles",
+    adapter: "generic-json",
+    type: "news",
+    ok: count > 0,
+    fromCache: true,
+    message: `loaded ${count} articles from canonical news storage`,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
 async function persistMorningBriefMatches(brief: MorningBrief): Promise<MorningBrief> {
   await persistCanonicalMatches(brief.matches, "ai-match-briefs");
   return brief;
@@ -2858,6 +2913,58 @@ function extractArticleTextFromHtml(html: string): string {
   return normalizeArticleText(unique.join("\n\n"));
 }
 
+function isEspnArticle(article: NewsArticle): boolean {
+  return article.id.startsWith("espn-")
+    || article.domain === "espn.com"
+    || /(^|\.)espn\.com$/i.test(articleDomain(article.url) || "");
+}
+
+function espnArticleContentId(article: NewsArticle): string | undefined {
+  const idMatch = article.id.match(/^espn-(\d+)/);
+  if (idMatch?.[1]) return idMatch[1];
+  const urlMatch = article.url.match(/\/id\/(\d+)/);
+  return urlMatch?.[1];
+}
+
+function espnCoreArticleSource(contentId: string): DataSourceConfig {
+  return {
+    id: "espn-soccer-rss",
+    name: "ESPN Core Article API",
+    type: "news",
+    adapter: "espn-site-api",
+    baseUrl: "https://content.core.api.espn.com",
+    endpointPath: `/v1/sports/news/${encodeURIComponent(contentId)}`,
+    apiKey: "",
+    apiKeyPlacement: "none",
+    apiKeyParamName: "",
+    apiKeyHeaderName: "",
+    enabled: true,
+    priority: 5,
+    refreshSeconds: 900,
+    cacheTtlSeconds: 900,
+    timeoutMs: 8000,
+    notes: "Official ESPN Core API article body endpoint.",
+  };
+}
+
+async function fetchEspnCoreArticleText(article: NewsArticle): Promise<string | undefined> {
+  if (!isEspnArticle(article)) return undefined;
+  const contentId = espnArticleContentId(article);
+  if (!contentId) return undefined;
+
+  try {
+    const { data } = await fetchJsonFromSource<EspnCoreNewsResponse>(espnCoreArticleSource(contentId));
+    const story = data.headlines
+      ?.map((headline) => headline.story)
+      .find((value): value is string => Boolean(value?.trim()));
+    if (!story) return undefined;
+    const text = extractArticleTextFromHtml(story);
+    return text.length >= 180 ? text : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function fetchOriginalArticleText(article: NewsArticle): Promise<string | undefined> {
   if (!/^https?:\/\//i.test(article.url)) return undefined;
   const controller = new AbortController();
@@ -2882,6 +2989,20 @@ async function fetchOriginalArticleText(article: NewsArticle): Promise<string | 
   }
 }
 
+async function fetchArticleFullText(article: NewsArticle): Promise<{
+  text: string;
+  bodySource: NonNullable<NewsArticle["bodySource"]>;
+} | undefined> {
+  const providerText = await fetchEspnCoreArticleText(article);
+  if (providerText) return { text: providerText, bodySource: "provider-api" };
+
+  const existingText = normalizeArticleText(article.sourceText, article.summary);
+  if (existingText.length >= 1200 && splitArticleParagraphs(existingText).length >= 3) return undefined;
+
+  const originalText = await fetchOriginalArticleText(article);
+  return originalText ? { text: originalText, bodySource: "original-page" } : undefined;
+}
+
 async function mapWithConcurrency<T, R>(
   items: T[],
   concurrency: number,
@@ -2901,28 +3022,22 @@ async function mapWithConcurrency<T, R>(
 }
 
 async function enrichArticlesWithSourceText(articles: NewsArticle[]): Promise<NewsArticle[]> {
-  const fetchLimit = Math.min(articles.length, 12);
-  const enrichedTop = await mapWithConcurrency(
-    articles.slice(0, fetchLimit),
+  const enriched = await mapWithConcurrency(
+    articles,
     4,
     async (article) => {
-      const remoteText = await fetchOriginalArticleText(article);
-      const sourceText = normalizeArticleText(remoteText, article.sourceText || article.summary);
+      const fullText = await fetchArticleFullText(article);
+      const sourceText = normalizeArticleText(fullText?.text, article.sourceText || article.summary);
       return {
         ...article,
         sourceText,
-        bodySource: remoteText ? "original-page" as const : article.bodySource || (article.sourceText ? "source-api" as const : "summary" as const),
+        body: fullText ? splitArticleParagraphs(sourceText) : article.body,
+        bodySource: fullText?.bodySource || article.bodySource || (article.sourceText ? "source-api" as const : "summary" as const),
+        bodyUpdatedAt: fullText ? new Date().toISOString() : article.bodyUpdatedAt,
       };
     },
   );
-  return [
-    ...enrichedTop,
-    ...articles.slice(fetchLimit).map((article) => ({
-      ...article,
-      sourceText: normalizeArticleText(article.sourceText, article.summary),
-      bodySource: article.bodySource || (article.sourceText ? "source-api" as const : "summary" as const),
-    })),
-  ];
+  return enriched;
 }
 
 function xmlTagValue(xml: string, tag: string): string {
@@ -3826,33 +3941,35 @@ export async function getAggregatedNews(options: {
   };
   const { dataSources, aiProviders, primaryAiProviderId, updatedAt } = await readAdminConfig();
   const windowKey = `${window.publishedAfter?.toISOString() || "any"}:${window.publishedBefore?.toISOString() || "any"}`;
-  const snapshotKey = snapshotKeyFor("news:v8", `${query}:${limit}:${windowKey}`, updatedAt);
+  const snapshotKey = snapshotKeyFor("news:v9", `${query}:${limit}:${windowKey}`, updatedAt);
   const persisted = await readSnapshotCache<NewsSnapshotPayload>(snapshotKey);
   if (shouldUseSnapshot(persisted, (payload) => payload.articles.length > 0, options)) {
+    const payload = await hydrateNewsSnapshotPayload(persisted.payload);
     return {
-      articles: persisted.payload.articles,
+      articles: payload.articles,
       source: "cache",
       diagnostics: [
-        ...persisted.payload.diagnostics,
+        ...payload.diagnostics,
         snapshotDiagnostic(snapshotKey, "news", persisted),
       ],
-      aggregation: persisted.payload.aggregation,
-      curation: persisted.payload.curation,
+      aggregation: payload.aggregation,
+      curation: payload.curation,
     };
   }
 
   if (isCacheFirst(options)) {
     const stale = await readSnapshotCache<NewsSnapshotPayload>(snapshotKey, { allowStale: true });
     if (stale) {
+      const payload = await hydrateNewsSnapshotPayload(stale.payload);
       return {
-        articles: stale.payload.articles,
+        articles: payload.articles,
         source: "cache",
         diagnostics: [
-          ...stale.payload.diagnostics,
+          ...payload.diagnostics,
           snapshotDiagnostic(snapshotKey, "news", stale, true),
         ],
-        aggregation: stale.payload.aggregation,
-        curation: stale.payload.curation,
+        aggregation: payload.aggregation,
+        curation: payload.curation,
       };
     }
   }
@@ -3869,15 +3986,29 @@ export async function getAggregatedNews(options: {
   if (isCacheOnly(options)) {
     const latest = await readLatestSnapshotCache<NewsSnapshotPayload>("news", { allowStale: true });
     if (latest?.payload.articles.length) {
+      const payload = await hydrateNewsSnapshotPayload(latest.payload);
       return {
-        articles: latest.payload.articles.slice(0, limit),
+        articles: payload.articles.slice(0, limit),
         source: "cache",
         diagnostics: [
-          ...latest.payload.diagnostics,
+          ...payload.diagnostics,
           snapshotDiagnostic(latest.snapshotKey, "news", latest, true),
         ],
-        aggregation: latest.payload.aggregation,
-        curation: latest.payload.curation,
+        aggregation: payload.aggregation,
+        curation: payload.curation,
+      };
+    }
+    const canonicalArticles = (await getLatestCanonicalNewsArticles(limit)).map(ensureArticleBody);
+    if (canonicalArticles.length) {
+      return {
+        articles: canonicalArticles,
+        source: "cache",
+        diagnostics: [canonicalNewsDiagnostic(canonicalArticles.length)],
+        aggregation: {
+          ...emptyAggregation,
+          deduplicatedArticleCount: canonicalArticles.length,
+          aiMessage: "从持久化新闻库按发布时间读取。",
+        },
       };
     }
     return {
@@ -3953,15 +4084,16 @@ export async function getAggregatedNews(options: {
 
   const stale = await readSnapshotCache<NewsSnapshotPayload>(snapshotKey, { allowStale: true });
   if (stale?.payload.articles.length) {
+    const payload = await hydrateNewsSnapshotPayload(stale.payload);
     return {
-      articles: stale.payload.articles,
+      articles: payload.articles,
       source: "cache",
       diagnostics: [
         ...diagnostics,
         snapshotDiagnostic(snapshotKey, "news", stale, true),
       ],
-      aggregation: stale.payload.aggregation,
-      curation: stale.payload.curation,
+      aggregation: payload.aggregation,
+      curation: payload.curation,
     };
   }
 
@@ -3985,16 +4117,33 @@ async function getCachedMorningNewsFallback(): Promise<{
   curation?: AiNewsCuration;
 } | undefined> {
   const latest = await readLatestSnapshotCache<NewsSnapshotPayload>("news", { allowStale: true });
-  if (!latest?.payload.articles.length) return undefined;
+  if (!latest?.payload.articles.length) {
+    const canonicalArticles = (await getLatestCanonicalNewsArticles(MORNING_BRIEF_NEWS_LIMIT)).map(ensureArticleBody);
+    if (!canonicalArticles.length) return undefined;
+    return {
+      articles: canonicalArticles,
+      source: "cache",
+      diagnostics: [canonicalNewsDiagnostic(canonicalArticles.length)],
+      aggregation: {
+        fetchedSourceCount: 0,
+        successfulSourceCount: 0,
+        rawArticleCount: canonicalArticles.length,
+        deduplicatedArticleCount: canonicalArticles.length,
+        aiUsed: false,
+        aiMessage: "从持久化新闻库按发布时间读取。",
+      },
+    };
+  }
+  const payload = await hydrateNewsSnapshotPayload(latest.payload);
   return {
-    articles: latest.payload.articles,
+    articles: payload.articles,
     source: "cache",
     diagnostics: [
-      ...latest.payload.diagnostics,
+      ...payload.diagnostics,
       snapshotDiagnostic(latest.snapshotKey, "news", latest, true),
     ],
-    aggregation: latest.payload.aggregation,
-    curation: latest.payload.curation,
+    aggregation: payload.aggregation,
+    curation: payload.curation,
   };
 }
 

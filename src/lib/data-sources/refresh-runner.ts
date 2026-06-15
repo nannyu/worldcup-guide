@@ -13,9 +13,13 @@ import {
   NEWS_TRANSLATION_LIMIT,
 } from "@/lib/data-sources/aggregate";
 import { getWorldCupActivity } from "@/lib/data-sources/rate-policy";
+import {
+  enqueueArticleTranslation,
+  enqueueArticleTranslations,
+} from "@/lib/background/news-translation-jobs";
 import { recordIngestionRun } from "@/lib/db/queries/ingestion-runs";
 import { teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
-import { morningBriefTranslationArticle, translateArticleAndCache } from "@/lib/translation/article-translation";
+import { morningBriefTranslationArticle } from "@/lib/translation/article-translation";
 import {
   allScheduleDayGroups,
   beijingScheduleUtcDayBounds,
@@ -116,10 +120,8 @@ function historicalScheduleDates(): Array<{ date: string; bounds: ScheduleUtcDay
 
 async function refreshMorning(dateKey: ScheduleDateKey): Promise<RefreshTaskResult> {
   const result = await getAggregatedMorningBrief(dateKey, { cacheMode: "refresh" });
-  await translateArticleAndCache(morningBriefTranslationArticle(result.brief));
-  for (const article of result.brief.news.slice(0, NEWS_TRANSLATION_LIMIT)) {
-    await translateArticleAndCache(article);
-  }
+  await enqueueArticleTranslation(morningBriefTranslationArticle(result.brief));
+  await enqueueArticleTranslations(result.brief.news, NEWS_TRANSLATION_LIMIT);
   return {
     name: `morning:${dateKey}`,
     ok: true,
@@ -137,9 +139,7 @@ async function refreshNewsWindow(daysAgo: number): Promise<RefreshTaskResult> {
     publishedBefore: end,
     cacheMode: "refresh",
   });
-  for (const article of result.articles.slice(0, NEWS_TRANSLATION_LIMIT)) {
-    await translateArticleAndCache(article);
-  }
+  await enqueueArticleTranslations(result.articles, NEWS_TRANSLATION_LIMIT);
   return {
     name: `news:last-${daysAgo}d`,
     ok: true,
@@ -235,9 +235,7 @@ export async function runDataRefresh(mode: "scheduled" | "initialize" = "schedul
   } else if (enabledTypes.has("news")) {
     tasks.push(await task("news:current", async () => {
       const result = await getAggregatedNews({ limit: MORNING_BRIEF_NEWS_LIMIT, cacheMode: "refresh" });
-      for (const article of result.articles.slice(0, NEWS_TRANSLATION_LIMIT)) {
-        await translateArticleAndCache(article);
-      }
+      await enqueueArticleTranslations(result.articles, NEWS_TRANSLATION_LIMIT);
       return {
         name: "news:current",
         ok: true,

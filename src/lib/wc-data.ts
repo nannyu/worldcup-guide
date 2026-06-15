@@ -424,7 +424,7 @@ export interface NewsArticle {
   language?: string;
   country?: string;
   sourceText?: string;
-  bodySource?: "original-page" | "source-api" | "summary";
+  bodySource?: "original-page" | "provider-api" | "source-api" | "summary";
   bodyUpdatedAt?: string;
   bodyZh?: string[];
   bodyEn?: string[];

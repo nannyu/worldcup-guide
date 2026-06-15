@@ -1,4 +1,4 @@
-import { inArray } from "drizzle-orm";
+import { desc, inArray } from "drizzle-orm";
 import { getDb, isDatabaseConfigured } from "../client";
 import { newsArticles } from "../schema/world-cup";
 import type { NewsArticle } from "@/lib/wc-data";
@@ -78,6 +78,32 @@ export async function getCanonicalNewsArticlesByIds(articleIds: string[]): Promi
     if (process.env.NODE_ENV !== "production") {
       console.warn(
         "[news-articles] read skipped:",
+        error instanceof Error ? error.message : error,
+      );
+    }
+    return [];
+  }
+}
+
+export async function getLatestCanonicalNewsArticles(limit = 60): Promise<NewsArticle[]> {
+  const normalizedLimit = Number.isFinite(limit)
+    ? Math.min(Math.max(Math.round(limit), 1), 100)
+    : 60;
+  if (!isDatabaseConfigured) return [];
+
+  try {
+    const rows = await getDb()
+      .select()
+      .from(newsArticles)
+      .orderBy(desc(newsArticles.publishedAt))
+      .limit(normalizedLimit);
+    return rows
+      .map((row) => row.payload as NewsArticle)
+      .filter((article) => Boolean(article?.id && article.url));
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        "[news-articles] latest read skipped:",
         error instanceof Error ? error.message : error,
       );
     }

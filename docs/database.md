@@ -30,6 +30,7 @@ The Compose `init` service runs migrations first and then runs `data:init`. `dat
 - `teams`: FIFA team code, display data, and source payload.
 - `venues`: stadium, city, country, and UTC offset.
 - `matches`: official schedule, kickoff timestamp, participants/placeholders, score, status, and source payload.
+- `news_articles`: canonical news records keyed by stable article ID. Refresh jobs store full body text, image URLs, AI curation fields, and queued translation output here so page snapshots can be hydrated with the newest article payload.
 - `market_snapshots`: append-only probability and volume history for prediction markets.
 - `ingestion_runs`: audit trail for scheduled/manual source synchronization.
 
@@ -47,13 +48,14 @@ The Compose `init` service runs migrations first and then runs `data:init`. `dat
 ## Read And Refresh Strategy
 
 1. Page APIs default to `cache-only`: read a normalized snapshot from `data_snapshots`, including stale snapshots when allowed, and return immediately.
-2. If no snapshot exists, schedule routes can enqueue `background_jobs`; regular page reads avoid external fetches in production request paths.
-3. `?refresh=1` on selected data APIs uses refresh mode and is intended for admin/manual refresh flows, not high-traffic page loads.
-4. `GET /api/data/cron/refresh` checks `CRON_SECRET` when configured.
-5. Vercel Cron requests and `?wait=1` run `runDataRefresh()` synchronously. Other manual calls enqueue a full refresh job and return `202`.
-6. Railway worker runs the Node/tsx production command from `railway.json`, claims queued jobs with row locks, executes refresh logic, and writes new raw fetches plus feature snapshots. Local development can still run `bun run worker`.
-7. For each source, refresh logic reads `data_source_fetches` before making an external request.
-8. If providers fail during refresh, the application uses the latest stale normalized snapshot, seeded official schedule, or repository FIFA JSON fallback.
+2. News snapshots store retained article IDs and are hydrated from `news_articles` before returning, so full-text enrichment and queued translations can update cached pages without forcing a remote refresh.
+3. If no snapshot exists, schedule routes can enqueue `background_jobs`; regular page reads avoid external fetches in production request paths. News pages can also fall back to latest canonical `news_articles` ordered by `publishedAt`.
+4. `?refresh=1` on selected data APIs uses refresh mode and is intended for admin/manual refresh flows, not high-traffic page loads.
+5. `GET /api/data/cron/refresh` checks `CRON_SECRET` when configured.
+6. Vercel Cron requests and `?wait=1` run `runDataRefresh()` synchronously. Other manual calls enqueue a full refresh job and return `202`.
+7. Railway worker runs the Node/tsx production command from `railway.json`, claims queued jobs with row locks, executes refresh logic, and writes new raw fetches plus feature snapshots. Local development can still run `bun run worker`.
+8. For each source, refresh logic reads `data_source_fetches` before making an external request.
+9. If providers fail during refresh, the application uses the latest stale normalized snapshot, seeded official schedule, or repository FIFA JSON fallback.
 
 In local development, missing `DATABASE_URL` falls back to `data/runtime-cache.json` so the UI can run without PostgreSQL. In production, `DATABASE_URL` is required and runtime file cache is disabled.
 
