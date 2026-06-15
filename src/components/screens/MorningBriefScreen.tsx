@@ -11,7 +11,7 @@ import {
   type MorningBrief,
   type NewsArticle,
 } from "@/lib/wc-data";
-import { articleKeyPoints, articleSummary, articleTitle, articleTranslationState, teamName, tr } from "@/lib/i18n/content";
+import { articleBody, articleKeyPoints, articleSummary, articleTitle, articleTranslationState, teamName, tr } from "@/lib/i18n/content";
 
 // Event tag labels
 const tagLabels: Record<string, { label: string; color: string }> = {
@@ -373,9 +373,17 @@ function isEnglishArticle(article: NewsArticle): boolean {
     || looksEnglish(article.aiSummary);
 }
 
+function newsCardParagraphs(article: NewsArticle, locale: string): string[] {
+  const summary = articleSummary(article, locale);
+  return articleBody(article, locale)
+    .filter((paragraph) => paragraph && paragraph !== summary)
+    .slice(0, 2);
+}
+
 function NewsCard({ item, locale }: { item: NewsArticle; locale: string }) {
   const displayedSummary = articleSummary(item, locale);
   const keyPoints = articleKeyPoints(item, locale);
+  const bodyParagraphs = newsCardParagraphs(item, locale);
   const showBilingual = isChineseLocale(locale) && isEnglishArticle(item);
   const translationState = articleTranslationState(item, locale);
   const translationLabel = translationState === "translated"
@@ -392,6 +400,11 @@ function NewsCard({ item, locale }: { item: NewsArticle; locale: string }) {
       whileTap={{ scale: 0.98 }}
     >
       <Link href={`/news/${encodeURIComponent(item.id)}`} className="block">
+        {item.imageUrl && (
+          <div className="mb-3 aspect-[16/9] overflow-hidden border border-[#241A14] bg-[#EDE9E0]">
+            <img src={item.imageUrl} alt={articleTitle(item, locale)} className="h-full w-full object-cover" loading="lazy" />
+          </div>
+        )}
         <div className="flex justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h4 className="font-bold text-sm text-[#241A14] leading-snug" style={{ fontFamily: "var(--font-heading)" }}>
@@ -411,6 +424,13 @@ function NewsCard({ item, locale }: { item: NewsArticle; locale: string }) {
             {englishSummary}
           </p>
         )}
+        {bodyParagraphs.length > 0 && (
+          <div className="mt-2 space-y-1.5 border-t border-dashed border-[#241A14]/20 pt-2 text-xs leading-6 text-[#3C332D]">
+            {bodyParagraphs.map((paragraph, index) => (
+              <p key={`${item.id}-body-${index}`}>{paragraph}</p>
+            ))}
+          </div>
+        )}
         {keyPoints.length > 0 && (
           <ul className="mt-2 space-y-1 border-l-2 border-[#9CB48A] pl-2">
             {keyPoints.map((point) => (
@@ -427,6 +447,7 @@ function NewsCard({ item, locale }: { item: NewsArticle; locale: string }) {
         {item.language && <span>· {item.language}</span>}
         {item.country && <span>· {item.country}</span>}
         {translationLabel && <span>· {translationLabel}</span>}
+        {item.bodySource && <span>· {item.bodySource === "original-page" ? tr(locale, "已抓全文", "full text") : tr(locale, "正文预览", "body preview")}</span>}
       </div>
     </motion.div>
   );

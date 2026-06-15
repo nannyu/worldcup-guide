@@ -1756,6 +1756,12 @@ function newsArticlePreview(article: NewsArticle): NewsArticle {
     domain: article.domain,
     language: article.language,
     country: article.country,
+    sourceText: article.sourceText,
+    bodySource: article.bodySource,
+    bodyUpdatedAt: article.bodyUpdatedAt,
+    bodyZh: article.bodyZh,
+    bodyEn: article.bodyEn,
+    body: article.body,
     relatedSources: article.relatedSources,
     relatedUrls: article.relatedUrls,
     sourceCount: article.sourceCount,
@@ -3861,6 +3867,19 @@ export async function getAggregatedNews(options: {
   };
 
   if (isCacheOnly(options)) {
+    const latest = await readLatestSnapshotCache<NewsSnapshotPayload>("news", { allowStale: true });
+    if (latest?.payload.articles.length) {
+      return {
+        articles: latest.payload.articles.slice(0, limit),
+        source: "cache",
+        diagnostics: [
+          ...latest.payload.diagnostics,
+          snapshotDiagnostic(latest.snapshotKey, "news", latest, true),
+        ],
+        aggregation: latest.payload.aggregation,
+        curation: latest.payload.curation,
+      };
+    }
     return {
       articles: [],
       source: "fallback",

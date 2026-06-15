@@ -196,6 +196,12 @@ export function NewsDetailScreen() {
             {article.domain && <p className="mt-2 text-[10px] text-[#9E948C]">{tr(locale, "域名：", "Domain: ")}{article.domain}</p>}
           </header>
 
+          {article.imageUrl && (
+            <div className="overflow-hidden border-2 border-[#241A14] bg-[#EDE9E0]" style={{ boxShadow: "4px 4px 0 0 #241A14" }}>
+              <img src={article.imageUrl} alt={articleTitle(article, locale)} className="aspect-[16/9] w-full object-cover" />
+            </div>
+          )}
+
           <section className="border-l-2 border-[#D36E52] pl-3 text-sm leading-relaxed text-[#5C524C]">
             <p>{summary || tr(locale, "暂无摘要。", "No summary yet.")}</p>
             {showBilingual && englishSummary && (
