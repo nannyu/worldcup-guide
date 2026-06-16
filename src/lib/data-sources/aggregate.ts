@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
-import { readAdminConfig, type DataSourceConfig } from "@/lib/admin/config";
+import { readAdminConfig, type AiProviderConfig, type DataSourceConfig } from "@/lib/admin/config";
 import { addAiMatchBriefsToMorningMatches } from "@/lib/ai/match-briefs";
+import { generateMorningQuote } from "@/lib/ai/morning-quote";
 import { curateNewsWithAi, type AiNewsCuration } from "@/lib/ai/news-curation";
 import {
   fetchJsonFromSource,
@@ -12,6 +13,7 @@ import { getEffectiveRefreshSeconds, getSourceRefreshPlan } from "@/lib/data-sou
 import {
   getLatestSourceUsageByIds,
   readLatestSnapshotCache,
+  readRecentSnapshotCaches,
   readSnapshotCache,
   upsertSnapshotCache,
 } from "@/lib/db/queries/data-cache";
@@ -49,6 +51,7 @@ import {
   type MatchStatistic,
   type MatchStatus,
   type MorningBrief,
+  type MorningQuote,
   type NewsAggregationMeta,
   type NewsArticle,
   type OddsMatch,
@@ -562,6 +565,8 @@ type MorningBriefStoredPayload = MorningBrief | {
   articleIds: string[];
   newsPreview: NewsArticle[];
 };
+
+type MorningQuoteSnapshotPayload = MorningQuote;
 
 function sourceDateFor(
   dateKey: ScheduleDateKey,
@@ -3248,6 +3253,164 @@ function buildFallbackNewsSummary(news: NewsArticle[], aggregation: NewsAggregat
   return `今日世界杯新闻主线集中在${themes}。${highlightText}${scopeText}`;
 }
 
+function orderAiProviders(providers: AiProviderConfig[], primaryProviderId?: string): AiProviderConfig[] {
+  return providers
+    .slice()
+    .sort((left, right) => {
+      if (left.id === primaryProviderId) return -1;
+      if (right.id === primaryProviderId) return 1;
+      return 0;
+    });
+}
+
+function morningQuoteSnapshotPrefix(dateKey: ScheduleDateKey, dateRange: ScheduleUtcDayBounds): string {
+  return `morning-quote:v1:${dateKey}:${dateRangeSnapshotKey(dateRange)}:`;
+}
+
+function selectMorningQuoteNews(news: NewsArticle[]): NewsArticle[] {
+  return news
+    .map((article, index) => ({
+      article,
+      index,
+      score: article.aiScore ?? worldCupRelevanceScore(article) * 8,
+      sourceCount: article.sourceCount || article.relatedSources?.length || 1,
+      published: new Date(article.publishedAt).getTime(),
+    }))
+    .sort((left, right) =>
+      right.score - left.score
+      || right.sourceCount - left.sourceCount
+      || (Number.isFinite(right.published) ? right.published : 0) - (Number.isFinite(left.published) ? left.published : 0)
+      || left.index - right.index,
+    )
+    .slice(0, 5)
+    .map((item) => item.article);
+}
+
+function matchUpdateFingerprint(match: Match) {
+  return {
+    id: match.id,
+    status: match.status,
+    homeScore: match.homeScore,
+    awayScore: match.awayScore,
+    updatedAt: match.updatedAt,
+    aiBriefZh: match.aiBriefZh,
+    events: match.events?.map((event) => ({
+      minute: event.minute,
+      type: event.type,
+      player: event.player,
+      team: event.team,
+      description: event.description,
+    })) || [],
+  };
+}
+
+function morningQuoteInputHash(news: NewsArticle[], matches: Match[]): string {
+  const payload = {
+    news: news.map((article) => ({
+      id: article.id,
+      title: article.titleZh || article.title,
+      summary: article.summaryZh || article.aiSummary || article.summary,
+      aiScore: article.aiScore,
+      publishedAt: article.publishedAt,
+      sourceCount: article.sourceCount,
+    })),
+    matches: matches.map(matchUpdateFingerprint),
+  };
+  return createHash("sha256").update(JSON.stringify(payload)).digest("hex").slice(0, 16);
+}
+
+async function readMorningQuoteHistory(
+  dateKey: ScheduleDateKey,
+  dateRange: ScheduleUtcDayBounds,
+  limit = 12,
+): Promise<MorningQuote[]> {
+  const rows = await readRecentSnapshotCaches<MorningQuoteSnapshotPayload>("morning-quote", {
+    allowStale: true,
+    limit,
+    snapshotKeyPrefix: morningQuoteSnapshotPrefix(dateKey, dateRange),
+  });
+  const seen = new Set<string>();
+  return rows
+    .map((row) => row.payload)
+    .filter((quote): quote is MorningQuote => Boolean(quote?.id && quote.text))
+    .filter((quote) => {
+      const key = `${quote.inputHash}:${quote.text}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function applyMorningQuoteHistory(brief: MorningBrief, history: MorningQuote[]): MorningBrief {
+  const latest = history[0];
+  return {
+    ...brief,
+    quote: latest?.text || brief.quote,
+    quoteHistory: history,
+  };
+}
+
+async function finalizeMorningBrief(
+  brief: MorningBrief,
+  dateKey: ScheduleDateKey,
+  dateRange: ScheduleUtcDayBounds,
+): Promise<MorningBrief> {
+  const persisted = await persistMorningBriefMatches(brief);
+  const history = await readMorningQuoteHistory(dateKey, dateRange);
+  return applyMorningQuoteHistory(persisted, history);
+}
+
+async function getOrCreateMorningQuote(input: {
+  dateKey: ScheduleDateKey;
+  dateRange: ScheduleUtcDayBounds;
+  news: NewsArticle[];
+  matches: Match[];
+  aiProviders: AiProviderConfig[];
+  primaryAiProviderId?: string;
+  adminUpdatedAt: string;
+  disabled?: boolean;
+}): Promise<{ quote?: MorningQuote; history: MorningQuote[] }> {
+  const keyNews = selectMorningQuoteNews(input.news);
+  if (!keyNews.length && !input.matches.length) {
+    return { history: await readMorningQuoteHistory(input.dateKey, input.dateRange) };
+  }
+
+  const inputHash = morningQuoteInputHash(keyNews, input.matches);
+  const snapshotPrefix = morningQuoteSnapshotPrefix(input.dateKey, input.dateRange);
+  const snapshotKey = `${snapshotPrefix}${inputHash}:${input.adminUpdatedAt}`;
+  const persisted = await readSnapshotCache<MorningQuoteSnapshotPayload>(snapshotKey, { allowStale: true });
+  if (persisted?.payload) {
+    return {
+      quote: persisted.payload,
+      history: await readMorningQuoteHistory(input.dateKey, input.dateRange),
+    };
+  }
+
+  const quote = await generateMorningQuote({
+    providers: orderAiProviders(input.aiProviders, input.primaryAiProviderId),
+    news: keyNews,
+    matches: input.matches,
+    dateKey: input.dateKey,
+    inputHash,
+    disabled: input.disabled,
+  });
+  await upsertSnapshotCache({
+    snapshotKey,
+    feature: "morning-quote",
+    sourceMode: quote.source === "ai" ? "remote" : "fallback",
+    sourceId: quote.providerName || "rules-morning-quote",
+    payload: quote,
+    diagnostics: {
+      inputHash,
+      newsArticleIds: quote.newsArticleIds,
+      matchIds: quote.matchIds,
+    },
+    ttlSeconds: 180 * 24 * 60 * 60,
+  });
+  const history = await readMorningQuoteHistory(input.dateKey, input.dateRange);
+  return { quote, history: history.some((item) => item.id === quote.id) ? history : [quote, ...history] };
+}
+
 function buildMorningBrief(input: {
   matches: Match[];
   news: NewsArticle[];
@@ -3256,6 +3419,8 @@ function buildMorningBrief(input: {
   sourceDate?: string;
   aggregation: NewsAggregationMeta;
   curation?: AiNewsCuration;
+  quote?: MorningQuote;
+  quoteHistory?: MorningQuote[];
 }): MorningBrief {
   const finishedMatches = input.matches.filter((match) => match.status === "finished");
   const headlineMatch = finishedMatches[0] || input.matches[0];
@@ -3277,7 +3442,8 @@ function buildMorningBrief(input: {
     edition,
     title: input.curation?.title || topNews?.titleZh || fallbackTitle,
     summary: input.curation?.summary || fallbackSummary,
-    quote: input.curation?.quote || (topNews ? articleFocusSentence(topNews) || shortenText(topNews.summaryZh || topNews.summary, 96) : ""),
+    quote: input.quote?.text || (topNews ? articleFocusSentence(topNews) || shortenText(topNews.summaryZh || topNews.summary, 96) : ""),
+    quoteHistory: input.quoteHistory || [],
     sourceLabel: input.sourceLabel,
     updatedAt: new Date().toISOString(),
     matches: input.matches,
@@ -4156,12 +4322,12 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
   const newsWindow = rollingRecentNewsWindow();
   const sourceDate = sourceDateFor(dateKey, options);
   const dateRange = dateRangeFor(dateKey, options);
-  const snapshotPrefix = `morning:v18:${dateKey}:${dateRangeSnapshotKey(dateRange)}:`;
+  const snapshotPrefix = `morning:v19:${dateKey}:${dateRangeSnapshotKey(dateRange)}:`;
   const snapshotKey = `${snapshotPrefix}${newsWindow.cacheKey}:${updatedAt}`;
   const persisted = await readSnapshotCache<MorningBriefStoredPayload>(snapshotKey);
   if (persisted?.payload && options.cacheMode !== "refresh") {
     return {
-      brief: await persistMorningBriefMatches(await hydrateMorningBriefPayload(persisted.payload)),
+      brief: await finalizeMorningBrief(await hydrateMorningBriefPayload(persisted.payload), dateKey, dateRange),
       source: "cache",
       diagnostics: [snapshotDiagnostic(snapshotKey, "news", persisted)],
     };
@@ -4171,7 +4337,7 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
     const stale = await readSnapshotCache<MorningBriefStoredPayload>(snapshotKey, { allowStale: true });
     if (stale?.payload) {
       return {
-        brief: await persistMorningBriefMatches(await hydrateMorningBriefPayload(stale.payload)),
+        brief: await finalizeMorningBrief(await hydrateMorningBriefPayload(stale.payload), dateKey, dateRange),
         source: "cache",
         diagnostics: [snapshotDiagnostic(snapshotKey, "news", stale, true)],
       };
@@ -4182,7 +4348,7 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
     const latestSameDay = await readLatestSnapshotCache<MorningBriefStoredPayload>("morning", { allowStale: true });
     if (latestSameDay?.payload && latestSameDay.snapshotKey.startsWith(snapshotPrefix)) {
       return {
-        brief: await persistMorningBriefMatches(await hydrateMorningBriefPayload(latestSameDay.payload)),
+        brief: await finalizeMorningBrief(await hydrateMorningBriefPayload(latestSameDay.payload), dateKey, dateRange),
         source: "cache",
         diagnostics: [snapshotDiagnostic(latestSameDay.snapshotKey, "news", latestSameDay, true)],
       };
@@ -4234,7 +4400,7 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
       curation: newsResult.curation,
     });
     return {
-      brief: await persistMorningBriefMatches(fallbackBrief),
+      brief: await finalizeMorningBrief(fallbackBrief, dateKey, dateRange),
       source: newsResult.source === "cache" || matchesResult.source === "cache" ? "cache" : "fallback",
       diagnostics: [...matchesResult.diagnostics, ...newsResult.diagnostics],
     };
@@ -4270,6 +4436,16 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
     disabled: options.useAi === false,
   });
   await persistCanonicalMatches(matchBriefResult.matches, "ai-match-briefs");
+  const quoteResult = await getOrCreateMorningQuote({
+    dateKey,
+    dateRange,
+    news: newsResult.articles,
+    matches: matchBriefResult.matches,
+    aiProviders,
+    primaryAiProviderId,
+    adminUpdatedAt: updatedAt,
+    disabled: options.useAi === false,
+  });
   const brief = buildMorningBrief({
     matches: matchBriefResult.matches,
     news: newsResult.articles,
@@ -4278,6 +4454,8 @@ export async function getAggregatedMorningBrief(dateKey: ScheduleDateKey, option
     sourceDate,
     aggregation: newsResult.aggregation,
     curation: newsResult.curation,
+    quote: quoteResult.quote,
+    quoteHistory: quoteResult.history,
   });
   const diagnostics = [...matchesResult.diagnostics, ...newsResult.diagnostics];
 

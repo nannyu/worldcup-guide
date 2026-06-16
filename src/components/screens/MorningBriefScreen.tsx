@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { History } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import {
@@ -355,6 +356,17 @@ function formatArticleTime(input: string, locale = "zh-CN"): string {
   }).format(date);
 }
 
+function formatQuoteTime(input: string, locale = "zh-CN"): string {
+  const date = new Date(input);
+  if (Number.isNaN(date.getTime())) return tr(locale, "时间未知", "Unknown time");
+  return new Intl.DateTimeFormat(locale.startsWith("zh") ? "zh-CN" : "en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 function isChineseLocale(locale: string): boolean {
   return locale.toLowerCase().startsWith("zh");
 }
@@ -539,6 +551,65 @@ function sortNewsByPublishedDesc(news: NewsArticle[]): NewsArticle[] {
     .map((item) => item.article);
 }
 
+const popularTeamWeights: Array<[RegExp, number]> = [
+  [/argentina|阿根廷/i, 100],
+  [/brazil|巴西/i, 98],
+  [/france|法国/i, 96],
+  [/england|英格兰/i, 94],
+  [/spain|西班牙/i, 92],
+  [/germany|德国/i, 90],
+  [/portugal|葡萄牙/i, 88],
+  [/netherlands|荷兰/i, 86],
+  [/italy|意大利/i, 84],
+  [/uruguay|乌拉圭/i, 82],
+  [/mexico|墨西哥/i, 80],
+  [/united states|usa|美国/i, 78],
+  [/canada|加拿大/i, 76],
+  [/japan|日本/i, 72],
+  [/morocco|摩洛哥/i, 70],
+  [/croatia|克罗地亚/i, 68],
+  [/belgium|比利时/i, 66],
+  [/cape verde|cabo verde|佛得角/i, 64],
+  [/saudi arabia|沙特/i, 58],
+];
+
+function popularTeamWeight(match: Match): number {
+  const text = `${match.homeTeam} ${match.awayTeam}`.toLowerCase();
+  return popularTeamWeights.reduce((score, [pattern, weight]) => pattern.test(text) ? Math.max(score, weight) : score, 0);
+}
+
+function matchStatusWeight(match: Match, now: Date): number {
+  if (match.status === "finished") return 40;
+  if (match.status === "live") return 35;
+  if (hasMatchStarted(match, now)) return 25;
+  return 0;
+}
+
+function subtitleMatchScore(match: Match, locale: string, now: Date): string {
+  const title = `${teamName(match.homeTeam, locale)} vs ${teamName(match.awayTeam, locale)}`;
+  if (match.homeScore !== null && match.awayScore !== null) {
+    return `${title} ${match.homeScore}:${match.awayScore}`;
+  }
+  if (hasMatchStarted(match, now)) {
+    return `${title} ${tr(locale, "等待比分源", "waiting for score feed")}`;
+  }
+  return `${title} ${tr(locale, "待开赛", "upcoming")}`;
+}
+
+function morningSubtitleMatch(matches: Match[], now: Date): Match | undefined {
+  return matches
+    .map((match, index) => {
+      const kickoff = matchKickoffDate(match)?.getTime();
+      const recency = Number.isFinite(kickoff) ? -Math.abs(now.getTime() - Number(kickoff)) / 3_600_000 : -999;
+      return {
+        match,
+        index,
+        score: popularTeamWeight(match) * 100 + matchStatusWeight(match, now) * 10 + recency,
+      };
+    })
+    .sort((left, right) => right.score - left.score || left.index - right.index)[0]?.match;
+}
+
 function rankingStatusLabel(
   aggregation: MorningBrief["aggregation"] | undefined,
   locale: string,
@@ -562,7 +633,9 @@ export function MorningBriefScreen() {
   const [brief, setBrief] = useState<MorningBrief>(fallbackMorningBrief);
   const [browserNow, setBrowserNow] = useState(() => new Date());
   const [copied, setCopied] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const quote = brief.quote;
+  const quoteHistory = brief.quoteHistory || [];
   const visibleNews = useMemo(() => dedupeNewsByDisplayedTitle(brief.news, locale), [brief.news, locale]);
   const topNews = useMemo(() => sortTopNews(visibleNews), [visibleNews]);
   const newsColumnItems = useMemo(() => sortNewsByPublishedDesc(visibleNews), [visibleNews]);
@@ -601,9 +674,11 @@ export function MorningBriefScreen() {
     });
   }
 
-  const briefTitle = isChineseLocale(locale) && looksEnglish(brief.title) && brief.titleZh
-    ? brief.titleZh
-    : tr(locale, brief.title || "世界杯早报", "World Cup Morning Brief");
+  const mastheadTitle = tr(locale, "世界杯早报", "World Cup Morning Brief");
+  const mastheadSubtitleMatch = morningSubtitleMatch(brief.matches, browserNow);
+  const mastheadSubtitle = mastheadSubtitleMatch
+    ? subtitleMatchScore(mastheadSubtitleMatch, locale, browserNow)
+    : "";
   const quoteText = isChineseLocale(locale) && looksEnglish(quote) && brief.quoteZh
     ? brief.quoteZh
     : quote;
@@ -626,8 +701,13 @@ export function MorningBriefScreen() {
           className="font-black text-xl leading-tight text-[#241A14]"
           style={{ fontFamily: "var(--font-heading)" }}
         >
-          {briefTitle}
+          {mastheadTitle}
         </h2>
+        {mastheadSubtitle && (
+          <p className="mt-1 truncate text-xs font-bold text-[#6D625A]">
+            {mastheadSubtitle}
+          </p>
+        )}
       </div>
 
       {/* Scrollable content */}
@@ -682,14 +762,51 @@ export function MorningBriefScreen() {
         {/* Quote card */}
         {quote && (
           <div
-            className="border border-[#241A14] bg-[#FAF7F0] p-3 relative"
+            className="border border-[#241A14] bg-[#FAF7F0] p-3 pr-11 relative"
             style={{ boxShadow: "3px 3px 0 0 #241A14" }}
           >
+            <button
+              type="button"
+              aria-label={tr(locale, "历史评论", "Quote history")}
+              disabled={quoteHistory.length === 0}
+              onClick={() => setHistoryOpen((open) => !open)}
+              className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center border border-[#241A14] bg-[#EDE9E0] text-[#241A14] disabled:cursor-not-allowed disabled:opacity-40"
+              title={tr(locale, "历史评论", "Quote history")}
+            >
+              <History className="h-3.5 w-3.5" strokeWidth={2.5} />
+            </button>
             <p className="font-serif text-sm text-[#241A14] leading-relaxed">{quoteText}</p>
             {isChineseLocale(locale) && looksEnglish(quote) && (
               <p className="mt-2 border-l border-[#241A14]/30 pl-2 text-xs leading-6 text-[#8A8078]">
                 {quote}
               </p>
+            )}
+            {historyOpen && quoteHistory.length > 0 && (
+              <div className="mt-3 space-y-2 border-t border-dashed border-[#241A14]/30 pt-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-black tracking-wider text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
+                    {tr(locale, "历史评论", "Quote history")}
+                  </span>
+                  <span className="shrink-0 text-[10px] font-bold text-[#9E948C]">
+                    {quoteHistory.length} {tr(locale, "条", "items")}
+                  </span>
+                </div>
+                <div className="max-h-52 space-y-2 overflow-y-auto pr-1">
+                  {quoteHistory.map((item, index) => (
+                    <div key={`${item.id}-${item.generatedAt}`} className="border border-[#241A14]/25 bg-[#EDE9E0] px-2.5 py-2">
+                      <div className="mb-1 flex items-center justify-between gap-2 text-[10px] text-[#9E948C]">
+                        <span className="font-mono font-black text-[#D36E52]">#{index + 1}</span>
+                        <span className="truncate">
+                          {formatQuoteTime(item.generatedAt, locale)}
+                          {" · "}
+                          {item.source === "ai" ? item.providerName || "AI" : tr(locale, "规则兜底", "fallback")}
+                        </span>
+                      </div>
+                      <p className="text-xs leading-5 text-[#3C332D]">{item.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
             <div className="mt-3 border-t border-dashed border-[#241A14] pt-2 flex justify-between items-center">
               <span className="text-[10px] font-bold text-[#9E948C]">{tr(locale, "复制摘要", "Copy summary")}</span>

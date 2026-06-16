@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { and, count, desc, eq, gt, gte, inArray } from "drizzle-orm";
+import { and, count, desc, eq, gt, gte, inArray, like } from "drizzle-orm";
 import { getDb, isDatabaseConfigured } from "../client";
 import { dataSnapshots, dataSourceFetches, dataSourceUsageEvents } from "../schema/data-cache";
 
@@ -17,6 +17,10 @@ export interface StoredCache<T> {
 }
 
 export interface LatestSnapshotCache<T> extends StoredCache<T> {
+  snapshotKey: string;
+}
+
+export interface SnapshotCacheRecord<T> extends StoredCache<T> {
   snapshotKey: string;
 }
 
@@ -210,6 +214,33 @@ async function readLatestSnapshotFile<T>(
   };
 }
 
+async function readRecentSnapshotFiles<T>(
+  feature: string,
+  options: { allowStale?: boolean; limit?: number; snapshotKeyPrefix?: string } = {},
+): Promise<Array<SnapshotCacheRecord<T>>> {
+  const cache = await readRuntimeCache();
+  const now = new Date();
+  return Object.entries(cache.snapshots)
+    .filter(([snapshotKey, row]) => {
+      const featureMatches = row.feature === feature || snapshotKey.startsWith(`${feature}:`);
+      if (!featureMatches) return false;
+      if (options.snapshotKeyPrefix && !snapshotKey.startsWith(options.snapshotKeyPrefix)) return false;
+      return options.allowStale || new Date(row.expiresAt) > now;
+    })
+    .sort(([, left], [, right]) => new Date(right.computedAt).getTime() - new Date(left.computedAt).getTime())
+    .slice(0, Math.max(1, Math.min(options.limit || 10, 100)))
+    .map(([snapshotKey, row]) => ({
+      snapshotKey,
+      payload: row.payload as T,
+      storage: "file",
+      expiresAt: new Date(row.expiresAt),
+      computedAt: new Date(row.computedAt),
+      sourceMode: row.sourceMode,
+      sourceId: row.sourceId,
+      diagnostics: row.diagnostics,
+    }));
+}
+
 async function upsertSnapshotFile(input: SnapshotCacheInput): Promise<void> {
   const now = new Date();
   const cache = pruneRuntimeCache(await readRuntimeCache(), now);
@@ -387,6 +418,40 @@ export async function readLatestSnapshotCache<T>(
   } catch (error) {
     logDbCacheError("read latest snapshot cache", error);
     return readLatestSnapshotFile<T>(feature, options);
+  }
+}
+
+export async function readRecentSnapshotCaches<T>(
+  feature: string,
+  options: { allowStale?: boolean; limit?: number; snapshotKeyPrefix?: string } = {},
+): Promise<Array<SnapshotCacheRecord<T>>> {
+  if (!isDatabaseConfigured) {
+    assertRuntimeCacheAllowed("read recent snapshot caches");
+    return readRecentSnapshotFiles<T>(feature, options);
+  }
+  try {
+    const clauses = [eq(dataSnapshots.feature, feature)];
+    if (!options.allowStale) clauses.push(gt(dataSnapshots.expiresAt, new Date()));
+    if (options.snapshotKeyPrefix) clauses.push(like(dataSnapshots.snapshotKey, `${options.snapshotKeyPrefix}%`));
+    const rows = await getDb()
+      .select()
+      .from(dataSnapshots)
+      .where(and(...clauses))
+      .orderBy(desc(dataSnapshots.computedAt))
+      .limit(Math.max(1, Math.min(options.limit || 10, 100)));
+    return rows.map((row) => ({
+      snapshotKey: row.snapshotKey,
+      payload: row.payload as T,
+      storage: "database",
+      expiresAt: row.expiresAt,
+      computedAt: row.computedAt,
+      sourceMode: row.sourceMode,
+      sourceId: row.sourceId,
+      diagnostics: row.diagnostics,
+    }));
+  } catch (error) {
+    logDbCacheError("read recent snapshot caches", error);
+    return readRecentSnapshotFiles<T>(feature, options);
   }
 }
 

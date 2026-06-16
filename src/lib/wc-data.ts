@@ -456,6 +456,17 @@ export interface NewsAggregationMeta {
   aiMessage: string;
 }
 
+export interface MorningQuote {
+  id: string;
+  text: string;
+  providerName?: string;
+  source: "ai" | "fallback";
+  inputHash: string;
+  generatedAt: string;
+  newsArticleIds: string[];
+  matchIds: string[];
+}
+
 export interface MorningBrief {
   issueDate: string;
   edition: string;
@@ -465,6 +476,7 @@ export interface MorningBrief {
   summaryZh?: string;
   quote: string;
   quoteZh?: string;
+  quoteHistory?: MorningQuote[];
   sourceLabel: string;
   updatedAt: string;
   matches: Match[];
