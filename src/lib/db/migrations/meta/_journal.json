@@ -36,6 +36,13 @@
       "when": 1781172000000,
       "tag": "0004_match_canonical_payload",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1781680000000,
+      "tag": "0005_analytics_events",
+      "breakpoints": true
     }
   ]
 }
