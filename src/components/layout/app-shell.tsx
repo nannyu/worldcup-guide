@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { BottomNav, SidebarNav } from "@/components/layout/nav";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { AnalyticsTracker } from "@/components/analytics/analytics-tracker";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -15,6 +16,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <AnalyticsTracker />
       <div className="flex min-h-svh">
         <SidebarNav />
         <main className="flex-1 flex flex-col min-w-0 pb-[72px] md:pb-0">
