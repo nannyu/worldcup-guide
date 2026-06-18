@@ -1,0 +1,1249 @@
+小组,队伍中文,队伍英文,FIFA代码,页码,球衣号码,位置代码,位置英文,球员英文名,球员中文名,英文名,英文姓,球衣名,出生日期,所属俱乐部英文,所属俱乐部中文,身高cm,国家队出场,国家队进球,中文名单位置,匹配分数,匹配方式
+J组,阿尔及利亚,Algeria,ALG,1,1,GK,Goalkeeper,MASTIL Melvin,梅尔文·马斯蒂尔,Melvin Feycal,MASTIL,MASTIL,19/02/2000,FC Stade Nyonnais (SUI),洛桑,194,2,0,门将,100,name_club
+J组,阿尔及利亚,Algeria,ALG,1,2,DF,Defender,MANDI Aissa,艾沙·曼迪,Aissa,MANDI,MANDI,22/10/1991,Lille OSC (FRA),里尔,184,119,8,后卫,100,name_club
+J组,阿尔及利亚,Algeria,ALG,1,3,DF,Defender,ABADA Achref,阿赫雷夫·阿巴达,Achref,ABADA,ABADA,15/06/1999,USM Alger (ALG),ASO车拉幅,185,10,1,后卫,94,name_club
+J组,阿尔及利亚,Algeria,ALG,1,4,DF,Defender,TOUGAI Mohamed Amine,阿明·图加伊,Mohamed Amine,TOUGAI,TOUGAI,22/01/2000,Espérance De Tunisie (TUN),突尼斯希望,186,30,2,后卫,100,name_club
+J组,阿尔及利亚,Algeria,ALG,1,5,DF,Defender,BELAID Zineddine,齐丁·贝莱德,Zineddine,BELAÏD,BELAID,20/03/1999,JS Kabylie (ALG),USM阿尔及尔,186,18,1,后卫,100,name_club
+J组,阿尔及利亚,Algeria,ALG,1,6,MF,Midfielder,ZERROUKI Ramiz,拉米兹·泽鲁基,Ramiz Larbi,ZERROUKI,ZERROUKI,26/05/1998,FC Twente (NED),特温特,183,53,3,,中场,"matched,name_web"
+J组,阿尔及利亚,Algeria,ALG,1,7,FW,Forward,MAHREZ Riyad,里亚德·马赫雷斯,Riyad Karim,MAHREZ,MAHREZ,21/02/1991,Al Ahli FC (KSA),吉达国民,179,116,38,前锋,82.4,name_club
+J组,阿尔及利亚,Algeria,ALG,1,8,MF,Midfielder,AOUAR Houssem,侯瑟姆·奥亚尔,Houssem-Eddine Chaabane,AOUAR,AOUAR,30/06/1998,Al Ittihad (KSA),吉达联合,175,23,6,中场,97.7,name_club
+J组,阿尔及利亚,Algeria,ALG,1,9,FW,Forward,GOUIRI Amine,阿明·古伊里,Amine Ferid,GHOUIRI,GOUIRI,16/02/2000,Olympique Marseille (FRA),马赛,180,23,10,前锋,100,name_club
+J组,阿尔及利亚,Algeria,ALG,1,10,MF,Midfielder,CHAIBI Fares,法雷斯·沙伊比,Fares,CHAIBI,CHAIBI,28/11/2002,Eintracht Frankfurt (GER),法兰克福,183,31,3,中场,100,name_club
+J组,阿尔及利亚,Algeria,ALG,1,11,FW,Forward,HADJ MOUSSA Anis,安尼斯·哈迪·穆萨,Anis,HADJ MOUSSA,HADJ MOUSSA,11/02/2002,Feyenoord Rotterdam (NED),费耶诺德,176,15,2,前锋,100,name_club
+J组,阿尔及利亚,Algeria,ALG,1,12,FW,Forward,BENBOUALI Nadhir,艾哈迈德·纳迪尔·本布利,Ahmed Nadhir,BENBOUALI,BENBOUALI,17/04/2000,Györi ETO FC (HUN),吉奥里,190,4,1,前锋,100,name_club
+J组,阿尔及利亚,Algeria,ALG,1,13,DF,Defender,HADJAM Jaouen,加温·哈达姆,Jaouen Djimmy,HADJAM,HADJAM,26/03/2003,BSC Young Boys (SUI),年轻人,185,18,3,后卫,100,name_club
+J组,阿尔及利亚,Algeria,ALG,1,14,MF,Midfielder,BOUDAOUI Hicham,希查姆·布达维,Hicham,BOUDAOUI,BOUDAOUI,23/09/1999,OGC Nice (FRA),尼斯,175,34,0,中场,100,name_club
+J组,阿尔及利亚,Algeria,ALG,1,15,DF,Defender,AIT-NOURI Rayan,艾特-努里,Rayan,AÏT-NOURI,AIT NOURI,06/06/2001,Manchester City FC (ENG),曼城,180,30,0,后卫,100,name_club
+J组,阿尔及利亚,Algeria,ALG,1,16,GK,Goalkeeper,BENBOT Oussama,奥萨马·本布特,Oussama,BENBOT,BENBOT,11/10/1994,USM Alger (ALG),USM阿尔及尔,188,3,0,门将,83.3,name_club
+J组,阿尔及利亚,Algeria,ALG,1,17,DF,Defender,BELGHALI Rafik,拉菲克·贝尔加利,Rafik,BELGHALI,BELGHALI,07/06/2002,Hellas Verona FC (ITA),维罗纳,180,13,1,后卫,100,name_club
+J组,阿尔及利亚,Algeria,ALG,1,18,FW,Forward,AMOURA Mohamed,穆罕穆德·阿穆拉,Mohammed Elamine,AMOURA,AMOURA,09/05/2000,VfL Wolfsburg (GER),沃尔夫斯堡,170,47,19,前锋,100,name_club
+J组,阿尔及利亚,Algeria,ALG,1,19,MF,Midfielder,BENTALEB Nabil,纳比尔·本塔莱布,Nabil,BENTALEB,BENTALEB,24/11/1994,Lille OSC (FRA),里尔,189,60,6,中场,100,name_club
+J组,阿尔及利亚,Algeria,ALG,1,20,FW,Forward,BOULBINA Adil,阿迪尔·布尔比纳,Adil,BOULBINA,BOULBINA,02/05/2003,Al Duhail SC (QAT),杜海勒,183,11,5,前锋,100,name_club
+J组,阿尔及利亚,Algeria,ALG,1,21,DF,Defender,BENSEBAINI Ramy,拉米·本塞拜尼,Amir Selmane Rami,BENSEBAINI,BENSEBAINI,16/04/1995,Borussia Dortmund (GER),多特蒙德,187,82,9,后卫,100,name_club
+J组,阿尔及利亚,Algeria,ALG,1,22,MF,Midfielder,MAZA Ibrahim,易卜拉欣·马扎,Ibrahim,MAZA,MAZA,24/11/2005,Bayer 04 Leverkusen (GER),勒沃库森,180,17,2,中场,100,name_club
+J组,阿尔及利亚,Algeria,ALG,1,23,GK,Goalkeeper,ZIDANE Luca,卢卡·齐达内,Luca Zinedine,ZIDANE,ZIDANE,13/05/1998,Granada CF (ESP),格拉纳达,183,7,0,门将,100,name_club
+J组,阿尔及利亚,Algeria,ALG,1,24,MF,Midfielder,TITRAOUI Yassine,亚辛·蒂特拉维,Yassine M E G,TITRAOUI,TITRAOUI,26/07/2003,Sporting Charleroi (BEL),沙勒罗瓦,180,5,0,,中场,"matched,name_web"
+J组,阿尔及利亚,Algeria,ALG,1,25,FW,Forward,GHEDJEMIS Fares,法雷斯·盖杰米斯,Fares,GHEDJEMIS,GHEDJEMIS,06/09/2002,Frosinone (ITA),弗洛西诺内,183,1,1,前锋,100,name_club
+J组,阿尔及利亚,Algeria,ALG,1,26,DF,Defender,CHERGUI Samir,萨米尔·谢尔吉,Samir Sophian,CHERGUI,CHERGUI,06/02/1999,Paris FC (FRA),巴黎FC,185,5,0,,后卫,"matched,name_web"
+J组,阿根廷,Argentina,ARG,2,1,GK,Goalkeeper,MUSSO Juan,胡安·穆索,Juan Agustín,MUSSO,MUSSO,06/05/1994,Atlético De Madrid (ESP),马德里竞技,193,4,0,门将,100,name_club
+J组,阿根廷,Argentina,ARG,2,2,DF,Defender,SENESI Marcos,马科斯·塞内西,Marcos Nicolás,SENESI BARON,SENESI,10/05/1997,AFC Bournemouth (ENG),伯恩茅斯,185,3,0,,后卫,"matched,name_web"
+J组,阿根廷,Argentina,ARG,2,3,DF,Defender,TAGLIAFICO Nicolas,尼古拉斯·塔利亚菲科,Nicolás Alejandro,TAGLIAFICO,TAGLIAFICO,31/08/1992,Olympique Lyonnais (FRA),里昂,172,76,1,后卫,69.6,name_club
+J组,阿根廷,Argentina,ARG,2,4,DF,Defender,MONTIEL Gonzalo,冈萨洛·蒙铁尔,Gonzalo Ariel,MONTIEL,MONTIEL,01/01/1997,CA River Plate (ARG),河床,175,39,2,后卫,100,name_club
+J组,阿根廷,Argentina,ARG,2,5,MF,Midfielder,PAREDES Leandro,莱昂德罗·帕雷德斯,Leandro Daniel,PAREDES,PAREDES,29/06/1994,CA Boca Juniors (ARG),博卡青年,182,77,5,中场,100,name_club
+J组,阿根廷,Argentina,ARG,2,6,DF,Defender,MARTINEZ Lisandro,利桑德罗·马丁内斯,Lisandro,MARTÍNEZ,MARTÍNEZ,18/01/1998,Manchester United FC (ENG),曼联,175,28,1,后卫,100,name_club
+J组,阿根廷,Argentina,ARG,2,7,MF,Midfielder,DE PAUL Rodrigo,罗德里戈·德保罗,Rodrigo Javier,DE PAUL,DE PAUL,24/05/1994,Inter Miami CF (USA),迈阿密国际,178,87,2,中场,100,name_club
+J组,阿根廷,Argentina,ARG,2,8,MF,Midfielder,BARCO Valentin,瓦伦丁·巴尔科,Valentin,BARCO,BARCO,23/07/2004,RC Strasbourg (FRA),斯特拉斯堡,172,4,2,中场,100,name_club
+J组,阿根廷,Argentina,ARG,2,9,FW,Forward,ALVAREZ Julian,阿尔瓦雷斯,Julián,ÁLVAREZ,J. ALVAREZ,31/01/2000,Atlético De Madrid (ESP),马德里竞技,170,51,14,前锋,100,name_club
+J组,阿根廷,Argentina,ARG,2,10,FW,Forward,MESSI Lionel,梅西,Lionel Andrés,MESSI,MESSI,24/06/1987,Inter Miami CF (USA),迈阿密国际,170,199,117,前锋,100,name_club
+J组,阿根廷,Argentina,ARG,2,11,MF,Midfielder,LO CELSO Giovani,乔瓦尼·洛塞尔索,Giovani,LO CELSO,LO CELSO,09/04/1996,Real Betis (ESP),皇家贝蒂斯,177,67,4,中场,85.7,name_club
+J组,阿根廷,Argentina,ARG,2,12,GK,Goalkeeper,RULLI Geronimo,格罗尼莫·鲁利,Geronimo,RULLI,RULLI,20/05/1992,Olympique Marseille (FRA),马赛,189,8,0,门将,100,name_club
+J组,阿根廷,Argentina,ARG,2,13,DF,Defender,ROMERO Cristian,克里斯蒂安·罗梅罗,Cristian Gabriel,ROMERO,ROMERO,27/04/1998,Tottenham Hotspur FC (ENG),热刺,185,51,3,后卫,100,name_club
+J组,阿根廷,Argentina,ARG,2,14,MF,Midfielder,PALACIOS Exequiel,埃塞克尔·帕拉西奥斯,Exequiel Alejandro,PALACIOS,PALACIOS,05/10/1998,Bayer 04 Leverkusen (GER),勒沃库森,177,40,0,中场,100,name_club
+J组,阿根廷,Argentina,ARG,2,15,MF,Midfielder,GONZALEZ Nico,尼古拉斯·冈萨雷斯,Nicolas Ivan,GONZALEZ,N. GONZALEZ,06/04/1998,Atlético De Madrid (ESP),马德里竞技,180,51,6,前锋,100,name_club
+J组,阿根廷,Argentina,ARG,2,16,FW,Forward,ALMADA Thiago,蒂亚戈·阿尔马达,Thiago Ezequiel,ALMADA,ALMADA,26/04/2001,Atlético De Madrid (ESP),马德里竞技,171,16,5,前锋,100,name_club
+J组,阿根廷,Argentina,ARG,2,17,FW,Forward,SIMEONE Giuliano,朱利亚诺·西蒙尼,Giuliano,SIMEONE,SIMEONE,18/12/2002,Atlético De Madrid (ESP),马德里竞技,174,13,2,前锋,100,name_club
+J组,阿根廷,Argentina,ARG,2,18,FW,Forward,PAZ Nico,尼科·帕斯,Nicolas,PAZ MARTÍNEZ,NICO PAZ,08/09/2004,Como (ITA),科莫,185,9,1,前锋,100,name_club
+J组,阿根廷,Argentina,ARG,2,19,DF,Defender,OTAMENDI Nicolas,尼古拉斯·奥塔门迪,Nicolas Hernan Gonzalo,OTAMENDI,OTAMENDI,12/02/1988,SL Benfica (POR),本菲卡,182,132,8,后卫,94,name_club
+J组,阿根廷,Argentina,ARG,2,20,MF,Midfielder,MAC ALLISTER Alexis,亚历克西斯·麦卡利斯特,Alexis,MAC ALLISTER,MAC ALLISTER,24/12/1998,Liverpool FC (ENG),利物浦,176,46,6,中场,80,name_club
+J组,阿根廷,Argentina,ARG,2,21,FW,Forward,LOPEZ Jose Manuel,若泽·曼努埃尔·洛佩斯,Jose Manuel Alberto,LOPEZ,LOPEZ,06/12/2000,SE Palmeiras (BRA),帕尔梅拉斯,190,5,0,前锋,100,name_club
+J组,阿根廷,Argentina,ARG,2,22,FW,Forward,MARTINEZ Lautaro,劳塔罗·马丁内斯,Lautaro Javier,MARTÍNEZ,L. MARTINEZ,22/08/1997,FC Internazionale Milano (ITA),国际米兰,175,77,37,,前锋,"matched,name_web"
+J组,阿根廷,Argentina,ARG,2,23,GK,Goalkeeper,MARTINEZ Emiliano,达米安·马丁内斯,Damián Emiliano,MARTÍNEZ,E. MARTINEZ,02/09/1992,Aston Villa FC (ENG),阿斯顿维拉,195,59,0,门将,77.8,name_club
+J组,阿根廷,Argentina,ARG,2,24,MF,Midfielder,FERNANDEZ Enzo,恩佐·费尔南德斯,Enzo Jeremías,FERNÁNDEZ,E. FERNANDEZ,17/01/2001,Chelsea FC (ENG),切尔西,178,42,6,中场,100,name_club
+J组,阿根廷,Argentina,ARG,2,25,DF,Defender,MEDINA Facundo,法昆多·梅迪纳,Facundo Axel,MEDINA,MEDINA,28/05/1999,Olympique Marseille (FRA),马赛,184,9,0,后卫,100,name_club
+J组,阿根廷,Argentina,ARG,2,26,DF,Defender,MOLINA Nahuel,纳韦尔·莫利纳,Nahuel,MOLINA LUCERO,MOLINA,06/04/1998,Atlético De Madrid (ESP),马德里竞技,179,58,1,后卫,100,name_club
+D组,澳大利亚,Australia,AUS,3,1,GK,Goalkeeper,RYAN Mathew,瑞安,Mathew David,RYAN,RYAN,08/04/1992,Levante UD (ESP),莱万特,184,104,0,门将,100,name_club
+D组,澳大利亚,Australia,AUS,3,2,DF,Defender,DEGENEK Milos,米洛斯·迪基尼克,Milos,DEGENEK,DEGENEK,28/04/1994,APOEL FC (CYP),希腊人竞技,187,57,1,后卫,100,name_club
+D组,澳大利亚,Australia,AUS,3,3,DF,Defender,CIRCATI Alessandro,亚历山德罗·奇尔卡蒂,Alessandro,CIRCATI,CIRCATI,10/10/2003,Parma (ITA),帕尔马,191,14,1,,后卫,"matched,name_web"
+D组,澳大利亚,Australia,AUS,3,4,DF,Defender,ITALIANO Jacob,伊塔利亚诺,Jacob Michael,ITALIANO,ITALIANO,30/07/2001,Grazer AK (AUT),格拉茨AK,177,6,0,后卫,100,name_club
+D组,澳大利亚,Australia,AUS,3,5,DF,Defender,BOS Jordan,乔丹·博斯,Jordan Jacob,BOS,BOS,29/10/2002,Feyenoord Rotterdam (NED),费耶诺德,180,28,4,后卫,100,name_club
+D组,澳大利亚,Australia,AUS,3,6,DF,Defender,GERIA Jason,卡梅隆·伯吉斯,Jason Kato,GERIA,GERIA,10/05/1993,Albirex Niigata (JPN),斯旺西,181,15,0,后卫,100,name_club
+D组,澳大利亚,Australia,AUS,3,7,FW,Forward,LECKIE Mathew,马修·莱基,Mathew Allan,LECKIE,LECKIE,04/02/1991,Melbourne City FC (AUS),墨尔本城,181,81,14,前锋,72.6,name_club
+D组,澳大利亚,Australia,AUS,3,8,MF,Midfielder,METCALFE Connor,康纳·梅特卡夫,Connor Isaac,METCALFE,METCALFE,05/11/1999,FC St. Pauli (GER),圣保利,183,37,2,中场,100,name_club
+D组,澳大利亚,Australia,AUS,3,9,FW,Forward,TOURE Mohamed,穆罕默德·图雷,Mohamed A,TOURE,TOURE,26/03/2004,Norwich City FC (ENG),诺维奇,186,11,2,前锋,100,name_club
+D组,澳大利亚,Australia,AUS,3,10,FW,Forward,HRUSTIC Ajdin,阿伊丁·赫鲁斯蒂奇,Ajdin,HRUSTIC,HRUSTIC,05/07/1996,SC Heracles Almelo (NED),赫拉克勒斯,180,37,3,中场,100,name_club
+D组,澳大利亚,Australia,AUS,3,11,FW,Forward,MABIL Awer,奥尔·马比尔,Awer Bul,MABIL,MABIL,15/09/1995,CD Castellón (ESP),卡斯迪隆,178,38,10,前锋,100,name_club
+D组,澳大利亚,Australia,AUS,3,12,GK,Goalkeeper,IZZO Paul,保罗·伊佐,Paul David,IZZO,IZZO,06/01/1995,Randers FC (DEN),兰纳斯,184,4,0,门将,100,name_club
+D组,澳大利亚,Australia,AUS,3,13,MF,Midfielder,ONEILL Aiden,奥尼尔,Aiden Connor,O'NEILL,O'NEILL,04/07/1998,New York City FC (USA),纽约城,180,32,0,中场,100,name_club
+D组,澳大利亚,Australia,AUS,3,14,MF,Midfielder,DEVLIN Cameron,卡梅伦·德夫林,Cameron Peter,DEVLIN,DEVLIN,07/06/1998,Heart Of Midlothian FC (SCO),哈茨,170,5,0,,中场,"matched,name_web"
+D组,澳大利亚,Australia,AUS,3,15,DF,Defender,TREWIN Kai,凯·特里温,Kai Clifton,TREWIN,TREWIN,18/05/2001,New York City FC (USA),纽约城,183,6,0,后卫,100,name_club
+D组,澳大利亚,Australia,AUS,3,16,DF,Defender,BEHICH Aziz,阿齐兹·贝希奇,Aziz,BEHICH,BEHICH,16/12/1990,Melbourne City FC (AUS),墨尔本城,170,85,3,后卫,97.7,name_club
+D组,澳大利亚,Australia,AUS,3,17,FW,Forward,IRANKUNDA Nestory,伊兰昆达,Nestory,IRANKUNDA,IRANKUNDA,09/02/2006,Watford FC (ENG),沃特福德,165,16,6,前锋,100,name_club
+D组,澳大利亚,Australia,AUS,3,18,GK,Goalkeeper,BEACH Patrick,帕特里克·比奇,Patrick Thomas,BEACH,BEACH,06/08/2003,Melbourne City FC (AUS),墨尔本城,189,3,0,门将,100,name_club
+D组,澳大利亚,Australia,AUS,3,19,DF,Defender,SOUTTAR Harry,哈利·苏塔尔,Harry James,SOUTTAR,SOUTTAR,22/10/1998,Leicester City FC (ENG),莱斯特城,198,39,11,后卫,100,name_club
+D组,澳大利亚,Australia,AUS,3,20,FW,Forward,VOLPATO Cristian,克里斯蒂安·沃尔帕托,Cristian,VOLPATO,VOLPATO,15/11/2003,US Sassuolo (ITA),萨索洛,187,1,0,前锋,100,name_club
+D组,澳大利亚,Australia,AUS,3,21,DF,Defender,BURGESS Cameron,卡梅伦·伯吉斯,Cameron Robert,BURGESS,BURGESS,21/10/1995,Swansea City AFC (WAL),斯旺西,194,28,0,,后卫,"matched,name_web"
+D组,澳大利亚,Australia,AUS,3,22,MF,Midfielder,IRVINE Jackson,杰克逊·欧文,Jackson Alexander,IRVINE,IRVINE,07/03/1993,FC St. Pauli (GER),圣保利,189,83,14,中场,85,name_club
+D组,澳大利亚,Australia,AUS,3,23,FW,Forward,VELUPILLAY Nishan,尼山·韦卢皮莱,Nishan Matthew,VELUPILLAY,VELUPILLAY,07/05/2001,Melbourne Victory FC (AUS),墨尔本胜利,181,8,3,前锋,100,name_club
+D组,澳大利亚,Australia,AUS,3,24,MF,Midfielder,OKON-ENGSTLER Paul,保罗·奥孔-恩斯特勒,Paul Michael Junior,OKON-ENGSTLER,OKON-ENGSTLER,24/01/2005,Sydney FC (AUS),悉尼FC,185,7,0,,中场,"matched,name_web"
+D组,澳大利亚,Australia,AUS,3,25,DF,Defender,HERRINGTON Lucas,卢卡斯·赫林顿,Lucas,HERRINGTON,HERRINGTON,05/09/2007,Colorado Rapids (USA),科罗拉多急流,193,4,0,后卫,100,name_club
+D组,澳大利亚,Australia,AUS,3,26,FW,Forward,YENGI Tete,特特·延吉,Tete Owen,YENGI,YENGI,28/11/2000,FC Machida Zelvia (JPN),町田泽维亚,197,2,1,,前锋,"matched,name_web"
+J组,奥地利,Austria,AUT,4,1,GK,Goalkeeper,SCHLAGER Alexander,亚历山大·施拉格,Alexander,SCHLAGER,SCHLAGER,01/02/1996,FC Red Bull Salzburg (AUT),萨尔茨堡,188,26,0,门将,75.2,name_club
+J组,奥地利,Austria,AUT,4,2,DF,Defender,AFFENGRUBER David,大卫·阿芬格鲁伯,David Leopold,AFFENGRUBER,AFFENGRUBER,19/03/2001,Elche CF (ESP),埃尔切,185,1,0,,后卫,"matched,name_web"
+J组,奥地利,Austria,AUT,4,3,DF,Defender,DANSO Kevin,凯文·丹索,Kevin,DANSO,DANSO,19/09/1998,Tottenham Hotspur FC (ENG),托特纳姆热刺,190,32,0,后卫,100,name_club
+J组,奥地利,Austria,AUT,4,4,MF,Midfielder,SCHLAGER Xaver,泽弗尔·施拉格,Xaver,SCHLAGER,XAVER,28/09/1997,RB Leipzig (GER),RB莱比锡,174,51,4,中场,68.4,name_club
+J组,奥地利,Austria,AUT,4,5,DF,Defender,POSCH Stefan,斯蒂芬·波施,Stefan,POSCH,POSCH,14/05/1997,1. FSV Mainz 05 (GER),美因茨,188,52,5,后卫,100,name_club
+J组,奥地利,Austria,AUT,4,6,MF,Midfielder,SEIWALD Nicolas,尼古拉斯·塞沃尔德,Nicolas,SEIWALD,SEIWALD,04/05/2001,RB Leipzig (GER),RB莱比锡,179,47,1,中场,100,name_club
+J组,奥地利,Austria,AUT,4,7,FW,Forward,ARNAUTOVIC Marko,阿瑙托维奇,Marko,ARNAUTOVIC,ARNAUTOVIC,19/04/1989,FK Crvena Zvezda (SRB),贝尔格莱德红星,192,133,47,前锋,100,name_club
+J组,奥地利,Austria,AUT,4,8,DF,Defender,ALABA David,大卫·阿拉巴,David,ALABA,ALABA,24/06/1992,Real Madrid C. F. (ESP),皇家马德里,180,113,15,后卫,94,name_club
+J组,奥地利,Austria,AUT,4,9,MF,Midfielder,SABITZER Marcel,萨比策,Marcel,SABITZER,SABITZER,17/03/1994,Borussia Dortmund (GER),多特蒙德,178,98,26,中场,100,name_club
+J组,奥地利,Austria,AUT,4,10,MF,Midfielder,GRILLITSCH Florian,弗洛里安·格里利奇,Florian,GRILLITSCH,GRILLITSCH,07/08/1995,SC Braga (POR),布拉加,186,59,1,中场,100,name_club
+J组,奥地利,Austria,AUT,4,11,FW,Forward,GREGORITSCH Michael,米歇尔·格雷戈里施,Michael,GREGORITSCH,GREGORITSCH,18/04/1994,FC Augsburg (GER),奥格斯堡,193,75,24,前锋,100,name_club
+J组,奥地利,Austria,AUT,4,12,GK,Goalkeeper,WIEGELE Florian,弗洛里安·维格勒,Florian,WIEGELE,WIEGELE,21/03/2001,FC Viktoria Plzeň (CZE),比尔森胜利,205,1,0,门将,100,name_club
+J组,奥地利,Austria,AUT,4,13,GK,Goalkeeper,PENTZ Patrick,帕特里克·彭茨,Patrick,PENTZ,PENTZ,02/01/1997,Brøndby IF (DEN),布隆德比,183,18,0,,门将,"matched,name_web"
+J组,奥地利,Austria,AUT,4,14,FW,Forward,KALAJDZIC Sasa,萨萨·卡拉季奇,Saša,KALAJDŽIĆ,KALAJDZIC,07/07/1997,LASK Linz (AUT),林茨,200,22,4,前锋,100,name_club
+J组,奥地利,Austria,AUT,4,15,DF,Defender,LIENHART Philipp,菲利普·林哈特,Philipp,LIENHART,LIENHART,11/07/1996,SC Freiburg (GER),弗赖堡,189,41,3,后卫,100,name_club
+J组,奥地利,Austria,AUT,4,16,DF,Defender,MWENE Phillip,菲利普·姆维尼,Phillip,MWENE,MWENE,29/01/1994,1. FSV Mainz 05 (GER),美因茨,170,30,0,后卫,100,name_club
+J组,奥地利,Austria,AUT,4,17,MF,Midfielder,CHUKWUEMEKA Carney,卡尔尼·丘库埃梅卡,Carney Chibueze,CHUKWUEMEKA,CHUKWUEMEKA,20/10/2003,Borussia Dortmund (GER),多特蒙德,187,3,1,中场,100,name_club
+J组,奥地利,Austria,AUT,4,18,MF,Midfielder,SCHMID Romano,罗马诺·施密德,Romano,SCHMID,SCHMID,27/01/2000,SV Werder Bremen (GER),云达不来梅,168,34,3,中场,100,name_club
+J组,奥地利,Austria,AUT,4,19,MF,Midfielder,LJUBICIC Dejan,德扬·柳比契奇,Dejan,LJUBIČIĆ,LJUBICIC,08/10/1997,FC Schalke 04 (GER),沙尔克04,187,9,1,,中场,"matched,name_web"
+J组,奥地利,Austria,AUT,4,20,MF,Midfielder,LAIMER Konrad,莱默,Konrad,LAIMER,LAIMER,27/05/1997,FC Bayern München (GER),拜仁慕尼黑,180,57,7,中场,83.6,name_club
+J组,奥地利,Austria,AUT,4,21,FW,Forward,WIMMER Patrick,帕特里克·维默尔,Patrick,WIMMER,WIMMER,30/05/2001,VfL Wolfsburg (GER),沃尔夫斯堡,182,30,1,中场,100,name_club
+J组,奥地利,Austria,AUT,4,22,MF,Midfielder,PRASS Alexander,亚历山大·普拉斯,Alexander,PRASS,PRASS,26/05/2001,TSG Hoffenheim (GER),霍芬海姆,180,19,0,后卫,100,cross_position_pinyin
+J组,奥地利,Austria,AUT,4,23,DF,Defender,FRIEDL Marco,马尔科·弗里德尔,Marco,FRIEDL,FRIEDL,16/03/1998,SV Werder Bremen (GER),云达不来梅,187,11,0,后卫,100,name_club
+J组,奥地利,Austria,AUT,4,24,MF,Midfielder,WANNER Paul,保尔·万纳尔,Paul,WANNER,WANNER,23/12/2005,PSV Eindhoven (NED),埃因霍温,185,3,0,中场,100,name_club
+J组,奥地利,Austria,AUT,4,25,DF,Defender,SVOBODA Michael,米夏埃尔·斯沃博达,Michael,SVOBODA,SVOBODA,15/10/1998,Venezia FC (ITA),威尼斯,195,4,0,中场,100,cross_position_pinyin
+J组,奥地利,Austria,AUT,4,26,MF,Midfielder,SCHOEPF Alessandro,亚历山德罗·舍普夫,Alessandro Andre,SCHÖPF,SCHÖPF,07/02/1994,Wolfsberger AC (AUT),沃尔夫斯贝格,178,35,6,,中场,"matched,name_web"
+G组,比利时,Belgium,BEL,5,1,GK,Goalkeeper,COURTOIS Thibaut,库尔图瓦,Thibaut Nicolas M,COURTOIS,COURTOIS,11/05/1992,Real Madrid C. F. (ESP),皇马,199,110,0,门将,75,name_club
+G组,比利时,Belgium,BEL,5,2,DF,Defender,DEBAST Zeno,德巴斯特,Zeno Koen,DEBAST,DEBAST,24/10/2003,Sporting CP (POR),葡萄牙体育,189,26,1,后卫,100,name_club
+G组,比利时,Belgium,BEL,5,3,DF,Defender,THEATE Arthur,泰特,Arthur Nicolas R,THEATE,THEATE,25/05/2000,Eintracht Frankfurt (GER),法兰克福,185,33,1,后卫,100,name_club
+G组,比利时,Belgium,BEL,5,4,DF,Defender,MECHELE Brandon,梅赫莱,Brandon Erik,MECHELE,MECHELE,28/01/1993,Club Brugge (BEL),布鲁日,190,10,1,后卫,100,name_club
+G组,比利时,Belgium,BEL,5,5,DF,Defender,DE CUYPER Maxim,德屈佩,Maxim Peter M,DE CUYPER,DE CUYPER,22/12/2000,Brighton & Hove Albion FC (ENG),布莱顿,182,20,4,后卫,100,name_club
+G组,比利时,Belgium,BEL,5,6,MF,Midfielder,WITSEL Axel,维特塞尔,Axel Laurent A,WITSEL,WITSEL,12/01/1989,Girona FC (ESP),赫罗纳,186,138,12,中场,100,name_club
+G组,比利时,Belgium,BEL,5,7,MF,Midfielder,DE BRUYNE Kevin,德布劳内,Kevin,DE BRUYNE,DE BRUYNE,28/06/1991,SSC Napoli (ITA),那不勒斯,181,120,37,中场,100,name_club
+G组,比利时,Belgium,BEL,5,8,MF,Midfielder,TIELEMANS Youri,蒂莱曼斯,Youri Marion A,TIELEMANS,TIELEMANS,07/05/1997,Aston Villa FC (ENG),维拉,176,86,13,中场,88.9,name_club
+G组,比利时,Belgium,BEL,5,9,FW,Forward,LUKAKU Romelu,卢卡库,Romelu,LUKAKU BOLINGOLI,LUKAKU,13/05/1993,SSC Napoli (ITA),那不勒斯,190,127,90,前锋,100,name_club
+G组,比利时,Belgium,BEL,5,10,FW,Forward,TROSSARD Leandro,特罗萨德,Leandro,TROSSARD,TROSSARD,04/12/1994,Arsenal FC (ENG),阿森纳,172,52,12,前锋,100,name_club
+G组,比利时,Belgium,BEL,5,11,FW,Forward,DOKU Jeremy,多库,Jeremy Baffour,DOKU,DOKU,27/05/2002,Manchester City FC (ENG),曼城,173,44,7,前锋,100,name_club
+G组,比利时,Belgium,BEL,5,12,GK,Goalkeeper,LAMMENS Senne,拉门斯,Senne,LAMMENS,LAMMENS,07/07/2002,Manchester United FC (ENG),曼联,193,2,0,门将,100,name_club
+G组,比利时,Belgium,BEL,5,13,GK,Goalkeeper,PENDERS Mike,彭德斯,Mike Louis,PENDERS,PENDERS,31/07/2005,RC Strasbourg (FRA),斯特拉斯堡,200,0,0,门将,100,name_club
+G组,比利时,Belgium,BEL,5,14,FW,Forward,LUKEBAKIO Dodi,卢克巴基奥,Dodi,LUKEBAKIO NGANDOLI,LUKEBAKIO,24/09/1997,SL Benfica (POR),本菲卡,184,30,6,前锋,84.2,name_club
+G组,比利时,Belgium,BEL,5,15,DF,Defender,MEUNIER Thomas,穆尼耶,Thomas Andre A,MEUNIER,MEUNIER,12/09/1991,Lille OSC (FRA),里尔,190,81,10,后卫,100,name_club
+G组,比利时,Belgium,BEL,5,16,DF,Defender,DE WINTER Koni,德温特,Koni,DE WINTER,DE WINTER,12/06/2002,AC Milan (ITA),AC米兰,191,8,0,后卫,100,name_club
+G组,比利时,Belgium,BEL,5,17,FW,Forward,DE KETELAERE Charles,德凯特拉雷,Charles Marc S,DE KETELAERE,DE KETELAERE,10/03/2001,Atalanta Bergamo (ITA),亚特兰大,192,31,6,前锋,100,name_club
+G组,比利时,Belgium,BEL,5,18,DF,Defender,SEYS Joaquin,塞伊斯,Joaquin Ronny,SEYS,SEYS,28/03/2005,Club Brugge (BEL),布鲁日,178,5,0,后卫,100,name_club
+G组,比利时,Belgium,BEL,5,19,MF,Midfielder,MOREIRA Diego,迭戈·莫雷拉,Diego Manuel J,DA SILVA MOREIRA,MOREIRA JR,06/08/2004,RC Strasbourg (FRA),斯特拉斯堡,179,3,0,前锋,99.8,name_club
+G组,比利时,Belgium,BEL,5,20,MF,Midfielder,VANAKEN Hans,瓦纳肯,Hans,VANAKEN,VANAKEN,24/08/1992,Club Brugge (BEL),布鲁日,195,35,7,中场,100,name_club
+G组,比利时,Belgium,BEL,5,21,DF,Defender,CASTAGNE Timothy,卡斯塔涅,Timothy,CASTAGNE,CASTAGNE,05/12/1995,Fulham FC (ENG),富勒姆,185,64,2,后卫,100,name_club
+G组,比利时,Belgium,BEL,5,22,MF,Midfielder,SAELEMAEKERS Alexis,萨勒马科尔斯,Alexis Jesse M,SAELEMAEKERS,SAELEMAEKERS,27/06/1999,AC Milan (ITA),AC米兰,180,24,2,前锋,100,name_club
+G组,比利时,Belgium,BEL,5,23,MF,Midfielder,RASKIN Nicolas,拉斯坎,Nicolas Thierry Y,RASKIN,RASKIN,23/02/2001,Rangers FC (SCO),流浪者,178,14,2,中场,85.7,name_club
+G组,比利时,Belgium,BEL,5,24,MF,Midfielder,ONANA Amadou,阿马杜·奥纳纳,Amadou Ba Z,MVOM ONANA,ONANA,16/08/2001,Aston Villa FC (ENG),维拉,192,30,1,中场,94,name_club
+G组,比利时,Belgium,BEL,5,25,DF,Defender,NGOY Nathan,恩戈伊,Nathan,NGOY,NGOY,10/06/2003,Lille OSC (FRA),里尔,183,5,0,后卫,100,name_club
+G组,比利时,Belgium,BEL,5,26,FW,Forward,FERNANDEZ-PARDO Matias,马蒂亚斯·费尔南德斯-帕尔多,Matias,FERNANDEZ-PARDO,FERNANDEZ-PARDO,03/02/2005,Lille OSC (FRA),里尔,188,3,0,前锋,100,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,1,GK,Goalkeeper,VASILJ Nikola,尼古拉·瓦西里,Nikola,VASILJ,VASILJ,02/12/1995,FC St. Pauli (GER),圣保利,193,27,0,门将,100,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,2,DF,Defender,MUJAKIC Nihad,尼哈德·穆亚基奇,Nihad,MUJAKIĆ,MUJAKIĆ,15/04/1998,Gaziantep FK (TUR),加济安泰普,189,12,1,后卫,100,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,3,DF,Defender,HADZIKADUNIC Dennis,丹尼斯·哈迪卡杜尼克,Dennis,HADŽIKADUNIĆ,HADŽIKADUNIĆ,09/07/1998,UC Sampdoria (ITA),桑普多利亚,191,32,0,后卫,100,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,4,DF,Defender,MUHAREMOVIC Tarik,塔里克·穆哈雷莫维奇,Tarik,MUHAREMOVIĆ,MUHAREMOVIĆ,28/02/2003,US Sassuolo (ITA),萨索洛,192,15,1,后卫,100,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,5,DF,Defender,KOLASINAC Sead,塞亚德·科拉希纳茨,Sead,KOLAŠINAC,KOLAŠINAC,20/06/1993,Atalanta Bergamo (ITA),亚特兰大,183,66,0,后卫,93.3,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,6,MF,Midfielder,TAHIROVIC Benjamin,本杰明·塔希罗维奇,Benjamin,TAHIROVIC,TAHIROVIĆ,03/03/2003,Brøndby IF (DEN),布隆德比,191,29,2,,中场,"matched,name_web"
+B组,波黑,Bosnia And Herzegovina,BIH,6,7,DF,Defender,DEDIC Amar,阿马尔·德蒂奇,Amar,DEDIĆ,DEDIĆ,18/08/2002,SL Benfica (POR),本菲卡,180,29,1,后卫,100,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,8,MF,Midfielder,GIGOVIC Armin,阿尔明·吉戈维奇,Armin,GIGOVIĆ,GIGOVIĆ,06/04/2002,BSC Young Boys (SUI),年轻人,187,21,1,中场,100,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,9,FW,Forward,BAZDAR Samed,萨梅德·巴日达尔,Samed,BAŽDAR,BAŽDAR,31/01/2004,Jagiellonia Białystok (POL),雅盖隆尼亚,189,14,1,前锋,100,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,10,FW,Forward,DEMIROVIC Ermedin,埃尔梅丁·德米罗维奇,Ermedin,DEMIROVIĆ,DEMIROVIĆ,25/03/1998,VfB Stuttgart (GER),斯图加特,185,41,4,前锋,100,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,11,FW,Forward,DZEKO Edin,埃丁·哲科,Edin,DŽEKO,DŽEKO,17/03/1986,FC Schalke 04 (GER),沙尔克04,192,148,73,前锋,100,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,12,GK,Goalkeeper,JURKAS Mladen,姆拉登·尤尔卡斯,Mladen,JURKAS,JURKAS,07/10/2007,FK Borac Banja Luka (BIH),巴尼亚卢卡战士,193,0,0,,门将,"matched,name_web"
+B组,波黑,Bosnia And Herzegovina,BIH,6,13,MF,Midfielder,BASIC Ivan,伊万·巴希奇,Ivan,BAŠIĆ,BAŠIĆ,30/04/2002,FC Astana (KAZ),阿斯塔纳,178,18,0,中场,100,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,14,MF,Midfielder,SUNJIC Ivan,伊万·舒尼奇,Ivan,ŠUNJIĆ,ŠUNJIĆ,09/10/1996,Pafos FC (CYP),帕福斯,183,12,0,中场,100,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,15,MF,Midfielder,MEMIC Amar,阿马尔·梅米奇,Amar,MEMIĆ,MEMIĆ,20/01/2001,FC Viktoria Plzeň (CZE),比尔森胜利,176,14,1,中场,100,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,16,MF,Midfielder,HADZIAHMETOVIC Amir,阿米尔·哈吉艾哈迈托维奇,Amir,HADŽIAHMETOVIĆ,HADŽIAHMETOVIĆ,08/03/1997,Hull City FC (ENG),赫尔城,179,36,0,中场,100,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,17,MF,Midfielder,BURNIC Dzenis,泽尼斯·布尔尼奇,Dženis,BURNIĆ,BURNIĆ,22/05/1998,Karlsruher SC (GER),卡尔斯鲁厄,182,21,0,中场,100,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,18,DF,Defender,KATIC Nikola,尼克拉·卡蒂奇,Nikola,KATIĆ,KATIĆ,10/10/1996,FC Schalke 04 (GER),沙尔克04,194,18,2,后卫,100,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,19,FW,Forward,ALAJBEGOVIC Kerim,克里姆·阿拉伊贝戈维奇,Kerim,ALAJBEGOVIĆ,ALAJBEGOVIĆ,21/09/2007,FC Red Bull Salzburg (AUT),萨尔茨堡红牛,186,11,1,中场,88.9,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,20,FW,Forward,BAJRAKTAREVIC Esmir,埃斯米尔·巴里亚克塔雷维奇,Esmir,BAJRAKTAREVIĆ,BAJRAKTAREVIĆ,10/03/2005,PSV Eindhoven (NED),埃因霍温,175,17,1,前锋,100,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,21,DF,Defender,RADELJIC Stjepan,斯捷潘·拉德里季奇,Stjepan,RADELJIĆ,RADELJIĆ,05/09/1997,HNK Rijeka (CRO),里耶卡,201,5,0,后卫,100,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,22,GK,Goalkeeper,ZLOMISLIC Martin,马丁·兹洛米斯利奇,Martin,ZLOMISLIĆ,ZLOMISLIĆ,16/08/1998,HNK Rijeka (CRO),里耶卡,189,3,0,门将,100,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,23,FW,Forward,TABAKOVIC Haris,哈里斯·塔巴科维奇,Haris,TABAKOVIĆ,TABAKOVIĆ,20/06/1994,Borussia Mönchengladbach (GER),门兴格拉德巴赫,196,10,4,前锋,100,name_club
+B组,波黑,Bosnia And Herzegovina,BIH,6,24,DF,Defender,MALIC Arjan,阿尔扬·马利奇,Arjan,MALIĆ,MALIĆ,28/08/2005,SK Sturm Graz (AUT),格拉茨风暴,188,8,0,,后卫,"matched,name_web"
+B组,波黑,Bosnia And Herzegovina,BIH,6,25,FW,Forward,LUKIC Jovo,约沃·卢基奇,Jovo,LUKIĆ,LUKIĆ,28/11/1998,Universitatea Cluj (ROU),克卢日大学,190,4,1,,前锋,"matched,name_web"
+B组,波黑,Bosnia And Herzegovina,BIH,6,26,MF,Midfielder,MAHMIC Ermin,埃尔明·马赫米奇,Ermin,MAHMIĆ,MAHMIĆ,14/03/2005,FC Slovan Liberec (CZE),利贝雷茨,182,2,0,中场,100,name_club
+C组,巴西,Brazil,BRA,7,1,GK,Goalkeeper,ALISSON,阿利松,Álisson Ramsés,BECKER,A. BECKER,02/10/1992,Liverpool FC (ENG),利物浦,193,79,0,门将,86.8,name_club
+C组,巴西,Brazil,BRA,7,2,MF,Midfielder,EDERSON SILVA,埃德森·席尔瓦,Éderson José,DOS SANTOS LOURENÇO DA SILVA,ÉDERSON S.,07/07/1999,Atalanta Bergamo (ITA),亚特兰大,184,3,0,,中场,"matched,name_web"
+C组,巴西,Brazil,BRA,7,3,DF,Defender,GABRIEL MAGALHAES,加布里埃尔,Gabriel,DOS SANTOS MAGALHÃES,GABRIEL,19/12/1997,Arsenal FC (ENG),阿森纳,190,18,1,后卫,100,name_club
+C组,巴西,Brazil,BRA,7,4,DF,Defender,MARQUINHOS,马尔基尼奥斯,Marcos,AOAS CORREA,MARQUINHOS,14/05/1994,Paris Saint-Germain (FRA),巴黎圣日耳曼,183,106,7,后卫,72.7,name_club
+C组,巴西,Brazil,BRA,7,5,MF,Midfielder,CASEMIRO,卡塞米罗,Carlos Henrique,CASIMIRO,CASEMIRO,23/02/1992,Manchester United FC (ENG),曼联,185,87,9,中场,100,name_club
+C组,巴西,Brazil,BRA,7,6,DF,Defender,ALEX SANDRO,阿莱克斯·桑德罗,Alex Sandro,LOBO SILVA,ALEX SANDRO,26/01/1991,CR Flamengo (BRA),弗拉门戈,180,45,2,后卫,100,name_club
+C组,巴西,Brazil,BRA,7,7,FW,Forward,VINICIUS JUNIOR,维尼修斯,Vinicius José,PAIXÃO DE OLIVEIRA JÚNIOR,VINI JR.,12/07/2000,Real Madrid C. F. (ESP),皇家马德里,176,50,10,,前锋,"matched,name_web"
+C组,巴西,Brazil,BRA,7,8,MF,Midfielder,BRUNO GUIMARAES,布鲁诺·吉马良斯,Bruno,GUIMARÃES RODRIGUEZ MOURA,BRUNO G.,16/11/1997,Newcastle United FC (ENG),纽卡斯尔,182,44,3,,中场,"matched,name_web"
+C组,巴西,Brazil,BRA,7,9,FW,Forward,MATHEUS CUNHA,库尼亚,Matheus,SANTOS CARNEIRO DA CUNHA,CUNHA,27/05/1999,Manchester United FC (ENG),曼联,183,24,1,前锋,100,name_club
+C组,巴西,Brazil,BRA,7,10,FW,Forward,NEYMAR JR,内马尔,Neymar,DA SILVA SANTOS JÚNIOR,NEYMAR JR,05/02/1992,Santos FC (BRA),桑托斯,175,128,79,前锋,100,name_club
+C组,巴西,Brazil,BRA,7,11,FW,Forward,RAPHINHA,拉菲尼亚,Raphael,DIAS BELLOLI,RAPHINHA,14/12/1996,FC Barcelona (ESP),巴塞罗那,176,40,11,,前锋,"matched,name_web"
+C组,巴西,Brazil,BRA,7,12,GK,Goalkeeper,WEVERTON,韦弗顿,Weverton,PEREIRA DA SILVA,WEVERTON,13/12/1987,Grêmio FBPA (BRA),格雷米奥,189,11,0,,门将,"matched,name_web"
+C组,巴西,Brazil,BRA,7,13,DF,Defender,DANILO,达尼洛,Danilo Luiz,DA SILVA,DANILO,15/07/1991,CR Flamengo (BRA),弗拉门戈,184,71,1,后卫,100,name_club
+C组,巴西,Brazil,BRA,7,14,DF,Defender,BREMER,布雷默,Gleison Bremer,SILVA NASCIMENTO,BREMER,18/03/1997,Juventus FC (ITA),尤文图斯,188,8,1,后卫,85.7,name_club
+C组,巴西,Brazil,BRA,7,15,DF,Defender,LEO PEREIRA,里奥·佩雷拉,Leonardo,PEREIRA,LÉO PEREIRA,31/01/1996,CR Flamengo (BRA),弗拉门戈,189,4,0,后卫,100,name_club
+C组,巴西,Brazil,BRA,7,16,DF,Defender,DOUGLAS SANTOS,道格拉斯·桑托斯,Douglas,DOS SANTOS JUSTINO DE MELO,DOUGLAS S.,22/03/1994,FC Zenit St. Petersburg (RUS),泽尼特,173,8,0,后卫,100,name_club
+C组,巴西,Brazil,BRA,7,17,MF,Midfielder,FABINHO,法比尼奥,Fabio Henrique,TAVARES,FABINHO,23/10/1993,Al Ittihad (KSA),吉达联合,188,34,0,中场,100,name_club
+C组,巴西,Brazil,BRA,7,18,MF,Midfielder,DANILO SANTOS,达尼洛·桑托斯,Danilo,DOS SANTOS DE OLIVEIRA,DANILO S.,29/04/2001,Botafogo (BRA),博塔弗戈,177,5,2,中场,92.3,name_club
+C组,巴西,Brazil,BRA,7,19,FW,Forward,ENDRICK,恩德里克,Endrick Felipe,MOREIRA DE SOUSA PESSOA,ENDRICK,21/07/2006,Olympique Lyonnais (FRA),里昂,172,17,4,前锋,88.9,name_club
+C组,巴西,Brazil,BRA,7,20,MF,Midfielder,LUCAS PAQUETA,帕奎塔,Lucas,TOLENTINO COELHO DE LIMA,L. PAQUETÁ,27/08/1997,CR Flamengo (BRA),弗拉门戈,183,64,13,中场,100,name_club
+C组,巴西,Brazil,BRA,7,21,FW,Forward,LUIZ HENRIQUE,路易斯·恩里克,Luiz Henrique André,ROSA DA SILVA,L. HENRIQUE,02/01/2001,FC Zenit St. Petersburg (RUS),泽尼特,182,16,2,前锋,100,name_club
+C组,巴西,Brazil,BRA,7,22,FW,Forward,GABRIEL MARTINELLI,马丁内利,Gabriel,TEODORO MARTINELLI SILVA,MARTINELLI,18/06/2001,Arsenal FC (ENG),阿森纳,178,23,4,前锋,100,name_club
+C组,巴西,Brazil,BRA,7,23,GK,Goalkeeper,EDERSON,埃德松,Ederson,SANTANA DE MORAES,EDERSON,17/08/1993,Fenerbahçe SK (TUR),费内巴切,188,32,0,门将,100,name_club
+C组,巴西,Brazil,BRA,7,24,DF,Defender,ROGER IBANEZ,罗杰·伊巴涅斯,Roger,IBAÑEZ DA SILVA,IBAÑEZ,23/11/1998,Al Ahli FC (KSA),吉达国民,186,8,0,后卫,78.3,name_club
+C组,巴西,Brazil,BRA,7,25,FW,Forward,IGOR THIAGO,伊戈尔·蒂亚戈,Igor Thiago,NASCIMENTO RODRIGUES,THIAGO,26/06/2001,Brentford FC (ENG),布伦特福德,190,5,2,前锋,100,name_club
+C组,巴西,Brazil,BRA,7,26,FW,Forward,RAYAN,拉扬,Rayan Vitor,SIMPLICIO ROCHA,RAYAN,03/08/2006,AFC Bournemouth (ENG),伯恩茅斯,187,2,1,前锋,80,name_club
+H组,佛得角,Cabo Verde,CPV,8,1,GK,Goalkeeper,VOZINHA,沃津哈,Josimar José,ÉVORA DIAS,VOZINHA,03/06/1986,GD Chaves (POR),沙维什,189,91,0,门将,72.3,name_club
+H组,佛得角,Cabo Verde,CPV,8,2,DF,Defender,STOPIRA,托皮拉,Ianique,DOS SANTOS TAVARES,STOPIRA,20/05/1988,SCU Torreense (POR),托里什,178,61,4,后卫,85.7,name_club
+H组,佛得角,Cabo Verde,CPV,8,3,DF,Defender,DINEY BORGES,迪内-博格斯,Edilson Alberto,MONTEIRO SANCHES BORGES,BORGES,17/01/1995,Al Bataeh Club (UAE),巴塔赫,185,33,2,后卫,83.3,name_club
+H组,佛得角,Cabo Verde,CPV,8,4,DF,Defender,PICO LOPES,罗拔图·洛佩兹,Roberto Carlos,LOPES,LOPES,17/06/1992,Shamrock Rovers FC (IRL),沙姆洛克流浪,186,46,0,后卫,75.2,name_club
+H组,佛得角,Cabo Verde,CPV,8,5,DF,Defender,LOGAN COSTA,洛根·科斯塔,Logan Evans,COSTA,COSTA,01/04/2001,Villarreal CF (ESP),比利亚雷亚尔,190,28,0,后卫,90.9,name_club
+H组,佛得角,Cabo Verde,CPV,8,6,MF,Midfielder,KEVIN PINA,凯文·皮纳,Kevin Lenini,GONÇALVES PEREIRA DE PINA,KEVIN L.,27/01/1997,FC Krasnodar (RUS),克拉斯诺达尔,177,32,3,中场,88.9,name_club
+H组,佛得角,Cabo Verde,CPV,8,7,MF,Midfielder,JOVANE CABRAL,久瓦尼·卡布拉尔,Jovane Eduardo,BORGES CABRAL,JOVANE,14/06/1998,CF Estrela Da Amadora (POR),阿马多拉之星,174,30,3,前锋,100,name_club
+H组,佛得角,Cabo Verde,CPV,8,8,MF,Midfielder,JOAO PAULO,若昂·保洛,João Paulo,MOREIRA FERNANDES,JOÃO PAULO,26/05/1998,FC FCSB (ROU),布加勒斯特星,180,42,1,,中场,"matched,name_web"
+H组,佛得角,Cabo Verde,CPV,8,9,FW,Forward,GILSON BENCHIMOL,吉尔森·本希莫尔,Gilson,BENCHIMOL TAVARES,BENCHIMOL,29/12/2001,FC Akron Tolyatti (RUS),陶里亚蒂,187,21,6,,前锋,"matched,name_web"
+H组,佛得角,Cabo Verde,CPV,8,10,MF,Midfielder,JAMIRO MONTEIRO,杰米罗·蒙特罗,Jamiro Gregory,MONTEIRO ALVARENGA,MONTEIRO,23/11/1993,PEC Zwolle (NED),兹沃勒,175,56,5,中场,92.3,name_club
+H组,佛得角,Cabo Verde,CPV,8,11,MF,Midfielder,GARRY RODRIGUES,加里·罗德里格斯,Garry,MENDES RODRIGUES,RODRIGUES,27/11/1990,Apollon Limassol (CYP),阿波罗利马索尔,173,61,10,前锋,83.3,name_club
+H组,佛得角,Cabo Verde,CPV,8,12,GK,Goalkeeper,MARCIO ROSA,马西奥·罗莎,Márcio Salomão,BRAZÃO DA ROSA,MARCIO,23/02/1997,PFC Montana (BUL),蒙塔纳,186,11,0,,门将,"matched,name_web"
+H组,佛得角,Cabo Verde,CPV,8,13,DF,Defender,SIDNY LOPES CABRAL,西德尼·洛佩斯·卡布拉尔,Sidny,LOPES CABRAL,LOPES CABRAL,18/09/2002,SL Benfica (POR),本菲卡,176,12,3,后卫,95.2,name_club
+H组,佛得角,Cabo Verde,CPV,8,14,MF,Midfielder,DEROY DUARTE,德罗伊·杜亚特,Deroy,D'ENCARNAÇÃO DUARTE,D. DUARTE,04/07/1999,PFC Ludogorets Razgrad (BUL),卢多戈雷茨,177,34,0,中场,83.3,name_club
+H组,佛得角,Cabo Verde,CPV,8,15,MF,Midfielder,LAROS DUARTE,拉罗斯·杜亚特,Laros Michael,D'ENCARNAÇÃO DUARTE,L. DUARTE,28/02/1997,Puskás Akadémia FC (HUN),普斯卡什学院,180,21,1,中场,83.3,name_club
+H组,佛得角,Cabo Verde,CPV,8,16,MF,Midfielder,YANNICK SEMEDO,亚尼克·塞梅多,Jair,SEMEDO MONTEIRO,Y. SEMEDO,29/12/1995,SC Farense (POR),法伦斯,176,11,1,中场,85.7,name_club
+H组,佛得角,Cabo Verde,CPV,8,17,MF,Midfielder,WILLY SEMEDO,威利·塞梅多,Willy Johnson,SEMEDO AFONSO,SEMEDO,27/04/1994,AC Omonia (CYP),奥莫尼亚,185,39,3,前锋,83.3,name_club
+H组,佛得角,Cabo Verde,CPV,8,18,MF,Midfielder,TELMO ARCANJO,特尔莫·阿尔坎若,Telmo Emanuel,GOMES ARCANJO,ARCANJO,21/06/2001,Vitória SC (POR),吉马良斯,180,17,1,中场,76.9,name_club
+H组,佛得角,Cabo Verde,CPV,8,19,FW,Forward,DAILON LIVRAMENTO,戴隆·利夫拉门托,Dailon,ROCHA LIVRAMENTO,LIVRAMENTO,04/05/2001,Casa Pia AC (POR),卡萨比亚,185,23,7,前锋,80,name_club
+H组,佛得角,Cabo Verde,CPV,8,20,FW,Forward,RYAN MENDES,瑞安·门德斯,Ryan Isaac,DA GRACA MENDES,RYAN,08/01/1990,Iğdır FK (TUR),伊格德尔,178,99,22,前锋,83.3,name_club
+H组,佛得角,Cabo Verde,CPV,8,21,MF,Midfielder,NUNO DA COSTA,努诺·达科斯塔,Nuno Miguel,DA COSTA JOIA,DA COSTA,10/02/1991,Başakşehir FK (TUR),伊斯坦布尔巴萨克赛尔,182,10,2,前锋,100,name_club
+H组,佛得角,Cabo Verde,CPV,8,22,DF,Defender,STEVEN MOREIRA,史蒂芬·莫雷拉,Steven,MOREIRA,MOREIRA,13/08/1994,Columbus Crew (USA),哥伦布机员,178,21,0,后卫,76.9,name_club
+H组,佛得角,Cabo Verde,CPV,8,23,GK,Goalkeeper,CJ DOS SANTOS,卡洛斯·多斯·桑托斯,Carlos Joaquim,ANTUNES DOS SANTOS,DOS SANTOS,24/08/2000,San Diego FC (USA),圣迭戈FC,189,1,0,门将,75,name_club
+H组,佛得角,Cabo Verde,CPV,8,24,DF,Defender,WAGNER PINA,瓦格纳·皮纳,Wagner Fabricio,CARDOSO DE PINA,WAGNER P.,03/11/2002,Trabzonspor (TUR),特拉布宗体育,180,14,0,后卫,90.9,name_club
+H组,佛得角,Cabo Verde,CPV,8,25,DF,Defender,KELVIN PIRES,凯尔文·皮雷斯,Kelvin,SPENCER PIRES,KELVIN,05/06/2000,SJK (FIN),SJK,193,6,1,后卫,92.3,name_club
+H组,佛得角,Cabo Verde,CPV,8,26,MF,Midfielder,HELIO VARELA,海里奥·瓦雷拉,Hélio Sandro,OLIVEIRA ALVES VARELA,HÉLIO,03/05/2002,Maccabi Tel-Aviv FC (ISR),马卡比特拉维夫,176,21,0,前锋,100,name_club
+B组,加拿大,Canada,CAN,9,1,GK,Goalkeeper,ST. CLAIR Dayne,达尼·圣克莱尔,Dayne Tristan,ST. CLAIR,ST. CLAIR,09/05/1997,Inter Miami CF (USA),迈阿密国际,191,20,0,门将,100,name_club
+B组,加拿大,Canada,CAN,9,2,DF,Defender,JOHNSTON Alistair,阿里斯特尔·约翰斯顿,Alistair William,JOHNSTON,JOHNSTON,08/10/1998,Celtic FC (SCO),凯尔特人,180,59,1,后卫,98.6,name_club
+B组,加拿大,Canada,CAN,9,3,DF,Defender,JONES  Alfie,阿尔菲·琼斯,Alfie Charles,JONES,JONES,07/10/1997,Middlesbrough FC (ENG),米德尔斯堡,191,2,0,,后卫,"matched,name_web"
+B组,加拿大,Canada,CAN,9,4,DF,Defender,DE FOUGEROLLES Luc,吕克·德富格罗莱斯,Luc,ROLLET DE FOUGEROLLES,DE FOUGEROLLES,12/10/2005,FCV Dender EH (BEL),登德,183,14,0,后卫,100,name_club
+B组,加拿大,Canada,CAN,9,5,DF,Defender,WATERMAN Joel,乔尔·沃特曼,Joel Robert,WATERMAN,WATERMAN,24/01/1996,Chicago Fire FC (USA),芝加哥火焰,185,17,0,后卫,100,name_club
+B组,加拿大,Canada,CAN,9,6,MF,Midfielder,CHOINIERE Mathieu,马修·舒瓦尼埃,Mathieu,CHOINIÈRE,CHOINIÈRE,07/02/1999,LAFC (USA),洛杉矶FC,173,24,0,中场,83.7,name_club
+B组,加拿大,Canada,CAN,9,7,MF,Midfielder,EUSTAQUIO Stephen,史蒂芬·欧斯塔基奥,Stephen,EUSTAQUIO,EUSTÁQUIO,21/12/1996,LAFC (USA),洛杉矶FC,175,57,4,中场,97.7,name_club
+B组,加拿大,Canada,CAN,9,8,MF,Midfielder,KONE Ismael,伊斯梅尔·科内,Ismaël Kenneth Jordan,KONE,KONÉ,16/06/2002,US Sassuolo (ITA),萨索洛,188,41,4,中场,100,name_club
+B组,加拿大,Canada,CAN,9,9,FW,Forward,LARIN Cyle,凯尔·拉林,Cyle Christopher,LARIN,LARIN,17/04/1995,Southampton FC (ENG),南安普顿,188,91,31,前锋,100,name_club
+B组,加拿大,Canada,CAN,9,10,FW,Forward,DAVID Jonathan,乔纳森·戴维,Jonathan Christian,DAVID,J. DAVID,14/01/2000,Juventus FC (ITA),尤文图斯,175,78,39,,前锋,"matched,name_web"
+B组,加拿大,Canada,CAN,9,11,MF,Midfielder,MILLAR Liam,利亚姆·米拉尔,Liam Alan,MILLAR,MILLAR,27/09/1999,Hull City FC (ENG),赫尔城,176,42,1,中场,100,name_club
+B组,加拿大,Canada,CAN,9,12,FW,Forward,OLUWASEYI Tani,奥卢瓦塞伊,Tanitoluwa Oluwatimilehin,OLUWASEYI,OLUWASEYI,15/05/2000,Villarreal CF (ESP),比利亚雷亚尔,187,25,2,前锋,100,name_club
+B组,加拿大,Canada,CAN,9,13,DF,Defender,CORNELIUS Derek,德雷克·科内柳斯,Derek Austin,CORNELIUS,CORNELIUS,25/11/1997,Rangers FC (SCO),格拉斯哥流浪者,186,45,1,后卫,77.8,name_club
+B组,加拿大,Canada,CAN,9,14,MF,Midfielder,SHAFFELBURG Jacob,沙菲尔博格,Jacob Everett,SHAFFELBURG,SHAFFELBURG,26/11/1999,LAFC (USA),洛杉矶FC,181,32,6,中场,100,name_club
+B组,加拿大,Canada,CAN,9,15,DF,Defender,BOMBITO Moise,莫伊斯·波姆比托,Moïse Bombito,LUMPUNGU,BOMBITO,30/03/2000,OGC Nice (FRA),尼斯,190,20,0,后卫,100,name_club
+B组,加拿大,Canada,CAN,9,16,GK,Goalkeeper,CREPEAU Maxime,马克西姆·克雷波,Maxime,CRÉPEAU,CRÉPEAU,11/05/1994,Orlando City SC (USA),奥兰多城,185,33,0,门将,100,name_club
+B组,加拿大,Canada,CAN,9,17,FW,Forward,BUCHANAN Tajon,布坎南,Tajon Trevor,BUCHANAN,BUCHANAN,08/02/1999,Villarreal CF (ESP),比利亚雷亚尔,183,61,8,中场,100,name_club
+B组,加拿大,Canada,CAN,9,18,GK,Goalkeeper,GOODMAN Owen,欧文·古德曼,Owen Olamidayo,GOODMAN,GOODMAN,27/11/2003,Barnsley (ENG),巴恩斯利,193,0,0,门将,100,name_club
+B组,加拿大,Canada,CAN,9,19,DF,Defender,DAVIES Alphonso,阿方索·戴维斯,Alphonso Boyle,DAVIES,DAVIES,02/11/2000,FC Bayern München (GER),拜仁,183,58,15,后卫,75,name_club
+B组,加拿大,Canada,CAN,9,20,FW,Forward,AHMED Ali,阿里·艾哈迈德,Ali,AHMED,AHMED,10/10/2000,Norwich City FC (ENG),诺维奇,180,25,1,中场,100,name_club
+B组,加拿大,Canada,CAN,9,21,MF,Midfielder,OSORIO Jonathan,乔纳森·奥索里奥,Jonathan,OSORIO,OSORIO,12/06/1992,Toronto FC (CAN),多伦多FC,175,92,10,中场,100,name_club
+B组,加拿大,Canada,CAN,9,22,DF,Defender,LARYEA Richie,里奇·拉耶,Richmond Mamah,LARYEA,LARYEA,07/01/1995,Toronto FC (CAN),多伦多FC,175,77,1,后卫,100,name_club
+B组,加拿大,Canada,CAN,9,23,DF,Defender,SIGUR Niko,尼科·西古尔,Niko Kristian,SIGUR,SIGUR,09/09/2003,HNK Hajduk Split (CRO),哈伊杜克,178,19,2,后卫,100,name_club
+B组,加拿大,Canada,CAN,9,24,FW,Forward,DAVID Promise,普罗米斯·戴维,Promise Oluwatobi Emmanuel,DAVID,PROMISE,03/07/2001,Royale Union Saint-Gilloise (BEL),圣吉罗斯,195,11,3,前锋,100,name_club
+B组,加拿大,Canada,CAN,9,25,MF,Midfielder,SALIBA Nathan,内森·萨利巴,Nathan-Dylan,SALIBA,SALIBA,07/02/2004,RSC Anderlecht (BEL),安德莱赫特,174,15,2,中场,94,name_club
+B组,加拿大,Canada,CAN,9,26,FW,Forward,NELSON Jayden,杰登·尼尔森,Jayden,NELSON,NELSON,26/09/2002,Austin FC (USA),奥斯汀FC,170,15,3,前锋,100,name_club
+K组,哥伦比亚,Colombia,COL,10,1,GK,Goalkeeper,OSPINA David,奥斯皮纳,David,OSPINA RAMIREZ,OSPINA,31/08/1988,Atlético Nacional (COL),国民竞技,183,130,0,门将,100,name_club
+K组,哥伦比亚,Colombia,COL,10,2,DF,Defender,MUNOZ Daniel,穆尼奥斯,Daniel,MUÑOZ MEJIA,D. MUÑOZ,26/05/1996,Crystal Palace FC (ENG),水晶宫,180,46,3,后卫,100,name_club
+K组,哥伦比亚,Colombia,COL,10,3,DF,Defender,LUCUMI Jhon,卢库米,Jhon Janer,LUCUMI BONILLA,J. LUCUMI,26/06/1998,Bologna FC (ITA),博洛尼亚,187,37,1,后卫,100,name_club
+K组,哥伦比亚,Colombia,COL,10,4,DF,Defender,ARIAS Santiago,阿里亚斯,Santiago,ARIAS NARANJO,ARIAS,13/01/1992,CA Independiente (ARG),阿根廷独立,177,68,0,后卫,100,name_club
+K组,哥伦比亚,Colombia,COL,10,5,MF,Midfielder,CASTANO Kevin,卡斯塔尼奥,Kevin Duvan,CASTAÑO GIL,K. CASTAÑO,29/09/2000,CA River Plate (ARG),河床,179,25,0,中场,100,name_club
+K组,哥伦比亚,Colombia,COL,10,6,MF,Midfielder,RIOS Richard,里奥斯,Richard,RÍOS MONTOYA,RICHARD RIOS,02/06/2000,SL Benfica (POR),本菲卡,185,32,2,,中场,"matched,name_web"
+K组,哥伦比亚,Colombia,COL,10,7,FW,Forward,DIAZ Luis,路易斯·迪亚斯,Luis Fernando,DÍAZ MARULANDA,LUIS DIAZ,13/01/1997,FC Bayern München (GER),拜仁,179,74,22,前锋,80,name_club
+K组,哥伦比亚,Colombia,COL,10,8,MF,Midfielder,CARRASCAL Jorge,卡拉斯卡尔,Jorge Andres,CARRASCAL GUARDO,CARRASCAL,25/05/1998,CR Flamengo (BRA),弗拉门戈,180,25,2,中场,100,name_club
+K组,哥伦比亚,Colombia,COL,10,9,FW,Forward,CORDOBA Jhon,科尔多瓦,Jhon Andrés,CÓRDOBA COPETE,CORDOBA,11/05/1993,FC Krasnodar (RUS),克拉斯诺达尔,186,21,6,前锋,75,name_club
+K组,哥伦比亚,Colombia,COL,10,10,MF,Midfielder,RODRIGUEZ James,J罗,James David,RODRÍGUEZ RUBIO,JAMES,12/07/1991,Minnesota United FC (USA),明尼苏达联,181,126,31,中场,100,name_club
+K组,哥伦比亚,Colombia,COL,10,11,MF,Midfielder,ARIAS Jhon,阿里亚斯,Jhon Adolfo,ARIAS ANDRADE,J. ARIAS,21/09/1997,SE Palmeiras (BRA),帕尔梅拉斯,168,38,6,中场,100,name_club
+K组,哥伦比亚,Colombia,COL,10,12,GK,Goalkeeper,VARGAS Camilo,卡米洛·巴尔加斯,Camilo Andres,VARGAS GIL,C. VARGAS,09/03/1989,Atlas FC (MEX),阿特拉斯,183,42,0,,门将,"matched,name_web"
+K组,哥伦比亚,Colombia,COL,10,13,DF,Defender,MINA Yerry,米纳,Yerry Fernando,MINA GONZALEZ,Y. MINA,23/09/1994,Cagliari (ITA),卡利亚里,195,54,8,后卫,100,name_club
+K组,哥伦比亚,Colombia,COL,10,14,DF,Defender,PUERTA Gustavo,古斯塔沃·普埃尔塔,Gustavo Adolfo,PUERTA MOLANO,PUERTA,23/07/2003,Racing Santander (ESP),桑坦德竞技,173,6,1,,后卫,"matched,name_web"
+K组,哥伦比亚,Colombia,COL,10,15,MF,Midfielder,PORTILLA Juan,波尔蒂利亚,Juan Camilo,PORTILLA OROZCO,PORTILLA,12/09/1998,Athletico Paranaense (BRA),巴拉纳竞技,181,10,0,中场,100,name_club
+K组,哥伦比亚,Colombia,COL,10,16,MF,Midfielder,LERMA Jefferson,莱尔马,Jefferson Andrés,LERMA SOLIS,J. LERMA,25/10/1994,Crystal Palace FC (ENG),水晶宫,180,65,5,中场,100,name_club
+K组,哥伦比亚,Colombia,COL,10,17,DF,Defender,MOJICA Johan,约翰·莫西卡,Johan Andrés,MOJICA PALACIO,J. MOJICA,21/08/1992,RCD Mallorca (ESP),马略卡,184,45,1,,后卫,"matched,name_web"
+K组,哥伦比亚,Colombia,COL,10,18,DF,Defender,DITTA Willer,迪塔,Willer Emilio,DITTA PEREZ,W. DITTA,23/01/1998,CF Cruz Azul (MEX),蓝十字,179,5,0,后卫,100,name_club
+K组,哥伦比亚,Colombia,COL,10,19,FW,Forward,HERNANDEZ Cucho,库乔·埃尔南德斯,Juan Camilo,HERNANDEZ SUAREZ,C. HERNANDEZ,20/04/1999,Real Betis (ESP),贝蒂斯,176,9,2,前锋,92.3,name_club
+K组,哥伦比亚,Colombia,COL,10,20,MF,Midfielder,QUINTERO Juan,金特罗,Juan Fernando,QUINTERO PANIAGUA,QUINTERO,18/01/1993,CA River Plate (ARG),河床,167,49,6,中场,100,name_club
+K组,哥伦比亚,Colombia,COL,10,21,FW,Forward,CAMPAZ Jaminton,坎帕兹,Jaminton Leandro,CAMPAZ,CAMPAZ,24/05/2000,CA Rosario Central (ARG),罗萨里奥中央,166,10,1,中场,100,name_club
+K组,哥伦比亚,Colombia,COL,10,22,DF,Defender,MACHADO Deiver,马查多,Deiver,MACHADO MENA,MACHADO,02/09/1993,FC Nantes (FRA),南特,173,15,0,后卫,93.3,name_club
+K组,哥伦比亚,Colombia,COL,10,23,DF,Defender,SANCHEZ Davinson,达文森·桑切斯,Davinson,SÁNCHEZ MINA,SANCHEZ,12/06/1996,Galatasaray SK (TUR),加拉塔萨雷,188,79,4,后卫,100,name_club
+K组,哥伦比亚,Colombia,COL,10,24,GK,Goalkeeper,MONTERO Alvaro,蒙特罗,Álvaro David,MONTERO PERALES,MONTERO,29/03/1995,CA Vélez Sarsfield (ARG),萨斯菲尔德,201,12,0,门将,100,name_club
+K组,哥伦比亚,Colombia,COL,10,25,FW,Forward,SUAREZ Luis,路易斯·苏亚雷斯,Luis Javier,SUÁREZ CHARRIS,SUAREZ,02/12/1997,Sporting CP (POR),葡萄牙体育,179,12,5,前锋,100,name_club
+K组,哥伦比亚,Colombia,COL,10,26,FW,Forward,GOMEZ Andres,安德烈斯·戈麦斯,Carlos Andrés,GÓMEZ HINESTROZA,A. GOMEZ,12/09/2002,CR Vasco Da Gama (BRA),瓦斯科达伽马,170,8,2,,前锋,"matched,name_web"
+K组,民主刚果,Congo DR,COD,11,1,GK,Goalkeeper,MPASI Lionel,莱昂内尔·姆帕西,Lionel Nzau,MPASI,MPASI,01/08/1994,Le Havre AC (FRA),勒阿弗尔,182,28,0,门将,80,name_club
+K组,民主刚果,Congo DR,COD,11,2,DF,Defender,WAN-BISSAKA Aaron,万-比萨卡,Wan,BISSAKA,WAN BISSAKA,26/11/1997,West Ham United FC (ENG),西汉姆联,183,12,0,后卫,94.7,name_club
+K组,民主刚果,Congo DR,COD,11,3,DF,Defender,KAPUADI Steve,史蒂夫·卡普阿迪,Steve Nkanu,KAPUADI,KAPUADI,30/04/1998,Widzew Łódź (POL),维德祖罗兹,196,3,0,后卫,100,name_club
+K组,民主刚果,Congo DR,COD,11,4,DF,Defender,TUANZEBE Axel,阿克塞尔·图安泽贝,Axel,TUANZEBE,TUANZEBE,14/11/1997,Burnley FC (ENG),伯恩利,188,13,1,后卫,100,name_club
+K组,民主刚果,Congo DR,COD,11,5,DF,Defender,BATUBINSIKA Dylan,迪朗·巴蒂班西卡,Dylan Buduka,BATUBINSIKA,BATUBINSIKA,15/02/1996,AEL FC (GRE),拉里萨,185,15,1,后卫,100,name_club
+K组,民主刚果,Congo DR,COD,11,6,MF,Midfielder,MUKAU Ngalayel,恩加拉耶尔·穆考,Ngal’ayel,MUKAU,MUKAU,03/11/2004,Lille OSC (FRA),里尔,186,14,0,中场,100,name_club
+K组,民主刚果,Congo DR,COD,11,7,MF,Midfielder,MBUKU Nathanael,纳撒尼尔·姆布库,Nathanaël,MBUKU,MBUKU,16/03/2002,Montpellier HSC (FRA),蒙彼利埃,170,19,2,中场,100,name_club
+K组,民主刚果,Congo DR,COD,11,8,MF,Midfielder,MOUTOUSSAMY Samuel,萨穆埃尔·穆图萨米,Samuel Alain,MOUTOUSSAMY,MOUTOUSSAMY,12/08/1996,Atromitos FC (GRE),阿特罗米托斯,176,58,0,中场,100,name_club
+K组,民主刚果,Congo DR,COD,11,9,FW,Forward,CIPENGA Brian,布莱恩·齐蓬加,Kibambe Brian,CIPENGA,CIPENGA,11/03/1998,CD Castellón (ESP),卡斯迪隆,172,8,0,中场,100,name_club
+K组,民主刚果,Congo DR,COD,11,10,MF,Midfielder,BONGONDA Theo,蒂奥·博格纳达,Theo Mbulofeko Batombo,BONGONDA,BONGONDA,20/11/1995,FC Spartak Moscow (RUS),莫斯科斯巴达,176,38,7,中场,100,name_club
+K组,民主刚果,Congo DR,COD,11,11,FW,Forward,KAKUTA Gael,盖尔·卡库塔,Mambenga Gaël Roméo,KAKUTA,KAKUTA,21/06/1991,AEL FC (GRE),拉里萨,174,31,5,中场,100,name_club
+K组,民主刚果,Congo DR,COD,11,12,DF,Defender,KAYEMBE Joris,乔里斯·卡耶姆贝,Joris,KAYEMBE-DITU,J. KAYEMBE,08/08/1994,KRC Genk (BEL),亨克,180,26,1,后卫,100,name_club
+K组,民主刚果,Congo DR,COD,11,13,FW,Forward,ELIA Meschack,梅沙克·埃利亚,Meschack Lina,ELIA,MESCHAK,06/08/1997,Alanyaspor (TUR),阿拉尼亚体育,173,68,12,中场,100,name_club
+K组,民主刚果,Congo DR,COD,11,14,MF,Midfielder,SADIKI Noah,诺亚·萨迪基,Noah Junior,SADIKI,SADIKI,17/12/2004,Sunderland AFC (ENG),桑德兰,165,20,0,中场,100,name_club
+K组,民主刚果,Congo DR,COD,11,15,MF,Midfielder,TSHIBOLA Aaron,阿隆·奇博拉,Tshibola,AARON,TSHIBOLA,02/01/1995,Kilmarnock FC (SCO),基尔马诺克,184,17,1,,中场,"matched,name_web"
+K组,民主刚果,Congo DR,COD,11,16,GK,Goalkeeper,FAYULU Timothy,蒂莫西·法尤鲁,Timothy Bruce Munzoko,FAYULU,FAYULU,24/07/1999,FC Noah (ARM),诺亚FC,192,3,0,门将,100,name_club
+K组,民主刚果,Congo DR,COD,11,17,FW,Forward,BAKAMBU Cedric,巴坎布,Cedric,BAKAMBU,BAKAMBU,11/04/1991,Real Betis (ESP),皇家贝蒂斯,182,70,21,前锋,85.7,name_club
+K组,民主刚果,Congo DR,COD,11,18,MF,Midfielder,PICKEL Charles,查尔斯·皮克尔,Charles Monginda,PICKEL,PICKEL,15/05/1997,RCD Espanyol (ESP),西班牙人,187,34,1,,中场,"matched,name_web"
+K组,民主刚果,Congo DR,COD,11,19,FW,Forward,MAYELE Fiston,菲斯顿·马耶勒,Mayele Fiston,KALALA,MAYELE,24/06/1994,Pyramids FC (EGY),金字塔,185,36,5,前锋,94,name_club
+K组,民主刚果,Congo DR,COD,11,20,FW,Forward,WISSA Yoane,约阿纳·维萨,Yoane,WISSA,WISSA,03/09/1996,Newcastle United FC (ENG),纽卡斯尔联,176,38,8,前锋,88.9,name_club
+K组,民主刚果,Congo DR,COD,11,21,GK,Goalkeeper,EPOLO Matthieu,马蒂厄·埃波洛,Matthieu Luka,EPOLO,EPOLO,15/01/2005,Standard Liège (BEL),标准列日,183,1,0,,门将,"matched,name_web"
+K组,民主刚果,Congo DR,COD,11,22,DF,Defender,MBEMBA Chancel,查塞尔·姆本巴,Mangulu Chancel,MBEMBA,MBEMBA,08/08/1994,Lille OSC (FRA),里尔,182,109,7,后卫,100,name_club
+K组,民主刚果,Congo DR,COD,11,23,FW,Forward,BANZA Simon,西蒙·班扎,Simon Bokote,BANZA,BANZA,13/08/1996,Al Jazira (UAE),阿布扎比半岛,189,15,2,前锋,100,name_club
+K组,民主刚果,Congo DR,COD,11,24,DF,Defender,KALULU Gedeon,热迪翁·卡卢卢,Gédéon Tchingoma Kyatengwa,KALULU,KALULU,29/08/1997,Aris Limassol FC (CYP),艾里斯利马斯素尔,178,28,0,后卫,100,name_club
+K组,民主刚果,Congo DR,COD,11,25,MF,Midfielder,KAYEMBE Edo,埃多·卡耶姆贝,Edo Kayembe,KAYEMBE,E. KAYEMBE,03/06/1998,Watford FC (ENG),沃特福德,183,42,2,中场,100,name_club
+K组,民主刚果,Congo DR,COD,11,26,DF,Defender,MASUAKU Arthur,亚瑟·马苏亚库,Arthur Fuka,MASUAKU KAWELA,MASUAKU,07/11/1993,RC Lens (FRA),朗斯,179,44,4,后卫,100,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,1,GK,Goalkeeper,FOFANA Yahia,叶海亚·福法纳,Yahia,FOFANA,Y. FOFANA,21/08/2000,Çaykur Rizespor (TUR),里泽体育,194,37,0,门将,90.9,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,2,DF,Defender,DIOMANDE Ousmane,奥斯曼·迪奥曼德,Ousmane,DIOMANDE,O. DIOMANDE,04/12/2003,Sporting CP (POR),葡萄牙体育,190,16,1,后卫,100,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,3,DF,Defender,KONAN Ghislain,吉兰·科南,N'clomande Ghislain,KONAN,G. KONAN,27/12/1995,Gil Vicente FC (POR),吉尔维森特,176,55,0,后卫,100,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,4,MF,Midfielder,SERI Jean Michael,塞里,Jean Michael,SERI,SERI,19/07/1991,NK Maribor (SVN),马里博尔,168,65,4,中场,100,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,5,DF,Defender,SINGO Wilfried,威尔弗里德·辛戈,Wilfried Stephane,SINGO,SINGO,25/12/2000,Galatasaray SK (TUR),加拉塔萨雷,182,36,1,后卫,100,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,6,MF,Midfielder,FOFANA Seko,塞科·福法纳,Seko Mohamed,FOFANA,FOFANA,07/05/1995,FC Porto (POR),波尔图,185,33,7,中场,100,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,7,DF,Defender,KOSSOUNOU Odilon,奥迪隆·科苏努,Kouakou Odilon Dorgeless,KOSSOUNOU,KOSSOUNOU,04/01/2001,Atalanta Bergamo (ITA),亚特兰大,191,37,0,,后卫,"matched,name_web"
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,8,MF,Midfielder,KESSIE Franck,凯西,Franck Yannick,KESSIE,KESSIE,19/12/1996,Al Ahli FC (KSA),吉达国民,183,105,15,中场,80,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,9,FW,Forward,BONNY Ange-Yoan,博尼,Ange-Yoan Laurent,BONNY,BONNY,25/10/2003,FC Internazionale Milano (ITA),国米,189,2,0,前锋,80.6,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,10,FW,Forward,ADINGRA Simon,西蒙·阿丁格拉,Simon,ADINGRA,ADINGRA,01/01/2002,AS Monaco (FRA),摩纳哥,175,29,5,前锋,83.3,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,11,FW,Forward,DIOMANDE Yan,扬·迪奥曼德,Yan,DIOMANDE,YAN DIOMANDE,14/11/2006,RB Leipzig (GER),RB莱比锡,180,11,3,前锋,91.7,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,12,FW,Forward,WAHI Elye,瓦希,Sepe Elye Delmas,WAHI,WAHI,02/01/2003,OGC Nice (FRA),尼斯,181,3,0,前锋,100,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,13,DF,Defender,OPERI Christopher,奥佩里,Christopher Tea Domoraud,OPERI,OPERI,29/04/1997,Başakşehir FK (TUR),伊斯坦布尔,183,12,0,后卫,100,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,14,FW,Forward,DIAKITE Oumar,奥马尔·迪亚基特,Oumar,DIAKITE,DIAKITE,20/12/2003,Cercle Brugge (BEL),色格拉布鲁日,182,29,6,前锋,100,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,15,FW,Forward,DIALLO Amad,阿玛德·迪亚洛,Amad,DIALLO,AMAD,11/07/2002,Manchester United FC (ENG),曼联,173,20,7,前锋,100,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,16,GK,Goalkeeper,KONE Mohamed,穆罕默德·科内,Mohamed,KONE,KONE,07/03/2002,Sporting Charleroi (BEL),沙勒罗瓦,186,0,0,门将,100,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,17,DF,Defender,DOUE Guela,盖拉·杜埃,Guela Maho-Lewis,DOUE,G. DOUE,17/10/2002,RC Strasbourg (FRA),斯特拉斯堡,187,21,3,后卫,100,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,18,MF,Midfielder,SANGARE Ibrahim,易卜拉欣·桑加雷,Ibrahim,SANGARE,SANGARE,02/12/1997,Nottingham Forest FC (ENG),诺丁汉森林,191,56,11,中场,100,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,19,FW,Forward,PEPE Nicolas,尼古拉·佩佩,Nicolas,PEPE,PEPE,29/05/1995,Villarreal CF (ESP),比利亚雷亚尔,183,57,12,前锋,100,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,20,DF,Defender,AGBADOU Emmanuel,埃马纽埃尔·阿格巴杜,Badobre Emmanuel Elysee Djedje,AGBADOU,AGBADOU,17/06/1997,Beşiktaş JK (TUR),贝西克塔斯,185,22,2,后卫,100,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,21,DF,Defender,NDICKA Evan,埃万·恩迪卡,Obite Evan,NDICKA,NDICKA,20/08/1999,AS Roma (ITA),罗马,192,29,0,后卫,100,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,22,FW,Forward,GUESSAND Evann,埃旺·盖桑德,Evann Ludovic Vidjannagni,GUESSAND,GUESSAND,01/07/2001,Crystal Palace FC (ENG),水晶宫,188,21,4,,前锋,"matched,name_web"
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,23,GK,Goalkeeper,LAFONT Alban,阿尔班·拉丰,Alban-Marc,LAFONT,LAFONT,23/01/1999,Panathinaikos FC (GRE),帕纳辛纳科斯,196,4,0,,门将,"matched,name_web"
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,24,FW,Forward,TOURE Bazoumana,巴祖马纳·图雷,Bazoumana,TOURE,TOURE,02/03/2006,TSG Hoffenheim (GER),霍芬海姆,178,7,2,前锋,100,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,25,MF,Midfielder,GUIAGON Parfait,帕尔费,Parfait,GUIAGON,GUIAGON,22/02/2001,Sporting Charleroi (BEL),沙勒罗瓦,165,5,0,中场,100,name_club
+E组,科特迪瓦,Côte D'Ivoire,CIV,12,26,MF,Midfielder,OULAI Christ Inao,克里斯·伊纳奥·乌莱,Christ Ravynel Inao,OULAI,INAO,06/04/2006,Trabzonspor (TUR),特拉布宗体育,173,10,0,,中场,"matched,name_web"
+L组,克罗地亚,Croatia,CRO,13,1,GK,Goalkeeper,LIVAKOVIC Dominik,多米尼克·利瓦科维奇,Dominik,LIVAKOVIĆ,LIVAKOVIĆ,09/01/1995,GNK Dinamo Zagreb (CRO),萨格勒布迪纳摩,188,75,0,门将,100,name_club
+L组,克罗地亚,Croatia,CRO,13,2,DF,Defender,STANISIC Josip,斯坦尼西奇,Josip,STANIŠIĆ,STANIŠIĆ,02/04/2000,FC Bayern München (GER),拜仁慕尼黑,186,31,0,后卫,100,name_club
+L组,克罗地亚,Croatia,CRO,13,3,DF,Defender,PONGRACIC Marin,庞格拉西奇,Marin,PONGRAČIĆ,PONGRAČIĆ,11/09/1997,ACF Fiorentina (ITA),佛罗伦萨,193,20,0,后卫,100,name_club
+L组,克罗地亚,Croatia,CRO,13,4,DF,Defender,GVARDIOL Josko,格瓦迪奥尔,Joško,GVARDIOL,GVARDIOL,23/01/2002,Manchester City FC (ENG),曼城,185,48,4,后卫,100,name_club
+L组,克罗地亚,Croatia,CRO,13,5,DF,Defender,CALETA-CAR Duje,杜耶·卡莱塔-卡尔,Duje,ĆALETA-CAR,ĆALETA-CAR,17/09/1996,Real Sociedad (ESP),皇家社会,193,38,1,后卫,100,name_club
+L组,克罗地亚,Croatia,CRO,13,6,DF,Defender,SUTALO Josip,约西普·苏塔洛,Josip,ŠUTALO,ŠUTALO,28/02/2000,AFC Ajax (NED),阿贾克斯,185,33,0,后卫,100,name_club
+L组,克罗地亚,Croatia,CRO,13,7,MF,Midfielder,MORO Nikola,尼古拉·莫罗,Nikola,MORO,MORO,12/03/1998,Bologna FC (ITA),博洛尼亚,183,10,0,中场,100,name_club
+L组,克罗地亚,Croatia,CRO,13,8,MF,Midfielder,KOVACIC Mateo,科瓦契奇,Mateo,KOVAČIĆ,KOVAČIĆ,06/05/1994,Manchester City FC (ENG),曼城,178,113,5,中场,100,name_club
+L组,克罗地亚,Croatia,CRO,13,9,FW,Forward,KRAMARIC Andrej,克拉马里奇,Andrej,KRAMARIĆ,KRAMARIĆ,19/06/1991,TSG Hoffenheim (GER),霍芬海姆,177,116,36,前锋,100,name_club
+L组,克罗地亚,Croatia,CRO,13,10,MF,Midfielder,MODRIC Luka,莫德里奇,Luka,MODRIĆ,MODRIĆ,09/09/1985,AC Milan (ITA),AC米兰,172,198,29,中场,100,name_club
+L组,克罗地亚,Croatia,CRO,13,11,FW,Forward,BUDIMIR Ante,安特·布迪米尔,Ante,BUDIMIR,BUDIMIR,22/07/1991,CA Osasuna (ESP),奥萨苏纳,190,38,6,前锋,100,name_club
+L组,克罗地亚,Croatia,CRO,13,12,GK,Goalkeeper,PANDUR Ivor,伊沃·潘杜,Ivor,PANDUR,PANDUR,25/03/2000,Hull City FC (ENG),赫尔城,187,0,0,门将,100,name_club
+L组,克罗地亚,Croatia,CRO,13,13,MF,Midfielder,VLASIC Nikola,尼科拉·弗拉西奇,Nikola,VLAŠIĆ,VLAŠIĆ,04/10/1997,Torino FC (ITA),都灵,179,63,10,中场,85.7,name_club
+L组,克罗地亚,Croatia,CRO,13,14,FW,Forward,PERISIC Ivan,伊万·佩里西奇,Ivan,PERIŠIĆ,PERIŠIĆ,02/02/1989,PSV Eindhoven (NED),埃因霍温,186,154,38,前锋,100,name_club
+L组,克罗地亚,Croatia,CRO,13,15,MF,Midfielder,PASALIC Mario,马里奥·帕萨利奇,Mario,PAŠALIĆ,PAŠALIĆ,09/02/1995,Atalanta Bergamo (ITA),亚特兰大,188,85,12,中场,100,name_club
+L组,克罗地亚,Croatia,CRO,13,16,MF,Midfielder,BATURINA Martin,马丁·巴图里纳,Martin,BATURINA,BATURINA,16/02/2003,Como (ITA),科莫,172,19,1,中场,85.7,name_club
+L组,克罗地亚,Croatia,CRO,13,17,MF,Midfielder,SUCIC Petar,佩塔·苏契奇,Petar,SUČIĆ,P. SUČIĆ,25/10/2003,FC Internazionale Milano (ITA),国际米兰,183,17,1,中场,90.9,name_club
+L组,克罗地亚,Croatia,CRO,13,18,DF,Defender,JAKIC Kristijan,克里斯蒂扬·亚基奇,Kristijan,JAKIĆ,JAKIĆ,14/05/1997,FC Augsburg (GER),奥格斯堡,181,17,2,后卫,100,name_club
+L组,克罗地亚,Croatia,CRO,13,19,MF,Midfielder,FRUK Toni,托尼·弗鲁克,Toni,FRUK,FRUK,09/03/2001,HNK Rijeka (CRO),里耶卡,177,7,1,中场,100,name_club
+L组,克罗地亚,Croatia,CRO,13,20,FW,Forward,MATANOVIC Igor,伊戈尔·马塔诺维奇,Igor,MATANOVIĆ,MATANOVIĆ,31/03/2003,SC Freiburg (GER),弗赖堡,194,9,2,前锋,100,name_club
+L组,克罗地亚,Croatia,CRO,13,21,MF,Midfielder,SUCIC Luka,卢卡·苏西奇,Luka,SUČIĆ,SUČIĆ,08/09/2002,Real Sociedad (ESP),皇家社会,185,21,1,中场,100,name_club
+L组,克罗地亚,Croatia,CRO,13,22,DF,Defender,VUSKOVIC Luka,武什科维奇,Luka,VUŠKOVIĆ,VUŠKOVIĆ,24/02/2007,Hamburger SV (GER),汉堡,193,5,1,后卫,100,name_club
+L组,克罗地亚,Croatia,CRO,13,23,GK,Goalkeeper,KOTARSKI Dominik,多米尼克·科塔尔斯基,Dominik,KOTARSKI,KOTARSKI,10/02/2000,FC København (DEN),哥本哈根,190,4,0,门将,100,name_club
+L组,克罗地亚,Croatia,CRO,13,24,FW,Forward,PASALIC Marco,马尔科·帕萨利奇,Marco,PAŠALIĆ,M. PAŠALIĆ,14/09/2000,Orlando City SC (USA),奥兰多城,177,15,1,前锋,100,name_club
+L组,克罗地亚,Croatia,CRO,13,25,DF,Defender,ERLIC Martin,马丁·埃尔利奇,Martin,ERLIĆ,ERLIĆ,24/01/1998,FC Midtjylland (DEN),中日德兰,192,13,1,后卫,83.3,name_club
+L组,克罗地亚,Croatia,CRO,13,26,FW,Forward,MUSA Petar,佩塔·穆萨,Petar,MUSA,MUSA,04/03/1998,FC Dallas (USA),达拉斯,190,11,1,前锋,94,name_club
+E组,库拉索,Curaçao,CUW,14,1,GK,Goalkeeper,ROOM Eloy,埃洛伊·罗姆,Eloy Victor,ROOM,ROOM,06/02/1989,Miami FC (USA),迈阿密FC,190,73,0,,门将,"matched,name_web"
+E组,库拉索,Curaçao,CUW,14,2,DF,Defender,SAMBO Shurandy,舒兰迪·桑博,Shurandy Ruggerio,SAMBO,SAMBO,19/08/2001,Sparta Rotterdam (NED),鹿特丹斯巴达,174,8,0,,后卫,"matched,name_web"
+E组,库拉索,Curaçao,CUW,14,3,DF,Defender,GAARI Jurien,尤里安·加里,Juriën Godfried Juan,GAARI,GAARI,23/12/1993,Abha Club (KSA),阿布哈,183,60,1,,后卫,"matched,name_web"
+E组,库拉索,Curaçao,CUW,14,4,DF,Defender,VAN EIJMA Roshon,罗申·范艾玛,Róshón Felix Romar Jordan,VAN EIJMA,VAN EIJMA,09/06/1998,RKC Waalwijk (NED),瓦尔韦克,186,28,1,后卫,100,name_club
+E组,库拉索,Curaçao,CUW,14,5,DF,Defender,FLORANUS Sherel,谢雷尔·弗洛拉努斯,Sherel Constancio,FLORANUS,FLORANUS,23/08/1998,PEC Zwolle (NED),兹沃勒,181,28,0,后卫,100,name_club
+E组,库拉索,Curaçao,CUW,14,6,MF,Midfielder,ROEMERATOE Godfried,戈德弗里德·罗默拉托,Godfried,ROEMERATOE,ROEMERATOE,19/08/1999,RKC Waalwijk (NED),瓦尔韦克,178,29,1,中场,100,name_club
+E组,库拉索,Curaçao,CUW,14,7,MF,Midfielder,BACUNA Juninho,儒尼尼奥·巴库纳,Juninho Gracielo,BACUNA,J. BACUNA,07/08/1997,FC Volendam (NED),福伦丹,178,51,14,中场,100,name_club
+E组,库拉索,Curaçao,CUW,14,8,MF,Midfielder,COMENENCIA Livano,利瓦诺·科门西亚,Livano Shyron Liomar,COMENENCIA,COMENENCIA,03/02/2004,FC Zürich (SUI),苏黎世,185,21,3,,中场,"matched,name_web"
+E组,库拉索,Curaçao,CUW,14,9,FW,Forward,LOCADIA Juergen,于尔根·洛卡迪亚,Jürgen Leonardo,LOCADIA,LOCADIA,07/11/1993,Miami FC (USA),迈阿密FC,193,14,1,前锋,69.7,name_club
+E组,库拉索,Curaçao,CUW,14,10,MF,Midfielder,BACUNA Leandro,莱安多·巴库纳,Leandro Jones Johan,BACUNA,L. BACUNA,21/08/1991,Iğdır FK (TUR),厄德尔,180,73,16,中场,80,name_club
+E组,库拉索,Curaçao,CUW,14,11,FW,Forward,ANTONISSE Jeremy,杰里米·安东尼斯,Jeremy Cornelis Jacobus,ANTONISSE,ANTONISSE,29/03/2002,AE Kifisia FC (GRE),基菲西亚,164,28,4,,前锋,"matched,name_web"
+E组,库拉索,Curaçao,CUW,14,12,FW,Forward,HANSEN Sontje,松切·汉森,Misjonne Juniffer Naigelino,HANSEN,HANSEN,18/05/2002,Middlesbrough FC (ENG),米堡,176,7,1,前锋,94,name_club
+E组,库拉索,Curaçao,CUW,14,13,FW,Forward,NOSLIN Tyrese,泰瑞斯·诺斯林,Tyrese Yurvencey,NOSLIN,NOSLIN,11/09/2002,SC Telstar (NED),特尔斯达,182,7,1,中场,78.3,name_club
+E组,库拉索,Curaçao,CUW,14,14,FW,Forward,GORRE Kenji,肯吉·戈雷,Kenji Joël,GORRÉ,GORRÉ,29/09/1994,Maccabi Haifa FC (ISR),马卡比海法,174,38,6,前锋,69.3,name_club
+E组,库拉索,Curaçao,CUW,14,15,MF,Midfielder,MARTHA Arjany,阿亚尼·马尔塔,Ar'jany Jainel Archenir,MARTHA,MARTHA,04/09/2003,Rotherham United FC (ENG),罗瑟勒姆,180,9,2,中场,100,name_club
+E组,库拉索,Curaçao,CUW,14,16,FW,Forward,MARGARITHA Jearl,吉尔·马加里塔,Jearl Erwin,MARGARITHA,MARGARITHA,10/04/2000,SK Beveren (BEL),贝弗伦,181,23,5,,前锋,"matched,name_web"
+E组,库拉索,Curaçao,CUW,14,17,FW,Forward,KUWAS Brandley,库沃斯,Brandley Mack-Olien,KUWAS,KUWAS,19/09/1992,FC Volendam (NED),福伦丹,181,36,2,前锋,100,name_club
+E组,库拉索,Curaçao,CUW,14,18,DF,Defender,OBISPO Armando,阿曼多·奥比斯波,Armando Maria,OBISPO,OBISPO,05/03/1999,PSV Eindhoven (NED),埃因霍温,185,7,0,后卫,100,name_club
+E组,库拉索,Curaçao,CUW,14,19,FW,Forward,KASTANEER Gervane,赫尔瓦内·卡斯塔内尔,Gervane Zjandric Adonnis,KASTANEER,KASTANEER,09/06/1996,Terengganu FC (MAS),丁加奴,189,30,9,前锋,100,name_club
+E组,库拉索,Curaçao,CUW,14,20,DF,Defender,BRENET Joshua,约书亚·布雷内特,Joshua Benjamin,BRENET,BRENET,20/03/1994,Kayserispor (TUR),开塞利体育,181,18,2,,后卫,"matched,name_web"
+E组,库拉索,Curaçao,CUW,14,21,MF,Midfielder,CHONG Tahith,陈达毅,Tahith Jose Girigorio Djorkaef,CHONG,CHONG,04/12/1999,Shefield United FC (ENG),谢菲尔德联,185,7,3,前锋,97.7,name_club
+E组,库拉索,Curaçao,CUW,14,22,MF,Midfielder,FELIDA Kevin,凯文·费利达,Kevin Antonio,FELIDA,FELIDA,11/11/1999,FC Den Bosch (NED),邓伯什,174,19,1,中场,100,name_club
+E组,库拉索,Curaçao,CUW,14,23,DF,Defender,BAZOER Riechedly,里奇德利·巴佐尔,Riechedly Guillermo,BAZOER,BAZOER,12/10/1996,Konyaspor (TUR),科尼亚体育,184,6,0,后卫,100,name_club
+E组,库拉索,Curaçao,CUW,14,24,DF,Defender,FONVILLE Deveron,德弗隆·丰维尔,Deveron Lenny,FONVILLE,FONVILLE,16/05/2003,NEC Nijmegen (NED),NEC奈梅亨,188,3,0,,后卫,"matched,name_web"
+E组,库拉索,Curaçao,CUW,14,25,GK,Goalkeeper,BODAK Tyrick,泰里克·波达克,Tyrick Jeremy,BODAK,BODAK,15/05/2002,SC Telstar (NED),泰尔斯达,190,4,0,门将,94,name_club
+E组,库拉索,Curaçao,CUW,14,26,GK,Goalkeeper,DOORNBUSCH Trevor,特雷弗·杜恩布什,Trevor Irving,DOORNBUSCH,DOORNBUSCH,06/07/1999,VVV Venlo (NED),芬洛,188,8,0,门将,100,name_club
+A组,捷克,Czechia,CZE,15,1,GK,Goalkeeper,KOVAR Matej,科瓦尔,Matěj,KOVÁŘ,KOVÁŘ,17/05/2000,PSV Eindhoven (NED),埃因霍温,196,21,0,门将,100,name_club
+A组,捷克,Czechia,CZE,15,2,DF,Defender,ZIMA David,齐马,David,ZIMA,ZIMA,08/11/2000,SK Slavia Praha (CZE),布拉格斯拉维亚,190,25,1,后卫,100,name_club
+A组,捷克,Czechia,CZE,15,3,DF,Defender,HOLES Tomas,霍莱什,Tomáš,HOLEŠ,HOLEŠ,31/03/1993,SK Slavia Praha (CZE),布拉格斯拉维亚,180,41,2,后卫,100,name_club
+A组,捷克,Czechia,CZE,15,4,DF,Defender,HRANAC Robin,赫拉纳克,Robin,HRANÁČ,HRANÁČ,29/01/2000,TSG Hoffenheim (GER),霍芬海姆,189,15,1,后卫,100,name_club
+A组,捷克,Czechia,CZE,15,5,DF,Defender,COUFAL Vladimir,曹法尔,Vladimír,COUFAL,COUFAL,22/08/1992,TSG Hoffenheim (GER),霍芬海姆,175,63,2,后卫,100,name_club
+A组,捷克,Czechia,CZE,15,6,DF,Defender,CHALOUPEK Stepan,沙卢佩克,Štěpán,CHALOUPEK,CHALOUPEK,08/03/2003,SK Slavia Praha (CZE),布拉格斯拉维亚,188,6,0,后卫,100,name_club
+A组,捷克,Czechia,CZE,15,7,DF,Defender,KREJCI Ladislav,克雷伊奇,Ladislav,KREJČÍ,KREJČÍ,20/04/1999,Wolverhampton Wanderers FC (ENG),狼队,191,28,6,后卫,75,name_club
+A组,捷克,Czechia,CZE,15,8,MF,Midfielder,DARIDA Vladimir,达里达,Vladimír,DARIDA,DARIDA,08/08/1990,FC Hradec Králové (CZE),赫拉德茨克拉洛韦,172,79,8,中场,100,name_club
+A组,捷克,Czechia,CZE,15,9,FW,Forward,HLOZEK Adam,赫洛热克,Adam,HLOŽEK,HLOŽEK,25/07/2002,TSG Hoffenheim (GER),霍芬海姆,188,44,5,前锋,100,name_club
+A组,捷克,Czechia,CZE,15,10,FW,Forward,SCHICK Patrik,希克,Patrik,SCHICK,SCHICK,24/01/1996,Bayer 04 Leverkusen (GER),勒沃库森,191,54,26,前锋,97.7,name_club
+A组,捷克,Czechia,CZE,15,11,FW,Forward,KUCHTA Jan,库奇塔,Jan,KUCHTA,KUCHTA,08/01/1997,AC Sparta Praha (CZE),布拉格斯巴达,185,31,3,前锋,85.7,name_club
+A组,捷克,Czechia,CZE,15,12,MF,Midfielder,CERV Lukas,卢卡斯·切尔夫,Lukáš,ČERV,ČERV,10/04/2001,FC Viktoria Plzeň (CZE),比尔森胜利,182,17,2,,中场,"matched,name_web"
+A组,捷克,Czechia,CZE,15,13,FW,Forward,CHYTIL Mojmir,齐迪尔,Mojmír,CHYTIL,CHYTIL,29/04/1999,SK Slavia Praha (CZE),布拉格斯拉维亚,187,23,6,前锋,100,name_club
+A组,捷克,Czechia,CZE,15,14,DF,Defender,JURASEK David,尤拉塞克,David,JURÁSEK,JURÁSEK,07/08/2000,SK Slavia Praha (CZE),布拉格斯拉维亚,183,18,1,后卫,100,name_club
+A组,捷克,Czechia,CZE,15,15,FW,Forward,SULC Pavel,苏尔克,Pavel,ŠULC,ŠULC,29/12/2000,Olympique Lyonnais (FRA),里昂,177,22,5,中场,100,name_club
+A组,捷克,Czechia,CZE,15,16,GK,Goalkeeper,STANEK Jindrich,斯坦尼克,Jindřich,STANĚK,STANĚK,27/04/1996,SK Slavia Praha (CZE),布拉格斯拉维亚,192,14,0,门将,100,name_club
+A组,捷克,Czechia,CZE,15,17,MF,Midfielder,PROVOD Lukas,普罗沃德,Lukáš,PROVOD,PROVOD,23/10/1996,SK Slavia Praha (CZE),布拉格斯拉维亚,191,39,3,中场,100,name_club
+A组,捷克,Czechia,CZE,15,18,MF,Midfielder,SADILEK Michal,米甲・萨迪莱克,Michal,SADÍLEK,SADÍLEK,31/05/1999,SK Slavia Praha (CZE),布拉格斯拉维亚,169,36,1,中场,100,name_club
+A组,捷克,Czechia,CZE,15,19,FW,Forward,CHORY Tomas,乔里,Tomáš,CHORÝ,CHORÝ,26/01/1995,SK Slavia Praha (CZE),布拉格斯拉维亚,199,23,7,前锋,100,name_club
+A组,捷克,Czechia,CZE,15,20,DF,Defender,ZELENY Jaroslav,泽勒尼,Jaroslav,ZELENÝ,ZELENÝ,20/08/1992,AC Sparta Praha (CZE),布拉格斯拉维亚,190,24,0,后卫,85.7,name_club
+A组,捷克,Czechia,CZE,15,21,DF,Defender,DOUDERA David,道德拉,David,DOUDĚRA,DOUDĚRA,31/05/1998,SK Slavia Praha (CZE),布拉格斯拉维亚,175,17,2,后卫,100,name_club
+A组,捷克,Czechia,CZE,15,22,MF,Midfielder,SOUCEK Tomas,绍切克,Tomáš,SOUČEK,SOUČEK,27/02/1995,West Ham United FC (ENG),西汉姆联,192,91,17,中场,100,name_club
+A组,捷克,Czechia,CZE,15,23,GK,Goalkeeper,HORNICEK Lukas,卢卡斯·霍尔尼切克,Lukáš,HORNÍČEK,HORNÍČEK,13/07/2002,SC Braga (POR),布拉加,198,1,0,,门将,"matched,name_web"
+A组,捷克,Czechia,CZE,15,24,MF,Midfielder,SOJKA Alexandr,亚历山大・索卡,Alexandr,SOJKA,SOJKA,02/04/2003,FC Viktoria Plzeň (CZE),比尔森胜利,188,3,0,中场,75.2,name_club
+A组,捷克,Czechia,CZE,15,25,MF,Midfielder,SOCHUREK Hugo,索楚雷克,Hugo,SOCHŮREK,SOCHŮREK,07/06/2008,AC Sparta Praha (CZE),布拉格斯巴达,183,1,0,中场,88.9,name_club
+A组,捷克,Czechia,CZE,15,26,FW,Forward,VISINSKY Denis,德尼斯·维辛斯基,Denis,VIŠINSKÝ,VIŠINSKÝ,21/03/2003,FC Viktoria Plzeň (CZE),比尔森胜利,178,2,1,,前锋,"matched,name_web"
+E组,厄瓜多尔,Ecuador,ECU,16,1,GK,Goalkeeper,GALINDEZ Hernan,加林德斯,Hernán Ismael,GALÍNDEZ,GALINDEZ,30/03/1987,CA Huracán (ARG),飓风,189,36,0,门将,100,name_club
+E组,厄瓜多尔,Ecuador,ECU,16,2,DF,Defender,TORRES Felix,菲利克斯·托雷斯,Félix Eduardo,TORRES CAICEDO,TORRES,11/01/1997,SC Internacional (BRA),巴西国际,187,49,5,后卫,95,name_club
+E组,厄瓜多尔,Ecuador,ECU,16,3,DF,Defender,HINCAPIE Piero,因卡皮耶,Piero Martin,HINCAPIÉ REYNA,HINCAPIE,09/01/2002,Arsenal FC (ENG),阿森纳,183,53,2,后卫,100,name_club
+E组,厄瓜多尔,Ecuador,ECU,16,4,DF,Defender,ORDONEZ Joel,乔尔·奥多涅兹,Joel Leandro,ORDÓÑEZ GUERRERO,ORDÓÑEZ,21/04/2004,Club Brugge (BEL),布鲁日,188,18,0,后卫,100,name_club
+E组,厄瓜多尔,Ecuador,ECU,16,5,MF,Midfielder,ALCIVAR Jordy,阿尔西瓦尔,Jordy Jose,ALCÍVAR MACÍAS,ALCIVAR,05/08/1999,Independiente Del Valle (ECU),山谷独立,168,11,1,中场,75,name_club
+E组,厄瓜多尔,Ecuador,ECU,16,6,DF,Defender,PACHO Willian,帕乔,Willian Joel,PACHO TENORIO,PACHO,16/10/2001,Paris Saint-Germain (FRA),巴黎,188,35,2,后卫,80,name_club
+E组,厄瓜多尔,Ecuador,ECU,16,7,DF,Defender,ESTUPINAN Pervis,埃斯图皮尼安,Pervis Josue,ESTUPIÑÁN TENORIO,ESTUPIÑÁN,21/01/1998,AC Milan (ITA),AC米兰,175,54,5,后卫,100,name_club
+E组,厄瓜多尔,Ecuador,ECU,16,8,MF,Midfielder,VALENCIA Anthony,安东尼奥·巴伦西亚,Anthony Lenin,VALENCIA BAJAÑA,A. VALENCIA,21/07/2003,Royal Antwerp FC (BEL),安德莱赫特,173,3,1,,中场,"matched,name_web"
+E组,厄瓜多尔,Ecuador,ECU,16,9,FW,Forward,YEBOAH John,约翰·叶博亚,John,YEBOAH ZAMORA,YEBOAH ZAMORA,23/06/2000,Venezia FC (ITA),威尼斯,170,23,3,前锋,97.7,name_club
+E组,厄瓜多尔,Ecuador,ECU,16,10,MF,Midfielder,PAEZ Kendry,派斯,Ray Kendry,PAEZ ANDRADE,KENDRY,04/05/2007,CA River Plate (ARG),河床,178,26,2,中场,88.7,name_club
+E组,厄瓜多尔,Ecuador,ECU,16,11,FW,Forward,RODRIGUEZ Kevin,凯文·罗德里格斯,Kevin Jose,RODRÍGUEZ CORTEZ,RODRIGUEZ,04/03/2000,Royale Union Saint-Gilloise (BEL),因巴布拉,190,32,2,前锋,83.3,name_club
+E组,厄瓜多尔,Ecuador,ECU,16,12,GK,Goalkeeper,RAMIREZ Moises,莫伊塞斯·拉米雷斯,Wellington Moisés,RAMÍREZ PRECIADO,RAMÍREZ,09/09/2000,AE Kifisia FC (GRE),基菲西亚,185,7,0,,门将,"matched,name_web"
+E组,厄瓜多尔,Ecuador,ECU,16,13,FW,Forward,VALENCIA Enner,恩纳·巴伦西亚,Enner Remberto,VALENCIA LASTRA,E. VALENCIA,04/11/1989,CF Pachuca (MEX),帕丘卡,177,106,49,,前锋,"matched,name_web"
+E组,厄瓜多尔,Ecuador,ECU,16,14,MF,Midfielder,MINDA Alan,阿兰·明达,Alan Steve,MINDA GARCIA,MINDA,14/05/2003,Atlético Mineiro (BRA),米内罗竞技,174,21,2,前锋,100,name_club
+E组,厄瓜多尔,Ecuador,ECU,16,15,MF,Midfielder,VITE Pedro,佩德罗·维特,Pedro Jeampierre,VITE UCA,VITE,09/03/2002,Pumas UNAM (MEX),墨西哥美洲狮,172,18,1,中场,100,name_club
+E组,厄瓜多尔,Ecuador,ECU,16,16,FW,Forward,CAICEDO Jordy,乔迪·凯塞多,Jordy Josue,CAICEDO MEDINA,J. CAICEDO,18/11/1997,CA Huracán (ARG),飓风,186,20,4,前锋,100,name_club
+E组,厄瓜多尔,Ecuador,ECU,16,17,DF,Defender,PRECIADO Angelo,安吉洛·普雷西亚多,Ángelo Smit,PRECIADO QUIÑONEZ,PRECIADO,18/02/1998,Atlético Mineiro (BRA),米内罗竞技,174,57,0,后卫,88.7,name_club
+E组,厄瓜多尔,Ecuador,ECU,16,18,MF,Midfielder,CASTILLO Denil,德尼尔·卡斯蒂略,Denil Daniel,CASTILLO PRECIADO,CASTILLO,24/03/2004,FC Midtjylland (DEN),中日德兰,189,5,0,,中场,"matched,name_web"
+E组,厄瓜多尔,Ecuador,ECU,16,19,FW,Forward,PLATA Gonzalo,冈萨洛·普拉塔,Gonzalo Jordy,PLATA JIMENEZ,PLATA,01/11/2000,CR Flamengo (BRA),弗拉门戈,178,51,8,前锋,100,name_club
+E组,厄瓜多尔,Ecuador,ECU,16,20,FW,Forward,ANGULO Nilson,尼尔松·安古洛,Nilson David,ANGULO RAMIREZ,ANGULO,19/06/2003,Sunderland AFC (ENG),桑德兰,184,15,2,前锋,100,name_club
+E组,厄瓜多尔,Ecuador,ECU,16,21,MF,Midfielder,FRANCO Alan,阿兰·弗兰科,Alan Steven,FRANCO PALMA,FRANCO,21/08/1998,Atlético Mineiro (BRA),米内罗竞技,175,59,1,中场,100,name_club
+E组,厄瓜多尔,Ecuador,ECU,16,22,GK,Goalkeeper,VALLE Gonzalo,冈萨洛·巴列,Gonzalo Roberto,VALLE BUSTAMANTE,VALLE,28/02/1996,LDU Quito (ECU),基多大学,186,4,0,,门将,"matched,name_web"
+E组,厄瓜多尔,Ecuador,ECU,16,23,MF,Midfielder,CAICEDO Moises,凯塞多,Moisés Isaac,CAICEDO COROZO,M. CAICEDO,02/11/2001,Chelsea FC (ENG),切尔西,178,62,3,中场,92.8,name_club
+E组,厄瓜多尔,Ecuador,ECU,16,24,FW,Forward,AREVALO Jeremy,阿雷瓦洛,Jeremy Alberto,AREVALO MERA,AREVALO,19/03/2005,VfB Stuttgart (GER),斯图加特,182,4,0,前锋,100,name_club
+E组,厄瓜多尔,Ecuador,ECU,16,25,DF,Defender,POROZO Jackson,哈克松·波罗索,Jackson Gabriel,POROZO VERNAZA,POROZO,04/08/2000,Club Tijuana (MEX),蒂华纳,192,10,1,,后卫,"matched,name_web"
+E组,厄瓜多尔,Ecuador,ECU,16,26,DF,Defender,MEDINA Yaimar,亚马尔·梅迪纳,Yaimar Abel,MEDINA ORTIZ,MEDINA,05/11/2004,KRC Genk (BEL),亨克,173,6,0,后卫,100,name_club
+G组,埃及,Egypt,EGY,17,1,GK,Goalkeeper,MOHAMED ELSHENAWY,穆罕默德·谢纳维,Mohamed Elsayed Mohamed,ELSHENAWY GOMAA,M. ELSHENAWY,18/12/1988,Al Ahly FC (EGY),开罗国民,191,77,0,门将,100,name_club
+G组,埃及,Egypt,EGY,17,2,DF,Defender,YASSER IBRAHIM,易卜拉欣,Yasser Ahmed Ibrahim,ELHANAFY,YASSER,10/02/1993,Al Ahly FC (EGY),开罗国民,185,19,1,后卫,85,name_club
+G组,埃及,Egypt,EGY,17,3,DF,Defender,MOHAMED HANY,穆罕默德·哈尼,Mohamed Hany Gamal,ELDEMERDASH,M. HANY,02/02/1996,Al Ahly FC (EGY),开罗国民,175,44,0,后卫,100,name_club
+G组,埃及,Egypt,EGY,17,4,DF,Defender,HOSSAM ABDELMAGUID,侯赛因·阿卜德尔马吉德,Hossam Abdelmegeed Abdelsalam,ABDELMEGEED,HOSSAM,30/04/2001,Zamalek SC (EGY),扎马雷克,193,13,0,,后卫,"matched,name_web"
+G组,埃及,Egypt,EGY,17,5,DF,Defender,RAMY RABIA,拉米·拉比亚,Ramy Hisham Abdelaziz Moustafa,RABIA,R. RABIAA,20/05/1993,Al Ain FC (UAE),艾因,183,48,6,后卫,80,name_club
+G组,埃及,Egypt,EGY,17,6,DF,Defender,MOHAMED ABDELMONEIM,阿卜杜勒穆奈姆,Mohamed Abdelmoneim Elsayed M,AHMED,M. ABDELMONIEM,01/02/1999,OGC Nice (FRA),尼斯,184,36,3,后卫,100,name_club
+G组,埃及,Egypt,EGY,17,7,FW,Forward,TREZEGUET,特雷泽盖,Mahmoud Ahmed Ibrahim,HASSAN,M. TREZEGUET,01/10/1994,Al Ahly FC (EGY),开罗国民,181,96,23,中场,100,name_club
+G组,埃及,Egypt,EGY,17,8,MF,Midfielder,EMAM ASHOUR,阿舒尔,Emam Ashour Metwaly,ABDELGHANY,E. ASHOUR,20/02/1998,Al Ahly FC (EGY),开罗国民,180,30,1,中场,100,name_club
+G组,埃及,Egypt,EGY,17,9,FW,Forward,HAMZA ABDELKARIM,阿卜杜勒卡里姆,Hamza Mohamed Abdelkarim E,SELIM,ABDELKARIM,01/01/2008,FC Barcelona (ESP),巴萨U19,182,3,0,前锋,100,name_club
+G组,埃及,Egypt,EGY,17,10,FW,Forward,MOHAMED SALAH,萨拉赫,Mohamed Salah Hamed Mahrous,GHALY,M. SALAH,15/06/1992,Liverpool FC (ENG),利物浦,175,117,67,中场,85.7,name_club
+G组,埃及,Egypt,EGY,17,11,MF,Midfielder,MOSTAFA ZICO,穆斯塔法·济科,Mostafa Mohamed Zaky,ABDELRAOUF,ZICO,27/04/1997,Pyramids FC (EGY),金字塔,179,3,2,中场,83.3,name_club
+G组,埃及,Egypt,EGY,17,12,FW,Forward,HAISSEM HASSAN,海瑟姆·哈桑,Haissem Yousry Fouad A,HASSAN,H. HASSAN,08/02/2002,Real Oviedo (ESP),奥维耶多,175,4,0,中场,84.6,name_club
+G组,埃及,Egypt,EGY,17,13,DF,Defender,AHMED FATOUH,法图赫,Ahmed Mohamed Aboelfetouh,MOHAMED,A. FATOUH,22/03/1998,Zamalek SC (EGY),扎马雷克,177,40,1,后卫,100,name_club
+G组,埃及,Egypt,EGY,17,14,MF,Midfielder,HAMDY FATHY,哈姆迪·法特希,Hamdy Fathy Abdelhalim,ABDELFATTAH,H. FATHY,29/09/1994,Al Wakrah SC (QAT),沃克拉,183,65,4,,中场,"matched,name_web"
+G组,埃及,Egypt,EGY,17,15,DF,Defender,KARIM HAFEZ,哈菲兹,Karim Hafez Ramadan,SEIFELDIN,K. HAFEZ,12/03/1996,Pyramids FC (EGY),金字塔,174,10,0,后卫,85.7,name_club
+G组,埃及,Egypt,EGY,17,16,GK,Goalkeeper,MAHDY SOLIMAN,索利曼,Mahdy Mohamed Soliman,IBRAHIM,M. SOLIMAN,08/06/1987,Zamalek SC (EGY),扎马雷克,189,0,0,门将,87.7,name_club
+G组,埃及,Egypt,EGY,17,17,MF,Midfielder,MOHANAD LASHIN,穆罕纳德·拉辛,Mohanad Mostafa Ahmed A,LASHIN,M. LASHIN,29/05/1996,Pyramids FC (EGY),金字塔,186,24,0,中场,85.7,name_club
+G组,埃及,Egypt,EGY,17,18,MF,Midfielder,NABIL DONGA,纳比勒·伊马德,Nabil Emad Aly Elmahdy,ALY,DONGA,06/04/1996,Al Najmah SC (KSA),纳杰马体育,179,12,0,中场,76.9,name_club
+G组,埃及,Egypt,EGY,17,19,MF,Midfielder,MARAWAN ATTIA,阿提亚,Marawan Attia Fahim,GHALLAB,M. ATTIA,01/08/1998,Al Ahly FC (EGY),开罗国民,176,36,1,中场,100,name_club
+G组,埃及,Egypt,EGY,17,20,FW,Forward,IBRAHIM ADEL,阿德尔,Ibrahim Adel Aly Mohamed,HASSAN,I. ADEL,23/04/2001,FC Nordsjælland (DEN),北西兰,178,25,3,中场,100,name_club
+G组,埃及,Egypt,EGY,17,21,MF,Midfielder,MAHMOUD SABER,萨比尔,Mahmoud Saber Abdelmohsen H,ABDELMOHSEN,M. SABER,30/07/2001,ZED FC (EGY),泽德,170,15,1,中场,100,name_club
+G组,埃及,Egypt,EGY,17,22,FW,Forward,OMAR MARMOUSH,马尔穆什,Omar Khaled Mohamed Abdelsalam,MARMOUSH,MARMOUSH,07/02/1999,Manchester City FC (ENG),曼城,180,51,11,前锋,100,name_club
+G组,埃及,Egypt,EGY,17,23,GK,Goalkeeper,MOSTAFA SHOUBIR,肖贝尔,Mostafa Ahmed Abdelaziz Mohame,SHOUBIR,SHOUBIR,15/05/2000,Al Ahly FC (EGY),开罗国民,195,11,0,门将,100,name_club
+G组,埃及,Egypt,EGY,17,24,DF,Defender,TAREK ALAA,塔里克·阿拉,Tarek Alaa Abdelghaffar Abdel,ELGEBALY,T. ALAA,05/01/2002,ZED FC (EGY),泽德,178,3,0,后卫,100,name_club
+G组,埃及,Egypt,EGY,17,25,FW,Forward,ZIZO,齐佐,Ahmed Mostafa Mohamed,SAYED,ZIZO,10/01/1996,Al Ahly FC (EGY),开罗国民,175,65,5,中场,100,name_club
+G组,埃及,Egypt,EGY,17,26,GK,Goalkeeper,MOHAMED ALAA,穆罕默德·阿拉,Mohamed Alaaeldin Soliman M,AHMED,M. ALAA,01/01/1999,El Gouna FC (EGY),艾尔格纳,188,0,0,门将,100,name_club
+L组,英格兰,England,ENG,18,1,GK,Goalkeeper,PICKFORD Jordan,皮克福德,Jordan Lee,PICKFORD,PICKFORD,07/03/1994,Everton FC (ENG),埃弗顿,185,84,0,门将,80,name_club
+L组,英格兰,England,ENG,18,2,DF,Defender,KONSA Ezri,孔萨,Ezri Ngoyo,KONSA,KONSA,23/10/1997,Aston Villa FC (ENG),阿斯顿维拉,180,20,1,后卫,90.9,name_club
+L组,英格兰,England,ENG,18,3,DF,Defender,OREILLY Nico,奥赖利,Nico,O'REILLY,O'REILLY,21/03/2005,Manchester City FC (ENG),曼城,177,5,0,后卫,100,name_club
+L组,英格兰,England,ENG,18,4,MF,Midfielder,RICE Declan,萨卡,Declan,RICE,RICE,14/01/1999,Arsenal FC (ENG),阿森纳,185,73,7,前锋,85,name_club
+L组,英格兰,England,ENG,18,5,DF,Defender,STONES John,斯通斯,John,STONES,STONES,28/05/1994,Manchester City FC (ENG),曼城,188,89,3,后卫,100,name_club
+L组,英格兰,England,ENG,18,6,DF,Defender,GUEHI Marc,格伊,Addji Keaninkin Marc-Isreal,GUEHI,GUÉHI,13/07/2000,Manchester City FC (ENG),曼城,183,29,1,后卫,100,name_club
+L组,英格兰,England,ENG,18,7,FW,Forward,SAKA Bukayo,埃泽,Bukayo Ayoyinka,SAKA,SAKA,05/09/2001,Arsenal FC (ENG),阿森纳,178,49,14,中场,100,name_club
+L组,英格兰,England,ENG,18,8,MF,Midfielder,ANDERSON Elliot,埃利奥特·安德森,Elliot Junior,ANDERSON,ANDERSON,06/11/2002,Nottingham Forest FC (ENG),诺丁汉森林,179,9,0,中场,100,name_club
+L组,英格兰,England,ENG,18,9,FW,Forward,KANE Harry,凯恩,Harry Edward,KANE,KANE,28/07/1993,FC Bayern München (GER),拜仁,190,114,79,前锋,100,name_club
+L组,英格兰,England,ENG,18,10,MF,Midfielder,BELLINGHAM Jude,贝林厄姆,Jude Victor William,BELLINGHAM,BELLINGHAM,29/06/2003,Real Madrid C. F. (ESP),皇家马德里,183,48,6,,中场,"matched,name_web"
+L组,英格兰,England,ENG,18,11,FW,Forward,RASHFORD Marcus,拉什福德,Marcus,RASHFORD,RASHFORD,31/10/1997,FC Barcelona (ESP),曼联/巴萨,180,72,18,前锋,80,name_club
+L组,英格兰,England,ENG,18,12,DF,Defender,CHALOBAH Trevoh,查洛巴,Trevoh Tom,CHALOBAH,CHALOBAH,05/07/1999,Chelsea FC (ENG),切尔西,192,1,0,后卫,100,name_club
+L组,英格兰,England,ENG,18,13,GK,Goalkeeper,HENDERSON Dean,迪恩·亨德森,Dean Bradley,HENDERSON,D. HENDERSON,12/03/1997,Crystal Palace FC (ENG),水晶宫,188,4,0,门将,100,name_club
+L组,英格兰,England,ENG,18,14,MF,Midfielder,HENDERSON Jordan,乔丹·亨德森,Jordan Brian,HENDERSON,HENDERSON,17/06/1990,Brentford FC (ENG),布伦特福德,183,91,3,中场,100,name_club
+L组,英格兰,England,ENG,18,15,DF,Defender,BURN Dan,丹·伯恩,Daniel Johnson,BURN,BURN,09/05/1992,Newcastle United FC (ENG),纽卡斯尔,201,8,0,,后卫,"matched,name_web"
+L组,英格兰,England,ENG,18,16,MF,Midfielder,MAINOO Kobbie,梅努,Kobbie Boateng,MAINOO,MAINOO,19/04/2005,Manchester United FC (ENG),曼联,183,14,0,中场,100,name_club
+L组,英格兰,England,ENG,18,17,MF,Midfielder,ROGERS Morgan,摩根·罗杰斯,Morgan Elliot,ROGERS,ROGERS,26/07/2002,Aston Villa FC (ENG),阿斯顿维拉,187,15,1,,中场,"matched,name_web"
+L组,英格兰,England,ENG,18,18,FW,Forward,GORDON Anthony,安东尼·戈登,Anthony Michael,GORDON,GORDON,24/02/2001,Newcastle United FC (ENG),纽卡斯尔,182,19,3,,前锋,"matched,name_web"
+L组,英格兰,England,ENG,18,19,FW,Forward,WATKINS Ollie,沃特金斯,Oliver George Arthur,WATKINS,WATKINS,30/12/1995,Aston Villa FC (ENG),阿斯顿维拉,180,22,7,,前锋,"matched,name_web"
+L组,英格兰,England,ENG,18,20,FW,Forward,MADUEKE Noni,马杜埃凯,Chukwunonso Azuka Tristan,MADUEKE,MADUEKE,10/03/2002,Arsenal FC (ENG),阿森纳,182,11,1,前锋,100,name_club
+L组,英格兰,England,ENG,18,21,MF,Midfielder,EZE Eberechi,赖斯,Eberechi Oluchi,EZE,EZE,29/06/1998,Arsenal FC (ENG),阿森纳,178,17,3,中场,100,name_club
+L组,英格兰,England,ENG,18,22,FW,Forward,TONEY Ivan,伊万·托尼,Ivan Benjamin Elijah,TONEY,TONEY,16/03/1996,Al Ahli FC (KSA),吉达国民,185,8,1,,前锋,"matched,name_web"
+L组,英格兰,England,ENG,18,23,GK,Goalkeeper,TRAFFORD James,特拉福德,James Harrington,TRAFFORD,TRAFFORD,10/10/2002,Manchester City FC (ENG),曼城,197,2,0,门将,100,name_club
+L组,英格兰,England,ENG,18,24,DF,Defender,JAMES Reece,里斯·詹姆斯,Reece Lewis,JAMES,JAMES,08/12/1999,Chelsea FC (ENG),切尔西,180,24,1,后卫,96.5,name_club
+L组,英格兰,England,ENG,18,25,DF,Defender,SPENCE Djed,斯彭斯,Diop Tehuti Djed-Hotep,SPENCE,SPENCE,09/08/2000,Tottenham Hotspur FC (ENG),热刺,184,6,0,后卫,100,name_club
+L组,英格兰,England,ENG,18,26,DF,Defender,QUANSAH Jarell,宽萨,Jarell Amorin,QUANSAH,QUANSAH,29/01/2003,Bayer 04 Leverkusen (GER),勒沃库森,190,3,0,后卫,100,name_club
+I组,法国,France,FRA,19,1,GK,Goalkeeper,SAMBA Brice,桑巴,Brice Lauriche,SAMBA,SAMBA,25/04/1994,Stade Rennais FC (FRA),雷恩,187,4,0,门将,100,name_club
+I组,法国,France,FRA,19,2,DF,Defender,GUSTO Malo,古斯托,Malo Arthur,GUSTO,GUSTO,19/05/2003,Chelsea FC (ENG),切尔西,179,11,0,后卫,100,name_club
+I组,法国,France,FRA,19,3,DF,Defender,DIGNE Lucas,迪涅,Lucas,DIGNE,DIGNE,20/07/1993,Aston Villa FC (ENG),维拉,178,58,0,后卫,80,name_club
+I组,法国,France,FRA,19,4,DF,Defender,UPAMECANO Dayot,于帕梅卡诺,Dayotchanculle Oswald,UPAMECANO,UPAMECANO,27/10/1998,FC Bayern München (GER),拜仁,186,38,2,后卫,88.9,name_club
+I组,法国,France,FRA,19,5,DF,Defender,KOUNDE Jules,科纳特,Jules Olivier,KOUNDE,KOUNDE,12/11/1998,FC Barcelona (ESP),利物浦,178,48,0,后卫,100,name_club
+I组,法国,France,FRA,19,6,MF,Midfielder,KONE Manu,科内,Kouadio Emmanuel Boris,KONE,KONE,17/05/2001,AS Roma (ITA),罗马,185,14,0,中场,100,name_club
+I组,法国,France,FRA,19,7,FW,Forward,DEMBELE Ousmane,登贝莱,Masour Ousmane,DEMBELE,DEMBELE,15/05/1997,Paris Saint-Germain (FRA),巴黎,179,59,7,前锋,85.7,name_club
+I组,法国,France,FRA,19,8,MF,Midfielder,TCHOUAMENI Aurelien,琼阿梅尼,Aurélien Djani,TCHOUAMENI,TCHOUAMENI,27/01/2000,Real Madrid C. F. (ESP),皇马,188,46,3,中场,75,name_club
+I组,法国,France,FRA,19,9,FW,Forward,THURAM Marcus,图拉姆,Marcus Lilian,THURAM-ULIEN,THURAM,06/08/1997,FC Internazionale Milano (ITA),国米,192,34,3,前锋,85.7,name_club
+I组,法国,France,FRA,19,10,FW,Forward,MBAPPE Kylian,姆巴佩,Kylian,MBAPPE LOTTIN,MBAPPE,20/12/1998,Real Madrid C. F. (ESP),皇马,180,98,56,前锋,85.7,name_club
+I组,法国,France,FRA,19,11,FW,Forward,OLISE Michael,奥利塞,Michael Akpovie,OLISE,OLISE,12/12/2001,FC Bayern München (GER),拜仁,184,17,7,前锋,100,name_club
+I组,法国,France,FRA,19,12,FW,Forward,BARCOLA Bradley,巴尔科拉,Bradley Jean-Manuel Essolisa A,BARCOLA,BARCOLA,02/09/2002,Paris Saint-Germain (FRA),巴黎,187,20,3,前锋,100,name_club
+I组,法国,France,FRA,19,13,MF,Midfielder,KANTE Ngolo,坎特,N'golo,KANTE,KANTE,29/03/1991,Fenerbahçe SK (TUR),费内巴切,171,69,2,中场,100,name_club
+I组,法国,France,FRA,19,14,MF,Midfielder,RABIOT Adrien,拉比奥特,Adrien Thibault Marie,RABIOT,RABIOT,03/04/1995,AC Milan (ITA),AC米兰,191,59,7,中场,100,name_club
+I组,法国,France,FRA,19,15,DF,Defender,KONATE Ibrahima,孔德,Ibrahima,KONATÉ,KONATE,25/05/1999,Liverpool FC (ENG),巴萨,194,28,0,后卫,80,name_club
+I组,法国,France,FRA,19,16,GK,Goalkeeper,MAIGNAN Mike,迈尼昂,Mike Peterson,MAIGNAN,MAIGNAN,03/07/1995,AC Milan (ITA),AC米兰,191,40,0,门将,100,name_club
+I组,法国,France,FRA,19,17,DF,Defender,SALIBA William,萨利巴,William Alain André Gabriel,SALIBA,SALIBA,24/03/2001,Arsenal FC (ENG),阿森纳,192,32,0,后卫,100,name_club
+I组,法国,France,FRA,19,18,MF,Midfielder,ZAIRE-EMERY Warren,扎伊尔·埃梅里,Warren Marie Jean-Pierre,ZAÏRE-EMERY,ZAIRE-EMERY,08/03/2006,Paris Saint-Germain (FRA),巴黎,176,11,1,中场,80,name_club
+I组,法国,France,FRA,19,19,DF,Defender,HERNANDEZ Theo,特奥,Théo Bernard François,HERNANDEZ,T. HERNANDEZ,06/10/1997,Al Hilal SC (KSA),利雅得新月,184,44,2,后卫,100,name_club
+I组,法国,France,FRA,19,20,FW,Forward,DOUE Desire,杜埃,Désiré Nonka-Maho,DOUE,DOUE,03/06/2005,Paris Saint-Germain (FRA),巴黎,182,7,2,前锋,100,name_club
+I组,法国,France,FRA,19,21,DF,Defender,HERNANDEZ Lucas,卢卡斯·埃尔南德斯,Lucas Francois Bernard,HERNANDEZ,L. HERNANDEZ,14/02/1996,Paris Saint-Germain (FRA),巴黎,184,42,0,后卫,85.7,name_club
+I组,法国,France,FRA,19,22,FW,Forward,MATETA Jean-Philippe,马特塔,Jean-Philippe,MATETA,MATETA,28/06/1997,Crystal Palace FC (ENG),水晶宫,192,4,2,前锋,100,name_club
+I组,法国,France,FRA,19,23,GK,Goalkeeper,RISSER Robin,里塞,Robin François Philippe,RISSER,RISSER,02/12/2004,RC Lens (FRA),朗斯,193,0,0,门将,100,name_club
+I组,法国,France,FRA,19,24,MF,Midfielder,CHERKI Rayan,谢尔基,Mathis Rayan,CHERKI,CHERKI,17/08/2003,Manchester City FC (ENG),曼城,180,7,2,前锋,91.4,name_club
+I组,法国,France,FRA,19,25,MF,Midfielder,AKLIOUCHE Maghnes,阿克利乌舍,Maghnes,AKLIOUCHE,AKLIOUCHE,25/02/2002,AS Monaco (FRA),摩纳哥,183,9,1,前锋,73.7,name_club
+I组,法国,France,FRA,19,26,DF,Defender,LACROIX Maxence,拉克鲁瓦,Maxence Guy,LACROIX,LACROIX,06/04/2000,Crystal Palace FC (ENG),水晶宫,192,4,0,后卫,100,name_club
+E组,德国,Germany,GER,20,1,GK,Goalkeeper,NEUER Manuel,诺伊尔,Manuel Peter,NEUER,NEUER,27/03/1986,FC Bayern München (GER),拜仁慕尼黑,193,125,0,门将,80,name_club
+E组,德国,Germany,GER,20,2,DF,Defender,RUEDIGER Antonio,吕迪格,Antonio,RÜDIGER,RÜDIGER,03/03/1993,Real Madrid C. F. (ESP),皇家马德里,190,83,3,防守端,85.7,name_club
+E组,德国,Germany,GER,20,3,DF,Defender,ANTON Waldemar,瓦尔德马·安东,Waldemar,ANTON,ANTON,20/07/1996,Borussia Dortmund (GER),多特蒙德,189,14,0,防守端,100,name_club
+E组,德国,Germany,GER,20,4,DF,Defender,TAH Jonathan,塔,Jonathan Glao,TAH,TAH,11/02/1996,FC Bayern München (GER),拜仁慕尼黑,195,48,1,防守端,94,name_club
+E组,德国,Germany,GER,20,5,MF,Midfielder,PAVLOVIC Aleksandar,帕夫洛维奇,Aleksandar,PAVLOVIĆ,PAVLOVIĆ,03/05/2004,FC Bayern München (GER),拜仁慕尼黑,188,12,1,防守端,80,name_club
+E组,德国,Germany,GER,20,6,DF,Defender,KIMMICH Joshua,基米希,Joshua Walter,KIMMICH,KIMMICH,08/02/1995,FC Bayern München (GER),拜仁慕尼黑,177,111,10,,后卫,"matched,name_web"
+E组,德国,Germany,GER,20,7,FW,Forward,HAVERTZ Kai,哈弗茨,Kai Lukas,HAVERTZ,HAVERTZ,11/06/1999,Arsenal FC (ENG),阿森纳,190,59,24,进攻端,82,name_club
+E组,德国,Germany,GER,20,8,MF,Midfielder,GORETZKA Leon,格雷茨卡,Leon Christoph,GORETZKA,GORETZKA,06/02/1995,FC Bayern München (GER),拜仁慕尼黑,189,71,15,,中场,"matched,name_web"
+E组,德国,Germany,GER,20,9,MF,Midfielder,LEWELING Jamie,亚米·莱韦林,Jamie Jaleel Jeremy,LEWELING,LEWELING,26/02/2001,VfB Stuttgart (GER),斯图加特,185,5,1,进攻端,100,name_club
+E组,德国,Germany,GER,20,10,MF,Midfielder,MUSIALA Jamal,穆西亚拉,Jamal,MUSIALA,MUSIALA,26/02/2003,FC Bayern München (GER),拜仁慕尼黑,180,43,10,进攻端,85.7,name_club
+E组,德国,Germany,GER,20,11,FW,Forward,WOLTEMADE Nick,沃尔特马德,Nick,WOLTEMADE,WOLTEMADE,14/02/2002,Newcastle United FC (ENG),纽卡斯尔,198,11,4,进攻端,100,name_club
+E组,德国,Germany,GER,20,12,GK,Goalkeeper,BAUMANN Oliver,奥利弗·鲍曼,Oliver,BAUMANN,BAUMANN,02/06/1990,TSG Hoffenheim (GER),霍芬海姆,187,13,0,门将,100,name_club
+E组,德国,Germany,GER,20,13,MF,Midfielder,GROSS Pascal,格罗斯,Pascal Alexander,GROß,GROß,15/06/1991,Brighton & Hove Albion FC (ENG),布莱顿,181,18,1,防守端,100,name_club
+E组,德国,Germany,GER,20,14,FW,Forward,BEIER Maximilian,施洛特贝克,Maximilian,BEIER,BEIER,17/10/2002,Borussia Dortmund (GER),多特蒙德,185,9,0,防守端,100,name_club
+E组,德国,Germany,GER,20,15,DF,Defender,SCHLOTTERBECK Nico,马克西米利安·拜尔,Nico Cédric,SCHLOTTERBECK,SCHLOTTERBECK,01/12/1999,Borussia Dortmund (GER),多特蒙德,191,28,1,进攻端,68.3,name_club
+E组,德国,Germany,GER,20,16,MF,Midfielder,STILLER Angelo,斯蒂勒,Angelo Nicolas,STILLER,STILLER,04/04/2001,VfB Stuttgart (GER),斯图加特,183,8,0,防守端,100,name_club
+E组,德国,Germany,GER,20,17,MF,Midfielder,WIRTZ Florian,维尔茨,Florian Richard,WIRTZ,WIRTZ,03/05/2003,Liverpool FC (ENG),利物浦,176,42,11,,中场,"matched,name_web"
+E组,德国,Germany,GER,20,18,DF,Defender,BROWN Nathaniel,纳撒尼尔·布朗,Nathaniel Christopher,BROWN,BROWN,16/06/2003,Eintracht Frankfurt (GER),法兰克福,176,6,1,防守端,92.2,name_club
+E组,德国,Germany,GER,20,19,MF,Midfielder,SANE Leroy,萨内,Leroy Aziz,SANÉ,SANÉ,11/01/1996,Galatasaray SK (TUR),加拉塔萨雷,183,77,17,进攻端,100,name_club
+E组,德国,Germany,GER,20,20,MF,Midfielder,AMIRI Nadiem,纳迪姆·阿米里,Nadiem,AMIRI,AMIRI,27/10/1996,1. FSV Mainz 05 (GER),美因茨,178,11,1,进攻端,100,name_club
+E组,德国,Germany,GER,20,21,GK,Goalkeeper,NUEBEL Alexander,努贝尔,Alexander,NÜBEL,NÜBEL,30/09/1996,VfB Stuttgart (GER),斯图加特,193,3,0,门将,100,name_club
+E组,德国,Germany,GER,20,22,DF,Defender,RAUM David,大卫·劳姆,David,RAUM,RAUM,22/04/1998,RB Leipzig (GER),RB莱比锡,180,38,1,防守端,88.9,name_club
+E组,德国,Germany,GER,20,23,MF,Midfielder,NMECHA Felix,菲利克斯·恩梅查,Felix Kalu,NMECHA,NMECHA,10/10/2000,Borussia Dortmund (GER),多特蒙德,190,9,2,防守端,100,name_club
+E组,德国,Germany,GER,20,24,DF,Defender,THIAW Malick,格雷茨卡,Malick,THIAW,THIAW,08/08/2001,Newcastle United FC (ENG),拜仁慕尼黑,194,5,0,进攻端,72.7,name_club
+E组,德国,Germany,GER,20,25,MF,Midfielder,OUEDRAOGO Assan,韦德拉奥果,Forzan Assan,OUÉDRAOGO,OUÉDRAOGO,09/05/2006,RB Leipzig (GER),莱比锡,191,1,1,进攻端,85.7,name_club
+E组,德国,Germany,GER,20,26,FW,Forward,UNDAV Deniz,翁达夫,Deniz,UNDAV,UNDAV,19/07/1996,VfB Stuttgart (GER),斯图加特,179,10,7,进攻端,91.4,name_club
+L组,加纳,Ghana,GHA,21,1,GK,Goalkeeper,ZIGI Lawrence Ati,劳伦斯·阿蒂·齐吉,Lawrence Ati,ZIGI,ZIGI,29/11/1996,FC St. Gallen (SUI),圣加仑,188,30,0,,门将,"matched,name_web"
+L组,加纳,Ghana,GHA,21,2,DF,Defender,SEIDU Alidu,塞杜,Alidu,SEIDU,ALIDU SEIDU,04/06/2000,Stade Rennais FC (FRA),雷恩,173,24,1,后卫,100,name_club
+L组,加纳,Ghana,GHA,21,3,MF,Midfielder,YIRENKYI Caleb,凯莱布·耶林基,Caleb Marfo,YIRENKYI,YIRENKYI,15/01/2006,FC Nordsjælland (DEN),北西兰,182,11,1,,中场,"matched,name_web"
+L组,加纳,Ghana,GHA,21,4,DF,Defender,ADJETEY Jonas,阿杰蒂,Jonas Adjei,ADJETEY,ADJETEY,13/12/2003,VfL Wolfsburg (GER),沃尔夫斯堡,188,10,0,后卫,100,name_club
+L组,加纳,Ghana,GHA,21,5,MF,Midfielder,PARTEY Thomas,托马斯,Thomas Teye,PARTEY,PARTEY,13/06/1993,Villarreal CF (ESP),比利亚雷亚尔,185,59,16,中场,100,name_club
+L组,加纳,Ghana,GHA,21,6,DF,Defender,MUMIN Abdul,穆明,Abdul Mumin,SULEMAN,A. MUMIN,06/06/1998,Rayo Vallecano (ESP),巴列卡诺,188,5,0,后卫,100,name_club
+L组,加纳,Ghana,GHA,21,7,FW,Forward,FATAWU Abdul,法塔乌,Abdul Fatawu,ISSAHAKU,A. FATAWU,08/03/2004,Leicester City FC (ENG),莱斯特城,177,28,3,中场,100,name_club
+L组,加纳,Ghana,GHA,21,8,MF,Midfielder,SIBO Kwasi,夸西·西博,Kwasi,SIBO,SIBO,24/06/1998,Real Oviedo (ESP),皇家奥维耶多,183,8,0,中场,88.9,name_club
+L组,加纳,Ghana,GHA,21,9,FW,Forward,AYEW Jordan,乔丹·阿尤,Jordan Pierre,AYEW,J. AYEW,11/09/1991,Leicester City FC (ENG),莱斯特城,182,120,34,前锋,90.3,name_club
+L组,加纳,Ghana,GHA,21,10,FW,Forward,THOMAS-ASANTE Brandon,阿桑特,Solomon Brandon Michael Clarke,THOMAS-ASANTE,ASANTE,29/12/1998,Coventry City FC (ENG),考文垂,182,8,1,前锋,92.3,name_club
+L组,加纳,Ghana,GHA,21,11,MF,Midfielder,SEMENYO Antoine,塞梅尼奥,Antoine Serlom,SEMENYO,SEMENYO,07/01/2000,Manchester City FC (ENG),曼城,185,34,3,前锋,100,name_club
+L组,加纳,Ghana,GHA,21,12,GK,Goalkeeper,ANANG Joseph,约瑟夫·阿南,Joseph Tetteh,ANANG,ANANG,08/06/2000,St Patrick's Athletic FC (IRL),圣帕特里克竞技,190,1,0,门将,100,name_club
+L组,加纳,Ghana,GHA,21,13,FW,Forward,BONSU BAAH Christopher,邦苏·巴,Christopher Bonsu,BAAH,BONSU BAAH,14/12/2004,Al Qadsiah FC (KSA),胡拜尔库迪西亚,172,9,0,前锋,100,name_club
+L组,加纳,Ghana,GHA,21,14,DF,Defender,MENSAH Gideon,门萨,Gideon,MENSAH,MENSAH,18/07/1998,AJ Auxerre (FRA),欧塞尔,178,40,0,后卫,100,name_club
+L组,加纳,Ghana,GHA,21,15,MF,Midfielder,OWUSU Elisha,伊莱莎·奥乌苏,Elisha,OWUSU,OWUSU,07/11/1997,AJ Auxerre (FRA),欧塞尔,182,20,0,中场,100,name_club
+L组,加纳,Ghana,GHA,21,16,GK,Goalkeeper,ASARE Benjamin,阿萨雷,Benjamin,ASARE,B. ASARE,13/07/1992,Hearts Of Oak SC (GHA),格特奥林匹克,188,13,0,门将,100,name_club
+L组,加纳,Ghana,GHA,21,17,DF,Defender,RAHMAN Baba,巴巴,Abdul Rahman,BABA,BABA,02/07/1994,PAOK Saloniki (GRE),塞萨洛尼基,179,53,1,后卫,100,name_club
+L组,加纳,Ghana,GHA,21,18,DF,Defender,OPOKU Jerome,奥波库,Jerome,OPOKU,OPOKU,14/10/1998,Başakşehir FK (TUR),伊斯坦布尔,197,11,1,后卫,100,name_club
+L组,加纳,Ghana,GHA,21,19,FW,Forward,WILLIAMS Inaki,伊纳基·威廉姆斯,Inaki,WILLIAMS ARTHUER,WILLIAMS,15/06/1994,Athletic Club (ESP),毕尔巴鄂竞技,186,26,2,前锋,100,name_club
+L组,加纳,Ghana,GHA,21,20,MF,Midfielder,BOAKYE Augustine,博克耶,Augustine,BOAKYE,BOAKYE,03/11/2000,AS Saint-Etienne (FRA),圣埃蒂安,178,0,0,中场,100,name_club
+L组,加纳,Ghana,GHA,21,21,DF,Defender,OPPONG Kojo Peprah,奥彭,Kojo Peprah,OPPONG,OPPONG,04/06/2004,OGC Nice (FRA),尼斯,185,4,0,后卫,100,name_club
+L组,加纳,Ghana,GHA,21,22,FW,Forward,SULEMANA Kamaldeen,苏莱马纳,Kamal Deen,SULEMANA,KAMALDEEN,15/02/2002,Atalanta Bergamo (ITA),亚特兰大,174,28,1,前锋,77.4,name_club
+L组,加纳,Ghana,GHA,21,23,DF,Defender,LUCKASSEN Derrick,德里克·卢卡森,Derrick,LUCKASSEN,LUCKASSEN,03/07/1995,Pafos FC (CYP),帕福斯,188,1,0,后卫,100,name_club
+L组,加纳,Ghana,GHA,21,24,FW,Forward,NUAMAH Ernest,阿皮亚,Ernest Nuamah,APPIAH,NUAMAH,01/11/2003,Olympique Lyonnais (FRA),里昂,178,19,4,前锋,75.2,name_club
+L组,加纳,Ghana,GHA,21,25,FW,Forward,ADU Prince,夸贝纳·阿杜,Prince Kwabena,ADU,PRINCE,23/09/2003,FC Viktoria Plzeň (CZE),比尔森胜利,179,5,0,前锋,80.6,name_club
+L组,加纳,Ghana,GHA,21,26,DF,Defender,SENAYA Marvin,塞纳亚,Marvin Elom,SENAYA,SENEYA,28/01/2001,AJ Auxerre (FRA),欧塞尔,181,2,0,后卫,100,name_club
+C组,海地,Haiti,HAI,22,1,GK,Goalkeeper,PLACIDE Johny,普拉西德,Johny,PLACIDE,PLACIDE,29/01/1988,SC Bastia (FRA),巴斯蒂亚,181,84,0,门将,100,name_club
+C组,海地,Haiti,HAI,22,2,DF,Defender,ARCUS Carlens,阿库斯,Carlens Jean Fedlaire Ruby,ARCUS,ARCUS,28/06/1996,Angers SCO (FRA),昂热,180,57,1,后卫,80,name_club
+C组,海地,Haiti,HAI,22,3,DF,Defender,THERMONCY Keeto,泰尔蒙西,Keeto,THERMONCY,THERMONCY,29/03/2006,BSC Young Boys (SUI),伯尔尼年轻人二队,179,1,0,后卫,80.3,name_club
+C组,海地,Haiti,HAI,22,4,DF,Defender,ADE Ricardo,里卡多·阿德,Ricardo,ADE,ADE,21/05/1990,LDU Quito (ECU),基多体育大学,190,62,2,后卫,94,name_club
+C组,海地,Haiti,HAI,22,5,DF,Defender,DELCROIX Hannes,杜克·拉克鲁瓦,Hannes Piterson D,DELCROIX,DELCROIX,28/02/1999,FC Lugano (SUI),卢加诺,183,8,0,后卫,100,name_club
+C组,海地,Haiti,HAI,22,6,MF,Midfielder,SAINTE Carl,桑泰,Carl Fred,SAINTE,SAINTE,09/08/2002,El Paso Locomotive FC (USA),埃尔帕索机车,182,26,0,中场,100,name_club
+C组,海地,Haiti,HAI,22,7,FW,Forward,ETIENNE Derrick,德里克·埃蒂安,Derrick Burckley,ETIENNE JR,ETIENNE JR,25/11/1996,Toronto FC (CAN),多伦多FC,178,50,8,,前锋,"matched,name_web"
+C组,海地,Haiti,HAI,22,8,DF,Defender,EXPERIENCE Martin,马丁·埃克斯佩里恩斯,Martin Yves Roberns Didier,EXPERIENCE,EXPERIENCE,09/03/1999,AS Nancy (FRA),南锡,178,22,0,,后卫,"matched,name_web"
+C组,海地,Haiti,HAI,22,9,FW,Forward,NAZON Duckens,纳宗,Duckens,NAZON,NAZON,07/04/1994,Esteghlal Tehran FC (IRN),埃尔库莱斯,181,83,44,前锋,94,name_club
+C组,海地,Haiti,HAI,22,10,MF,Midfielder,BELLEGARDE Jean-Ricner,让-里克内尔·贝尔加德,Jean Ricner,BELLEGARDE,BELLEGARDE,27/06/1998,Wolverhampton Wanderers FC (ENG),狼队,170,11,0,,中场,"matched,name_web"
+C组,海地,Haiti,HAI,22,11,FW,Forward,DEEDSON Louicius,卢修斯·迪德森,Don Deedson,LOUICIUS,LOUICIUS,11/02/2001,FC Dallas (USA),达拉斯,178,33,10,,前锋,"matched,name_web"
+C组,海地,Haiti,HAI,22,12,GK,Goalkeeper,PIERRE Alexandre,亚历山大·皮埃尔,Alexandre Jr,PIERRE,A. PIERRE,25/02/2001,FC Sochaux-Montbéliard (FRA),索肖,190,17,0,门将,100,name_club
+C组,海地,Haiti,HAI,22,13,DF,Defender,LACROIX Markhus,马库斯·拉克鲁瓦,Markhus,LACROIX,LACROIX,14/10/1993,Colorado Springs Switchbacks FC (USA),科罗拉多跃泉,175,16,3,,后卫,"matched,name_web"
+C组,海地,Haiti,HAI,22,14,DF,Defender,METUSALA Garven,梅图萨拉,Garven-Michee,METUSALA,METUSALA,31/12/1999,Colorado Springs Switchbacks FC (USA),科罗拉多跃泉,186,15,0,后卫,100,name_club
+C组,海地,Haiti,HAI,22,15,FW,Forward,PROVIDENCE Ruben,普罗维登斯,Ruben Fritzner,PROVIDENCE,PROVIDENCE,07/07/2001,Almere City FC (NED),阿尔梅勒城,178,16,3,前锋,100,name_club
+C组,海地,Haiti,HAI,22,16,FW,Forward,JOSEPH Lenny,莱尼·约瑟夫,Lenny Alvin Pico,JOSEPH,JOSEPH,12/10/2000,Ferencvárosi TC (HUN),费伦茨瓦罗斯,182,3,1,,前锋,"matched,name_web"
+C组,海地,Haiti,HAI,22,17,MF,Midfielder,JEAN JACQUES Danley,丹利,Danley,JEAN JACQUES,JEAN-JACQUES,20/05/2000,Philadelphia Union (USA),费城联合,182,32,6,中场,100,name_club
+C组,海地,Haiti,HAI,22,18,FW,Forward,ISIDOR Wilson,伊西多,Wilson,ISIDOR,ISIDOR,27/08/2000,Sunderland AFC (ENG),桑德兰,184,5,2,前锋,100,name_club
+C组,海地,Haiti,HAI,22,19,FW,Forward,FORTUNE Yassin,福尔蒂内,Yassin Enzo,FORTUNE,FORTUNE,30/01/1999,FC Vizela (POR),维泽拉,186,5,0,前锋,100,name_club
+C组,海地,Haiti,HAI,22,20,FW,Forward,PIERROT Frantzdy,贝莱加德,Frantzdy,PIERROT,PIERROT,29/03/1995,Çaykur Rizespor (TUR),里泽体育,194,54,34,中场,75,name_club
+C组,海地,Haiti,HAI,22,21,FW,Forward,CASIMIR Josue,卡西米尔,Josue Jeremie,CASIMIR,CASIMIR,24/09/2001,AJ Auxerre (FRA),欧塞尔,178,8,0,前锋,100,name_club
+C组,海地,Haiti,HAI,22,22,DF,Defender,DUVERNE Jean-Kevin,杜维内,Jean-Kévin,DUVERNE,DUVERNE,12/07/1997,KAA Gent (BEL),根特,184,17,1,后卫,100,name_club
+C组,海地,Haiti,HAI,22,23,GK,Goalkeeper,DUVERGER Josue,若苏埃·迪韦尔热,Josue,DUVERGER,DUVERGER,27/04/2000,FC Cosmos Koblenz (GER),科布伦茨宇宙,187,7,0,,门将,"matched,name_web"
+C组,海地,Haiti,HAI,22,24,DF,Defender,PAUGAIN Wilguens,波甘,Wilguens Raphael Polynice,PAUGAIN,PAUGAIN,24/08/2001,SV Zulte Waregem (BEL),祖尔特瓦勒海姆,180,8,0,后卫,100,name_club
+C组,海地,Haiti,HAI,22,25,MF,Midfielder,SIMON Dominique,多米尼克·西蒙,Dominique Celidor,SIMON,SIMON,29/07/2000,FC Tatran Prešov (SVK),普雷绍夫塔特兰,178,2,0,中场,100,name_club
+C组,海地,Haiti,HAI,22,26,MF,Midfielder,PIERRE Woodensky,伍登斯基·皮埃尔,Olivier Woodensky,PIERRE,W. PIERRE,30/12/2004,Violette AC (HAI),维奥莱特,177,1,0,,中场,"matched,name_web"
+G组,伊朗,IR Iran,IRN,23,1,GK,Goalkeeper,BEIRANVAND Alireza,阿里雷萨·贝兰万德,Ali Reza,SAFARBEIRANVAND,BEIRANVAND,21/09/1992,Tractor Sazi Tabriz FC (IRN),大不里士拖拉机,195,88,0,门将,100,name_club
+G组,伊朗,IR Iran,IRN,23,2,DF,Defender,HARDANI Saleh,萨利赫·哈达尼,Saleh,HARDANI KHERAD,SALEH,26/12/1998,Esteghlal Tehran FC (IRN),德黑兰独立,176,18,1,后卫,100,name_club
+G组,伊朗,IR Iran,IRN,23,3,DF,Defender,HAJISAFI Ehsan,哈吉萨菲,Ehsan,HAJI SAFI,E. HAJISAFI,25/02/1990,Sepahan SC (IRN),塞帕罕,178,147,7,后卫,100,name_club
+G组,伊朗,IR Iran,IRN,23,4,DF,Defender,KHALILZADEH Shoja,舒贾·哈利勒扎德,Shojae,KHALILZADEH,SHOJA,14/05/1989,Tractor Sazi Tabriz FC (IRN),大不里士拖拉机,183,59,2,后卫,100,name_club
+G组,伊朗,IR Iran,IRN,23,5,DF,Defender,MOHAMMADI Milad,米拉德·穆罕默迪,Milad,MOHAMMADIKESHMARZI,M. MOHAMMADI,29/09/1993,Persepolis FC (IRN),波斯波利斯,175,78,1,后卫,100,name_club
+G组,伊朗,IR Iran,IRN,23,6,MF,Midfielder,EZATOLAHI Saeid,赛义德·埃扎托拉希,Saeid,EZATOLAHI AFAGH,S. EZATOLAHI,01/10/1996,Shabab Al Ahli Club (UAE),迪拜国民,189,85,2,中场,100,name_club
+G组,伊朗,IR Iran,IRN,23,7,MF,Midfielder,JAHANBAKHSH Alireza,阿里莱扎·贾汉巴赫什,Alireza,JAHANBAKHSH JIRANDEH,A. JAHANBAKHSH,11/08/1993,FCV Dender EH (BEL),登德,180,99,17,中场,100,name_club
+G组,伊朗,IR Iran,IRN,23,8,MF,Midfielder,MOHEBBI Mohammad,穆罕默德·莫赫比,Mohammad,MOHEBBI,M. MOHEBBI,20/12/1998,FC Rostov (RUS),罗斯托夫,187,38,14,中场,87.5,name_club
+G组,伊朗,IR Iran,IRN,23,9,FW,Forward,TAREMI Mehdi,梅赫迪·塔雷米,Mehdi,TAREMI,TAREMI,18/07/1992,Olympiacos FC (GRE),奥林匹亚科斯,187,107,59,前锋,100,name_club
+G组,伊朗,IR Iran,IRN,23,10,FW,Forward,GHAYEDI Mehdi,迈赫迪·加耶迪,Mehdi,GHAYEDI,MEHDI GHAYEDI,05/12/1998,Al Nasr SC (UAE),卡尔巴联合,166,31,10,中场,76.9,name_club
+G组,伊朗,IR Iran,IRN,23,11,FW,Forward,ALIPOUR Ali,阿里·阿利普尔,Ali,ALIPOURGHARA,A. ALIPOUR,11/11/1995,Persepolis FC (IRN),波斯波利斯,181,15,1,前锋,100,name_club
+G组,伊朗,IR Iran,IRN,23,12,GK,Goalkeeper,NIAZMAND Payam,帕亚姆·尼亚曼德,Seyedpayam,NIAZMAND,PAYAM,06/04/1995,Persepolis FC (IRN),波斯波利斯,193,15,0,门将,100,name_club
+G组,伊朗,IR Iran,IRN,23,13,DF,Defender,KANANI Hossein,侯赛因·卡纳尼,Mohammadhossein,KANANI ZADEGAN,KANANI,23/03/1994,Persepolis FC (IRN),波斯波利斯,188,65,6,后卫,100,name_club
+G组,伊朗,IR Iran,IRN,23,14,MF,Midfielder,GHODDOS Saman,萨曼·戈多斯,Seyed Saman,GHODDOOS,GHODDOS,06/09/1993,Al Ittihad Kalba SCC (UAE),卡尔巴联合,176,69,3,中场,97.7,name_club
+G组,伊朗,IR Iran,IRN,23,15,MF,Midfielder,CHESHMI Roozbeh,鲁兹贝·切什米,Roozbeh,CHESHMI,ROOZBEH,24/07/1993,Esteghlal Tehran FC (IRN),德黑兰独立,192,41,3,中场,100,name_club
+G组,伊朗,IR Iran,IRN,23,16,MF,Midfielder,TORABI Mehdi,梅迪·托拉比,Mahdi,TORABI,M. TORABI,10/09/1994,Tractor Sazi Tabriz FC (IRN),大不里士拖拉机,185,52,7,中场,100,name_club
+G组,伊朗,IR Iran,IRN,23,17,DF,Defender,YOUSEFI Arya,阿丽亚·尤素菲,Arya,YOUSEFI,ARYA,22/04/2002,Sepahan SC (IRN),塞帕罕,181,15,1,中场,100,cross_position_pinyin
+G组,伊朗,IR Iran,IRN,23,18,FW,Forward,HOSSEINZADEH Amirhossein,阿米尔侯赛因·侯赛因扎德,Amirhossein,HOSSEINZADEHTAZEHGHESHLAGH,AMIRHOSSEIN,30/10/2000,Tractor Sazi Tabriz FC (IRN),大不里士拖拉机,178,19,5,前锋,100,name_club
+G组,伊朗,IR Iran,IRN,23,19,DF,Defender,NEMATI Ali,阿里·内马蒂,Ali,NEMATI,ALI,08/02/1996,Foolad Khuzestan FC (IRN),胡齐斯坦钢铁,182,19,0,后卫,100,name_club
+G组,伊朗,IR Iran,IRN,23,20,FW,Forward,MOGHANLOO Shahriyar,沙赫里亚尔·莫汉卢,Shahriyar,MOGHANLOO,SHAHRIYAR,21/12/1994,Al Ittihad Kalba SCC (UAE),卡尔巴联合,189,22,2,前锋,100,name_club
+G组,伊朗,IR Iran,IRN,23,21,MF,Midfielder,GHORBANI Mohammad,穆罕默德·戈尔巴尼,Mohammad,GHORBANI,MOHAMMAD,07/10/2001,Al Wahda SC (UAE),阿布扎比统一,190,16,0,中场,88.9,name_club
+G组,伊朗,IR Iran,IRN,23,22,GK,Goalkeeper,HOSSEINI Hossein,侯赛因·侯赛尼,Seyedhossein,HOSSEINI,HOSSEINI,30/06/1992,Sepahan SC (IRN),塞帕罕,189,14,0,门将,100,name_club
+G组,伊朗,IR Iran,IRN,23,23,DF,Defender,REZAEIAN Ramin,拉明·雷扎伊扬,Ramin,REZAEIANSEMESKANDI,RAMIN,21/03/1990,Foolad Khuzestan FC (IRN),胡齐斯坦钢铁,184,75,9,后卫,75.2,name_club
+G组,伊朗,IR Iran,IRN,23,24,FW,Forward,DARGAHI Dennis,丹尼斯·达尔加希,Dennis,DARGAHI,DARGAHI,09/01/1997,Standard Liège (BEL),标准列日,182,0,0,,前锋,"matched,name_web"
+G组,伊朗,IR Iran,IRN,23,25,DF,Defender,IRI Danial,达尼亚尔·埃里,Danial,IRI,DANIAL,26/10/2003,Malavan Anzali FC (IRN),马拉皖,182,0,0,后卫,88.9,name_club
+G组,伊朗,IR Iran,IRN,23,26,MF,Midfielder,RAZAGHINIA Amirmohammad,阿米尔穆罕默德·拉扎格尼亚,Amirmohammad,RAZAGHINIA,RAZAGH,11/04/2006,Esteghlal Tehran FC (IRN),德黑兰独立,187,4,0,中场,100,name_club
+I组,伊拉克,Iraq,IRQ,24,1,GK,Goalkeeper,FAHAD TALIB,法哈德·塔利卜,Fahad Talib Raheem,RAHEEM,FAHAD,21/10/1994,Al Talaba SC (IRQ),巴格达空军,192,21,0,门将,100,name_club
+I组,伊拉克,Iraq,IRQ,24,2,DF,Defender,REBIN SULAKA,雷宾·苏拉卡,Rebin Ghareeb Solaka,ADHAMAT,REBIN,12/04/1992,Port FC (THA),泰港,193,56,1,后卫,100,name_club
+I组,伊拉克,Iraq,IRQ,24,3,DF,Defender,HUSSEIN ALI,侯赛因·阿里,Hussein Haydar Hussein,ALI,HUSSEIN,01/03/2002,Pogoń Szczecin (POL),切什青波贡,182,27,1,后卫,100,name_club
+I组,伊拉克,Iraq,IRQ,24,4,DF,Defender,ZAID TAHSEEN,扎伊德·塔辛,Zaid Tahseen Abd Zaid,HANTOOSH,ZAID T.,29/01/2001,Pakhtakor Tashkent FK (UZB),塔什干棉农,187,28,1,后卫,100,name_club
+I组,伊拉克,Iraq,IRQ,24,5,DF,Defender,AKAM HASHIM,阿卡姆·哈希姆,Akam Hashim Rahman,RAHMAN,AKAM,16/08/1998,Al Zawra'a SC (IRQ),扎瓦拉体育,184,14,1,后卫,94,name_club
+I组,伊拉克,Iraq,IRQ,24,6,DF,Defender,MUNAF YOUNUS,马纳夫·尤尼斯,Munaf Younus Hashim,AL-TEKREETI,MUNAF,16/11/1996,Al Shorta SC (IRQ),巴格达警察,184,34,1,后卫,100,name_club
+I组,伊拉克,Iraq,IRQ,24,7,MF,Midfielder,YOUSSEF AMYN,优素福·阿明,Youssef Wali Faeq,AMYN,YOUSSEF,21/08/2003,AEK Larnaca FC (CYP),AE拉纳卡,172,27,2,中场,75,name_club
+I组,伊拉克,Iraq,IRQ,24,8,MF,Midfielder,IBRAHIM BAYESH,巴耶什·易卜拉欣,Ibrahim Bayesh Kamil,AL-KAABAWI,IBRAHIM,01/05/2000,Al Dhafra SCC (UAE),扎夫拉,180,76,8,,中场,"matched,name_web"
+I组,伊拉克,Iraq,IRQ,24,9,FW,Forward,ALI ALHAMADI,阿里·阿尔哈马迪,Ali Ibrahim Karim,ALZUBAIDI,AL-HAMADI,01/03/2002,Luton Town FC (ENG),卢顿,187,20,5,前锋,100,name_club
+I组,伊拉克,Iraq,IRQ,24,10,FW,Forward,MOHANAD ALI,莫哈纳德·阿里,Mohanad Ali Kadhim,AL-SHAMMARI,MOHANAD,20/06/2000,Dibba FC (UAE),阿尔富吉拉,183,72,26,前锋,100,name_club
+I组,伊拉克,Iraq,IRQ,24,11,FW,Forward,AHMED QASEM,艾哈迈德·卡塞姆,Ahmed Ihab Ahmed,AHMED,AHMED Q.,12/07/2003,Nashville SC (USA),纳什维尔,183,3,0,前锋,100,name_club
+I组,伊拉克,Iraq,IRQ,24,12,GK,Goalkeeper,JALAL HASSAN,贾拉尔·哈桑,Jalal Hasan Hachim,HACHIM,JALAL,18/05/1991,Al Zawra'a SC (IRQ),扎瓦拉体育,188,104,0,门将,83.3,name_club
+I组,伊拉克,Iraq,IRQ,24,13,FW,Forward,ALI YOUSIF,阿里·优素福,Ali Yousif Hashim,NAJATEE,ALI Y.,19/01/1996,Al Talaba SC (IRQ),塔拉巴,180,7,1,前锋,100,name_club
+I组,伊拉克,Iraq,IRQ,24,14,MF,Midfielder,ZIDANE IQBAL,齐达内·伊克巴尔,Zidane Aamar Iqbal,IQBAL,Z. IQBAL,27/04/2003,FC Utrecht (NED),乌得勒支B队,183,25,2,中场,100,name_club
+I组,伊拉克,Iraq,IRQ,24,15,DF,Defender,AHMED MAKNAZI,艾哈迈德·叶海亚,Ahmed Hasan Maknazi,AL-DEESHAWEE,AHMED H.,24/09/2001,Al Karma SC (IRQ),巴格达警察,183,7,0,后卫,80,name_club
+I组,伊拉克,Iraq,IRQ,24,16,MF,Midfielder,AMIR ALAMMARI,阿米尔·阿玛里,Amir Fouad Aboud,AL-AMMARI,AL-AMMARI,27/07/1997,KS Cracovia (POL),克拉科维亚,180,51,3,中场,100,name_club
+I组,伊拉克,Iraq,IRQ,24,17,FW,Forward,ALI JASIM,阿里·贾西姆,Ali Jasim Elaibi,AL-TAMEEMI,ALI J.,20/01/2004,Al Najmah SC (KSA),纳杰马体育,178,36,2,前锋,100,name_club
+I组,伊拉克,Iraq,IRQ,24,18,FW,Forward,AYMEN HUSSEIN,艾曼·侯赛因,Aymen Hussein Ghadhban,GHADHBAN,AYMEN,22/03/1996,Al Karma SC (IRQ),卡尔马,190,95,33,,前锋,"matched,name_web"
+I组,伊拉克,Iraq,IRQ,24,19,MF,Midfielder,KEVIN YAKOB,凯文·雅各布,Kevin Enkido Yakob William,WILLIAM,K. YAKOB,10/10/2000,Aarhus GF (DEN),奥胡斯,180,9,0,中场,90.9,name_club
+I组,伊拉克,Iraq,IRQ,24,20,MF,Midfielder,AIMAR SHER,艾马尔·谢尔,Aimar Hazar Anwar,SHER,AIMAR,20/12/2002,Sarpsborg 08 FF (NOR),萨尔普斯堡,180,7,0,中场,88.9,name_club
+I组,伊拉克,Iraq,IRQ,24,21,FW,Forward,MARKO FARJI,马科·法吉,Marko Jabbar Hussein,HUSSEIN,MARKO,16/03/2004,Venezia FC (ITA),威尼斯,185,12,0,前锋,100,name_club
+I组,伊拉克,Iraq,IRQ,24,22,GK,Goalkeeper,AHMED BASIL,艾哈迈德·巴西勒,Ahmed Basil Fadhil,AL-FADHLI,AHMED B.,19/08/1996,Al Shorta SC (IRQ),巴格达警察,184,16,0,门将,100,name_club
+I组,伊拉克,Iraq,IRQ,24,23,DF,Defender,MERCHAS DOSKI,梅赫加斯·多斯基,Merchas Ghazi Salih,SALIH,DOSKI,07/12/1999,FC Viktoria Plzeň (CZE),比尔森胜利,173,31,1,后卫,75.2,name_club
+I组,伊拉克,Iraq,IRQ,24,24,MF,Midfielder,ZAID ISMAEL,扎伊德・伊斯梅尔,Zaid Ismael Khaleel,AL-DULAIMI,ZAID I.,03/01/2002,Al Talaba SC (IRQ),塔拉巴,185,6,0,中场,83.3,name_club
+I组,伊拉克,Iraq,IRQ,24,25,DF,Defender,MUSTAFA SAADOON,穆斯塔法·萨登,Mustafa Saadoon Abbood,AL-KORJI,MUSTAFA,25/05/2001,Al Shorta SC (IRQ),巴格达警察,181,17,0,中场,100,cross_position_pinyin
+I组,伊拉克,Iraq,IRQ,24,26,DF,Defender,FRANS PUTROS,弗兰斯·普特罗斯,Frans Dhia Jirjis,HADDAD,FRANS,14/07/1993,Persib Bandung (IDN),万隆,182,28,0,,后卫,"matched,name_web"
+F组,日本,Japan,JPN,25,1,GK,Goalkeeper,SUZUKI Zion,铃木彩艳,Zion,SUZUKI,SUZUKI,21/08/2002,Parma (ITA),帕尔马,190,26,0,,门将,"matched,name_web"
+F组,日本,Japan,JPN,25,2,DF,Defender,SUGAWARA Yukinari,菅原由势,Yukinari,SUGAWARA,SUGAWARA,28/06/2000,SV Werder Bremen (GER),不莱梅,179,23,2,,后卫,"matched,name_web"
+F组,日本,Japan,JPN,25,3,DF,Defender,TANIGUCHI Shogo,谷口彰悟,Shogo,TANIGUCHI,TANIGUCHI,15/07/1991,Sint-Truiden VV (BEL),圣图尔登,185,40,1,,后卫,"matched,name_web"
+F组,日本,Japan,JPN,25,4,DF,Defender,ITAKURA Kou,板仓滉,Kou,ITAKURA,ITAKURA,27/01/1997,AFC Ajax (NED),阿贾克斯,188,41,3,后卫,92.1,name_club
+F组,日本,Japan,JPN,25,5,DF,Defender,NAGATOMO Yuto,长友佑都,Yuto,NAGATOMO,NAGATOMO,12/09/1986,FC Tokyo (JPN),东京FC,170,145,4,,后卫,"matched,name_web"
+F组,日本,Japan,JPN,25,6,FW,Forward,MACHINO Shuto,町野修斗,Shuto,MACHINO,MACHINO,30/09/1999,Borussia Mönchengladbach (GER),门兴格拉德巴赫,185,14,5,,前锋,"matched,name_web"
+F组,日本,Japan,JPN,25,7,MF,Midfielder,TANAKA Ao,田中碧,Ao,TANAKA,TANAKA,10/09/1998,Leeds United FC (ENG),利兹联,180,38,8,,中场,"matched,name_web"
+F组,日本,Japan,JPN,25,8,MF,Midfielder,KUBO Takefusa,久保建英,Takefusa,KUBO,KUBO,04/06/2001,Real Sociedad (ESP),皇家社会,173,50,7,中前场,100,name_club
+F组,日本,Japan,JPN,25,9,FW,Forward,GOTO Keisuke,后藤启介,Keisuke,GOTO,GOTO,03/06/2005,Sint-Truiden VV (BEL),圣图尔登,191,4,0,,前锋,"matched,name_web"
+F组,日本,Japan,JPN,25,10,MF,Midfielder,DOAN Ritsu,堂安律,Ritsu,DOAN,DOAN,16/06/1998,Eintracht Frankfurt (GER),法兰克福,172,67,11,中前场,100,name_club
+F组,日本,Japan,JPN,25,11,MF,Midfielder,MAEDA Daizen,前田大然,Daizen,MAEDA,DAIZEN,20/10/1997,Celtic FC (SCO),凯尔特人,173,29,5,中前场,87.2,name_club
+F组,日本,Japan,JPN,25,12,GK,Goalkeeper,OSAKO Keisuke,大迫敬介,Keisuke,OSAKO,OSAKO,28/07/1999,Sanfrecce Hiroshima (JPN),广岛三箭,188,11,0,,门将,"matched,name_web"
+F组,日本,Japan,JPN,25,13,MF,Midfielder,NAKAMURA Keito,中村敬斗,Keito,NAKAMURA,NAKAMURA,28/07/2000,Stade Reims (FRA),兰斯,180,27,12,,中场,"matched,name_web"
+F组,日本,Japan,JPN,25,14,MF,Midfielder,ITO Junya,伊东纯也,Junya,ITO,ITO,09/03/1993,KRC Genk (BEL),亨克,177,70,15,中前场,97.7,name_club
+F组,日本,Japan,JPN,25,15,MF,Midfielder,KAMADA Daichi,镰田大地,Daichi,KAMADA,KAMADA,05/08/1996,Crystal Palace FC (ENG),水晶宫,180,50,13,中前场,88.7,name_club
+F组,日本,Japan,JPN,25,16,DF,Defender,WATANABE Tsuyoshi,渡边刚,Tsuyoshi,WATANABE,WATANABE,05/02/1997,Feyenoord Rotterdam (NED),费耶诺德,184,13,0,后卫,92.1,name_club
+F组,日本,Japan,JPN,25,17,MF,Midfielder,SUZUKI Yuito,远藤航,Yuito,SUZUKI,Y. SUZUKI,25/10/2001,SC Freiburg (GER),弗赖堡,175,6,0,中前场,75,name_club
+F组,日本,Japan,JPN,25,18,FW,Forward,UEDA Ayase,上田绮世,Ayase,UEDA,AYASE,28/08/1998,Feyenoord Rotterdam (NED),费耶诺德,182,41,16,中前场,92.1,name_club
+F组,日本,Japan,JPN,25,19,FW,Forward,OGAWA Koki,小川航基,Koki,OGAWA,OGAWA,08/08/1997,NEC Nijmegen (NED),NEC奈梅亨,186,16,11,,前锋,"matched,name_web"
+F组,日本,Japan,JPN,25,20,DF,Defender,SEKO Ayumu,瀬古步梦,Ayumu,SEKO,SEKO,07/06/2000,Le Havre AC (FRA),勒阿弗尔,186,14,0,,后卫,"matched,name_web"
+F组,日本,Japan,JPN,25,21,DF,Defender,ITO Hiroki,伊藤洋辉,Hiroki,ITO,H. ITO,12/05/1999,FC Bayern München (GER),拜仁慕尼黑,188,26,1,,后卫,"matched,name_web"
+F组,日本,Japan,JPN,25,22,DF,Defender,TOMIYASU Takehiro,富安健洋,Takehiro,TOMIYASU,TOMIYASU,05/11/1998,AFC Ajax (NED),阿贾克斯,187,44,1,后卫,72.6,name_club
+F组,日本,Japan,JPN,25,23,GK,Goalkeeper,HAYAKAWA Tomoki,早川友基,Tomoki,HAYAKAWA,HAYAKAWA,03/03/1999,Kashima Antlers (JPN),鹿岛鹿角,187,4,0,,门将,"matched,name_web"
+F组,日本,Japan,JPN,25,24,MF,Midfielder,SANO Kaishu,佐野海舟,Kaishu,SANO,SANO,30/12/2000,1. FSV Mainz 05 (GER),美因茨,176,15,0,中前场,100,name_club
+F组,日本,Japan,JPN,25,25,DF,Defender,SUZUKI Junnosuke,铃木淳之介,Junnosuke,SUZUKI,J. SUZUKI,12/07/2003,FC København (DEN),哥本哈根,180,6,0,后卫,75.9,name_club
+F组,日本,Japan,JPN,25,26,FW,Forward,SHIOGAI Kento,小川航基,Kento,SHIOGAI,SHIOGAI,26/03/2005,VfL Wolfsburg (GER),沃尔夫斯堡,180,3,0,中前场,85.7,name_club
+J组,约旦,Jordan,JOR,26,1,GK,Goalkeeper,YAZEED ABULAILA,亚奇德·阿布拉伊拉,Yazeed Mo'ien Hasan,ABULAILA,YAZEED,08/01/1993,Al Hussein SC (JOR),侯赛因,188,76,0,门将,100,name_club
+J组,约旦,Jordan,JOR,26,2,DF,Defender,MOHAMMAD ABUHASHEESH,穆罕默德·阿布海塞,Mohammad Ali Hasan,ABUHASHEESH,ABU HASHEESH,09/05/1995,Al Karma SC (IRQ),卡尔马,179,56,1,后卫,77.8,name_club
+J组,约旦,Jordan,JOR,26,3,DF,Defender,ABDALLAH NASIB,阿卜杜拉·纳西布,Abdallah Mousa Musallam,NASIB,NASIB,25/02/1994,Al Zawra'a SC (IRQ),扎瓦拉,184,65,2,后卫,85.7,name_club
+J组,约旦,Jordan,JOR,26,4,DF,Defender,HUSAM ABUDAHAB,胡萨姆·阿布·达哈布,Husam Ali Mohammad,ABUDAHAB,ABU DAHAB,13/05/2000,Al Faisaly SC (JOR),费萨里,186,17,0,后卫,100,name_club
+J组,约旦,Jordan,JOR,26,5,DF,Defender,YAZAN ALARAB,亚赞·阿拉伯,Yazan Mousa Mahmoud,ALARAB,ALARAB,31/01/1996,FC Seoul (KOR),首尔FC,185,80,3,后卫,100,name_club
+J组,约旦,Jordan,JOR,26,6,MF,Midfielder,AMER JAMOUS,阿米尔·贾穆斯,Amer Rasem Adel,JAMOUS,JAMOUS,03/07/2002,Al Zawra'a SC (IRQ),扎瓦拉体育,177,19,1,中场,100,name_club
+J组,约旦,Jordan,JOR,26,7,FW,Forward,MOHAMMAD ABUZRAIQ,穆罕默德·阿布·兹雷克,Mohammad Faisal Yousef,ABU ZRAIQ,ABU ZRAIQ,30/12/1997,Raja Casablanca (MAR),拉加竞技,170,40,5,前锋,94.1,name_club
+J组,约旦,Jordan,JOR,26,8,MF,Midfielder,NOOR ALRAWABDEH,努尔·阿尔·拉瓦德赫,Noor Al-Deen Mahmoud Ali,AL RAWABDEH,ALRAWABDEH,24/02/1997,Selangor FC (MAS),雪兰莪,182,68,3,中场,100,name_club
+J组,约旦,Jordan,JOR,26,9,FW,Forward,ALI OLWAN,阿里·奥尔万,Ali Iyad Ali,OLWAN,OLWAN,26/03/2000,Al Sailiya SC (QAT),阿尔赛利亚,182,66,29,前锋,100,name_club
+J组,约旦,Jordan,JOR,26,10,FW,Forward,MOUSA ALTAMARI,穆萨·塔马里,Mousa Mohammad Mousa,SULEIMAN,ALTAMARI,10/06/1997,Stade Rennais FC (FRA),雷恩,176,92,24,前锋,100,name_club
+J组,约旦,Jordan,JOR,26,11,FW,Forward,ODEH FAKHOURY,奥德·法胡里,Odeh Burhan Shehadeh,FAKHOURY,ODEH,22/11/2005,Pyramids FC (EGY),金字塔,180,10,1,前锋,72.7,name_club
+J组,约旦,Jordan,JOR,26,12,GK,Goalkeeper,NOUR BANIATEYAH,努雷丁·扎伊德,Noureddin Zaid Khaleel,BANI ATEYAH,BANI ATEYAH,25/01/1993,Al Faisaly SC (JOR),费萨里,179,5,0,门将,99.8,name_club
+J组,约旦,Jordan,JOR,26,13,FW,Forward,MAHMOUD ALMARDI,马赫穆德·阿尔·马尔迪,Mahmoud Nayef Ahmad,ALMARDI,ALMARDI,06/10/1993,Al Hussein SC (JOR),侯赛因,173,87,8,前锋,100,name_club
+J组,约旦,Jordan,JOR,26,14,MF,Midfielder,RAJAEI AYED,拉杰伊·阿耶德,Raja'ei Ayed Fadel,HASAN,RAJA'EI,25/07/1993,Al Hussein SC (JOR),侯赛因,175,73,0,中场,100,name_club
+J组,约旦,Jordan,JOR,26,15,MF,Midfielder,IBRAHIM SADEH,易卜拉欣·萨德,Ibrahim Mohammad Sami,SA'DEH,SA'DEH,27/04/2000,Al Karma SC (IRQ),亚吉拉安曼,175,57,3,中场,83.6,name_club
+J组,约旦,Jordan,JOR,26,16,DF,Defender,MOHAMMAD ABUALNADI,穆罕默德·阿卜拉纳迪,Mohammad Majed Jamil,ABUALNADI,ABU ALNADI,08/02/2001,Selangor FC (MAS),雪兰莪,185,18,0,后卫,100,name_club
+J组,约旦,Jordan,JOR,26,17,DF,Defender,SALEEM OBAID,萨利姆·奥贝德,Saleem Amer Saleem,OBAID,SALEEM,17/01/1992,Al Hussein SC (JOR),侯赛因,187,12,0,后卫,100,name_club
+J组,约旦,Jordan,JOR,26,18,MF,Midfielder,MOHAMMAD ABUGHOUSH,萨伊德·罗桑,Mohammad Ahmed Mohammad,TAHA,ABU GHOUSH,13/07/2005,Al Hussein SC (JOR),侯赛因,182,0,0,前锋,76.8,name_club
+J组,约旦,Jordan,JOR,26,19,DF,Defender,SAED ALROSAN,埃桑·哈达德,Sa'ed Ahmad Salameh,ALROSAN,SA'ED,01/02/1997,Al Hussein SC (JOR),侯赛因,186,21,2,后卫,100,name_club
+J组,约旦,Jordan,JOR,26,20,MF,Midfielder,MOHANNAD ABUTAHA,穆罕默德·阿布·塔哈,Mohannad Mahmoud Saleh,ABU TAHA,ABU TAHA,02/02/2003,Al-Quwa Al-Jawiya (IRQ),安曼团结,173,30,1,中场,100,name_club
+J组,约旦,Jordan,JOR,26,21,MF,Midfielder,NIZAR ALRASHDAN,尼扎尔·阿尔·拉什丹,Nizar Mahmoud Ahmed,AL-RASHDAN,NIZAR,23/03/1999,Qatar SC (QAT),卡塔尔SC,183,47,4,中场,100,name_club
+J组,约旦,Jordan,JOR,26,22,GK,Goalkeeper,ABDALLAH ALFAKHORI,阿卜杜拉·拉伊德·法霍里,Abdallah Ra'ed Mahmoud,ALFAKHORI,ALFAKHORI,22/01/2000,Al Wahdat SC (JOR),瓦赫达特,190,16,0,门将,100,name_club
+J组,约旦,Jordan,JOR,26,23,DF,Defender,EHSAN HADDAD,艾哈桑·哈达德,Ehsan Manel Farhan,HADDAD,EHSAN,05/02/1994,Al Hussein SC (JOR),侯赛因,174,90,2,,后卫,"matched,name_web"
+J组,约旦,Jordan,JOR,26,24,FW,Forward,ALI AZAIZEH,阿里·阿扎伊泽,Ali Ahmad Ali,AZAIZEH,AZAIZEH,13/04/2004,Al Shabab FC (KSA),利雅得青年人,178,4,0,前锋,100,name_club
+J组,约旦,Jordan,JOR,26,25,MF,Midfielder,MOHAMMAD ALDAOUD,穆罕默德·达伍德,Mohammad Ratib Mohammad,ALDAOUD,ALDAOUD,12/04/1992,Al Wahdat SC (JOR),瓦赫达特,185,13,1,中场,100,name_club
+J组,约旦,Jordan,JOR,26,26,DF,Defender,ANAS BADAWI,阿纳斯·巴达维,Anas Said Ghazi,BADAWI,BADAWI,13/09/1997,Al Faisaly SC (JOR),费萨里,174,1,0,后卫,100,name_club
+A组,韩国,Korea Republic,KOR,27,1,GK,Goalkeeper,KIM Seunggyu,金承奎,Seunggyu,KIM,SEUNGGYU,30/09/1990,FC Tokyo (JPN),东京FC,187,87,0,,门将,"matched,name_web"
+A组,韩国,Korea Republic,KOR,27,2,DF,Defender,LEE Hanbeom,李韩汎,Hanbeom,LEE,HANBEOM,17/06/2002,FC Midtjylland (DEN),中日德兰,188,9,0,,后卫,"matched,name_web"
+A组,韩国,Korea Republic,KOR,27,3,MF,Midfielder,LEE Gihyuk,曹圭成,Gihyuk,LEE,GIHYUK,07/07/2000,Gangwon FC (KOR),中日德兰,184,4,0,前锋,100,name_club
+A组,韩国,Korea Republic,KOR,27,4,DF,Defender,KIM Minjae,金玟哉,Minjae,KIM,MINJAE,15/11/1996,FC Bayern München (GER),拜仁慕尼黑,190,80,4,,后卫,"matched,name_web"
+A组,韩国,Korea Republic,KOR,27,5,DF,Defender,KIM Taehyeon,金泰贤,Taehyeon,KIM,TAEHYEON,17/09/2000,Kashima Antlers (JPN),鹿岛鹿角,186,7,0,,后卫,"matched,name_web"
+A组,韩国,Korea Republic,KOR,27,6,MF,Midfielder,HWANG Inbeom,黄仁范,Inbeom,HWANG,INBEOM,20/09/1996,Feyenoord Rotterdam (NED),费耶诺德,177,74,7,中场,87.2,name_club
+A组,韩国,Korea Republic,KOR,27,7,FW,Forward,SON Heungmin,孙兴慜,Heung Min,SON,HEUNGMIN,08/07/1992,LAFC (USA),洛杉矶FC,183,145,56,前锋,100,name_club
+A组,韩国,Korea Republic,KOR,27,8,MF,Midfielder,PAIK Seungho,白昇浩,Seungho,PAIK,SEUNGHO,17/03/1997,Birmingham City FC (ENG),伯明翰,182,28,3,中场,100,name_club
+A组,韩国,Korea Republic,KOR,27,9,FW,Forward,CHO Guesung,黄喜灿,Guesung,CHO,GUESUNG,25/01/1998,FC Midtjylland (DEN),中日德兰,188,44,12,中场,85.7,name_club
+A组,韩国,Korea Republic,KOR,27,10,MF,Midfielder,LEE Jaesung,李在城,Jae Sung,LEE,JAESUNG,10/08/1992,1. FSV Mainz 05 (GER),美因茨,180,106,15,中场,100,name_club
+A组,韩国,Korea Republic,KOR,27,11,MF,Midfielder,HWANG Heechan,黄喜灿,Hee Chan,HWANG,HEECHAN,26/01/1996,Wolverhampton Wanderers FC (ENG),狼队,177,80,17,,中场,"matched,name_web"
+A组,韩国,Korea Republic,KOR,27,12,GK,Goalkeeper,SONG Bumkeun,宋范根,Bumkeun,SONG,BUMKEUN,15/10/1997,Jeonbuk Hyundai Motors FC (KOR),全北现代,196,3,0,,门将,"matched,name_web"
+A组,韩国,Korea Republic,KOR,27,13,DF,Defender,LEE Taeseok,李太锡,Taeseok,LEE,TAESEOK,28/07/2002,FK Austria Wien (AUT),奥地利维也纳,174,16,1,后卫,100,name_club
+A组,韩国,Korea Republic,KOR,27,14,DF,Defender,CHO Wije,赵伟济,Wije,CHO,WIJE,25/08/2001,Jeonbuk Hyundai Motors FC (KOR),全北现代,190,1,0,后卫,80,name_club
+A组,韩国,Korea Republic,KOR,27,15,DF,Defender,KIM Moonhwan,金玟焕,Moonhwan,KIM,MOONHWAN,01/08/1995,Daejeon Hana Citizen FC (KOR),大田韩亚市民,173,36,0,,后卫,"matched,name_web"
+A组,韩国,Korea Republic,KOR,27,16,DF,Defender,PARK Jinseob,朴进叙,Jinseob,PARK,JINSEOB,23/10/1995,Zhejiang FC (CHN),浙江FC,183,15,1,,后卫,"matched,name_web"
+A组,韩国,Korea Republic,KOR,27,17,MF,Midfielder,BAE Junho,裴峻浩,Junho,BAE,JUNHO,21/08/2003,Stoke City FC (ENG),斯托克城,180,13,2,中场,85.7,name_club
+A组,韩国,Korea Republic,KOR,27,18,FW,Forward,OH Hyeongyu,吴贤揆,Hyeongyu,OH,HYEONGYU,12/04/2001,Beşiktaş JK (TUR),贝西克塔斯,183,28,7,前锋,66.3,sequence
+A组,韩国,Korea Republic,KOR,27,19,MF,Midfielder,LEE Kangin,李刚仁,Kangin,LEE,KANGIN,19/02/2001,Paris Saint-Germain (FRA),巴黎圣日耳曼,174,48,10,,中场,"matched,name_web"
+A组,韩国,Korea Republic,KOR,27,20,MF,Midfielder,YANG Hyunjun,杨贤俊,Hyunjun,YANG,HYUNJUN,25/05/2002,Celtic FC (SCO),凯尔特人,179,9,0,中场,100,name_club
+A组,韩国,Korea Republic,KOR,27,21,GK,Goalkeeper,JO Hyeonwoo,赵贤祐,Hyeonwoo,JO,HYEONWOO,25/09/1991,Ulsan HD (KOR),蔚山HD,189,48,0,门将,77.1,name_club
+A组,韩国,Korea Republic,KOR,27,22,DF,Defender,SEOL Youngwoo,薛英佑,Youngwoo,SEOL,YOUNGWOO,05/12/1998,FK Crvena Zvezda (SRB),贝尔格莱德红星,180,35,0,后卫,86.3,name_club
+A组,韩国,Korea Republic,KOR,27,23,DF,Defender,CASTROP Jens,卡斯特罗普,Jens,CASTROP,JENS,29/07/2003,Borussia Mönchengladbach (GER),门兴,178,7,0,后卫,76.9,name_club
+A组,韩国,Korea Republic,KOR,27,24,MF,Midfielder,KIM Jingyu,金镇洙,Jingyu,KIM,JINGYU,24/02/1997,Jeonbuk Hyundai Motors FC (KOR),全北现代,177,23,3,,中场,"matched,name_web"
+A组,韩国,Korea Republic,KOR,27,25,MF,Midfielder,EOM Jisung,金镇圭,Jisung,EOM,JISUNG,09/05/2002,Swansea City AFC (WAL),斯旺西,177,10,2,中场,85.7,name_club
+A组,韩国,Korea Republic,KOR,27,26,MF,Midfielder,LEE Donggyeong,李东炅,Donggyeong,LEE,DONGGYEONG,20/09/1997,Ulsan HD (KOR),蔚山HD,175,18,4,中场,100,name_club
+A组,墨西哥,Mexico,MEX,28,1,GK,Goalkeeper,RANGEL Raul,何塞·兰格尔,José Raúl,RANGEL AGUILAR,R. RANGEL,25/02/2000,CD Guadalajara (MEX),瓜达拉哈拉,190,15,0,门将,95,name_club
+A组,墨西哥,Mexico,MEX,28,2,DF,Defender,SANCHEZ Jorge,豪尔赫·桑切斯,Jorge Eduardo,SÁNCHEZ RAMOS,J. SÁNCHEZ,10/12/1997,PAOK Saloniki (GRE),塞萨洛尼基,176,59,3,后卫,92.1,name_club
+A组,墨西哥,Mexico,MEX,28,3,DF,Defender,MONTES Cesar,塞萨尔·蒙特斯,César Jasib,MONTES CASTRO,C. MONTES,24/02/1997,FC Lokomotiv Moscow (RUS),莫斯科火车头,191,69,4,,后卫,"matched,name_web"
+A组,墨西哥,Mexico,MEX,28,4,DF,Defender,ALVAREZ Edson,埃德森·阿尔瓦雷斯,Edson Omar,ÁLVAREZ VELÁZQUEZ,E. ÁLVAREZ,24/10/1997,Fenerbahçe SK (TUR),费内巴切,180,100,7,中场,100,cross_position_pinyin
+A组,墨西哥,Mexico,MEX,28,5,DF,Defender,VASQUEZ Johan,约翰·巴斯克斯,Johan Felipe,VÁSQUEZ IBARRA,J. VÁSQUEZ,22/10/1998,Genoa CFC (ITA),热那亚,182,47,3,,后卫,"matched,name_web"
+A组,墨西哥,Mexico,MEX,28,6,MF,Midfielder,LIRA Erik,埃里克·里拉,Erik Antonio,LIRA MÉNDEZ,E. LIRA,08/05/2000,CF Cruz Azul (MEX),蓝十字,172,26,0,中场,100,name_club
+A组,墨西哥,Mexico,MEX,28,7,MF,Midfielder,ROMO Luis,罗莫,Luis Francisco,ROMO BARRÓN,L. ROMO,05/06/1995,CD Guadalajara (MEX),瓜达拉哈拉,183,62,4,中场,100,name_club
+A组,墨西哥,Mexico,MEX,28,8,MF,Midfielder,FIDALGO Alvaro,菲达尔戈,Álvaro,FIDALGO FERNÁNDEZ,FIDALGO,09/04/1997,Real Betis (ESP),皇家贝蒂斯,175,5,0,中场,100,name_club
+A组,墨西哥,Mexico,MEX,28,9,FW,Forward,JIMENEZ Raul,劳尔·希门尼斯,Raúl Alonso,JIMÉNEZ RODRÍGUEZ,RAÚL,05/05/1991,Fulham FC (ENG),富勒姆,188,127,46,前锋,95,name_club
+A组,墨西哥,Mexico,MEX,28,10,FW,Forward,VEGA Alexis,阿莱克西斯·维加,Ernesto Alexis,VEGA ROJAS,A. VEGA,25/11/1997,Deportivo Toluca FC (MEX),托卢卡,175,53,7,,前锋,"matched,name_web"
+A组,墨西哥,Mexico,MEX,28,11,FW,Forward,GIMENEZ Santiago,圣地亚哥·希门尼斯,Santiago Tomás,GIMENEZ,S. GIMENEZ,18/04/2001,AC Milan (ITA),AC米兰,180,47,6,前锋,100,name_club
+A组,墨西哥,Mexico,MEX,28,12,GK,Goalkeeper,ACEVEDO Carlos,卡洛斯·阿切维多,Carlos,ACEVEDO LÓPEZ,C. ACEVEDO,19/04/1996,Club Santos Laguna (MEX),桑托斯拉古纳,185,7,0,门将,100,name_club
+A组,墨西哥,Mexico,MEX,28,13,GK,Goalkeeper,OCHOA Guillermo,吉列尔莫·奥乔亚,Francisco Guillermo,OCHOA MAGAÑA,G. OCHOA,13/07/1985,AEL Limassol (CYP),AEL利马索尔,185,153,0,门将,85.6,name_club
+A组,墨西哥,Mexico,MEX,28,14,FW,Forward,GONZALEZ Armando,阿曼多·冈萨雷斯,Armando,GONZÁLEZ ALBA,A. GONZÁLEZ,20/04/2003,CD Guadalajara (MEX),瓜达拉哈拉,182,8,1,前锋,100,name_club
+A组,墨西哥,Mexico,MEX,28,15,DF,Defender,REYES Israel,伊塞尔·雷耶斯,Israel,REYES ROMERO,I. REYES,23/05/2000,Club América (MEX),美洲队,181,35,2,后卫,68.4,name_club
+A组,墨西哥,Mexico,MEX,28,16,FW,Forward,QUINONES Julian,奎尼奥内斯,Julián Andrés,QUIÑONES QUIÑONES,J. QUIÑONES,24/03/1997,Al Qadsiah FC (KSA),胡拜尔库迪西亚,177,23,3,前锋,100,name_club
+A组,墨西哥,Mexico,MEX,28,17,MF,Midfielder,PINEDA Orbelin,皮内达,Orbelín,PINEDA ALVARADO,ORBELÍN,24/03/1996,AEK Athens (GRE),雅典AEK,169,92,12,中场,86.8,name_club
+A组,墨西哥,Mexico,MEX,28,18,MF,Midfielder,VARGAS Obed,奥贝德·巴尔加斯,Obed Goméz,VARGAS,O. VARGAS,05/08/2005,Atlético De Madrid (ESP),马德里竞技,175,6,0,中场,93.8,name_club
+A组,墨西哥,Mexico,MEX,28,19,MF,Midfielder,MORA Gilberto,吉尔伯托·莫拉,Gilberto Rafael,MORA ZAMBRANO,G. MORA,14/10/2008,Club Tijuana (MEX),蒂华纳,175,9,0,,中场,"matched,name_web"
+A组,墨西哥,Mexico,MEX,28,20,DF,Defender,CHAVEZ Mateo,马特奥·查韦斯,Mateo,CHÁVEZ GARCÍA,M. CHÁVEZ,12/05/2004,AZ Alkmaar (NED),阿尔克马尔,178,10,0,后卫,100,name_club
+A组,墨西哥,Mexico,MEX,28,21,FW,Forward,HUERTA Cesar,塞萨尔·韦尔塔,César Saúl,HUERTA VALERA,C. HUERTA,03/12/2000,RSC Anderlecht (BEL),安德莱赫特,171,26,3,前锋,68.4,name_club
+A组,墨西哥,Mexico,MEX,28,22,FW,Forward,MARTINEZ Guillermo,吉列尔莫·马丁内斯,Guillermo,MARTÍNEZ AYALA,G. MARTÍNEZ,15/03/1995,Pumas UNAM (MEX),墨西哥美洲狮,191,12,3,前锋,100,name_club
+A组,墨西哥,Mexico,MEX,28,23,DF,Defender,GALLARDO Jesus,赫苏斯·加利亚多,Jesús Daniel,GALLARDO VASCONCELOS,J. GALLARDO,15/08/1994,Deportivo Toluca FC (MEX),托卢卡,174,123,3,,后卫,"matched,name_web"
+A组,墨西哥,Mexico,MEX,28,24,MF,Midfielder,CHAVEZ Luis,路易斯·查韦斯,Luis Gerardo,CHÁVEZ MAGALLÓN,L. CHÁVEZ,15/01/1996,FC Dynamo Moscow (RUS),莫斯科迪纳摩,178,46,5,中场,100,name_club
+A组,墨西哥,Mexico,MEX,28,25,FW,Forward,ALVARADO Roberto,罗伯托·阿尔瓦拉多,Roberto Carlos,ALVARADO HERNÁNDEZ,R. ALVARADO,07/09/1998,CD Guadalajara (MEX),瓜达拉哈拉,176,69,6,前锋,100,name_club
+A组,墨西哥,Mexico,MEX,28,26,MF,Midfielder,GUTIERREZ Brian,布莱恩·古铁雷斯,Brian,GUTIÉRREZ,B. GUTIÉRREZ,17/06/2003,CD Guadalajara (MEX),瓜达拉哈拉,178,8,2,中场,100,name_club
+C组,摩洛哥,Morocco,MAR,29,1,GK,Goalkeeper,BOUNOU Yassine,布努,Yassine,BOUNOU,BONO,05/04/1991,Al Hilal SC (KSA),利雅得新月,192,91,0,门将,100,name_club
+C组,摩洛哥,Morocco,MAR,29,2,DF,Defender,HAKIMI Achraf,阿什拉夫·哈基米,Achraf,HAKIMI,HAKIMI,04/11/1998,Paris Saint-Germain (FRA),巴黎圣日耳曼,180,97,11,,后卫,"matched,name_web"
+C组,摩洛哥,Morocco,MAR,29,3,DF,Defender,MAZRAOUI Noussair,马兹拉维,Noussair,MAZRAOUI,MAZRAOUI,14/11/1997,Manchester United FC (ENG),曼联,183,46,2,后卫,100,name_club
+C组,摩洛哥,Morocco,MAR,29,4,MF,Midfielder,AMRABAT Sofyan,穆拉贝特,Sofyan,AMRABAT,AMRABAT,21/08/1996,Real Betis (ESP),斯特拉斯堡,185,75,0,中场,100,name_club
+C组,摩洛哥,Morocco,MAR,29,5,DF,Defender,SAADANE Marwane,马万·萨阿达内,Marwane,SAADANE,SAADANE,17/01/1992,Al Fateh SC (KSA),阿尔法特,185,17,1,,后卫,"matched,name_web"
+C组,摩洛哥,Morocco,MAR,29,6,MF,Midfielder,BOUADDI Ayyoub,布阿迪,Ayyoub,BOUADDI,BOUADDI,02/10/2007,Lille OSC (FRA),里尔,185,4,0,中场,100,name_club
+C组,摩洛哥,Morocco,MAR,29,7,MF,Midfielder,TALBI Chemsdine,塔尔比,Chemsdine,TALBI,TALBI,09/05/2005,Sunderland AFC (ENG),桑德兰,175,6,0,前锋,100,name_club
+C组,摩洛哥,Morocco,MAR,29,8,MF,Midfielder,OUNAHI Azzedine,奥纳西,Azz-Eddine,OUNAHI,OUNAHI,19/04/2000,Girona FC (ESP),赫罗纳,182,50,9,中场,100,name_club
+C组,摩洛哥,Morocco,MAR,29,9,FW,Forward,RAHIMI Soufiane,拉希米,Soufiane,RAHIMI,RAHIMI,02/06/1996,Al Ain FC (UAE),阿尔艾因,180,38,12,前锋,68.4,name_club
+C组,摩洛哥,Morocco,MAR,29,10,FW,Forward,DIAZ Brahim,阿布德,Brahim,ABDELKADER DIAZ,BRAHIM,03/08/1999,Real Madrid C. F. (ESP),贝蒂斯,170,27,15,前锋,75.2,name_club
+C组,摩洛哥,Morocco,MAR,29,11,MF,Midfielder,SAIBARI Ismael,塞巴里,Ismael,SAIBARI,SAIBARI,28/01/2001,PSV Eindhoven (NED),埃因霍温,185,31,10,中场,100,name_club
+C组,摩洛哥,Morocco,MAR,29,12,GK,Goalkeeper,EL KAJOUI Munir,穆尼尔·卡尤伊,Monir,EL KAJOUI,EL KAJOUI,10/05/1989,RS Berkane (MAR),贝尔卡尼,190,52,0,,门将,"matched,name_web"
+C组,摩洛哥,Morocco,MAR,29,13,DF,Defender,EL OUAHDI Zakaria,埃尔瓦赫迪,Zakaria,EL OUAHDI,EL OUAHDI,31/12/2001,KRC Genk (BEL),亨克,171,3,0,后卫,100,name_club
+C组,摩洛哥,Morocco,MAR,29,14,DF,Defender,DIOP Issa,迪奥普,Issa Laye Lucas Jean,DIOP,ISSA,09/01/1997,Fulham FC (ENG),富勒姆,194,5,0,后卫,100,name_club
+C组,摩洛哥,Morocco,MAR,29,15,MF,Midfielder,EL MOURABET Samir,阿姆拉巴特,Samir,EL MOURABET,EL MOURABET,06/10/2005,RC Strasbourg (FRA),贝蒂斯,187,5,0,中场,88.9,name_club
+C组,摩洛哥,Morocco,MAR,29,16,MF,Midfielder,YASSINE Gessime,亚辛,Gessime Ben Youssef Mustapha,YASSINE,YASSINE,22/11/2005,RC Strasbourg (FRA),斯特拉斯堡,172,4,0,前锋,100,name_club
+C组,摩洛哥,Morocco,MAR,29,17,FW,Forward,SBAI Amine,阿明·斯巴伊,Mohamed Amine,SBAI,SBAÏ,05/11/2000,Angers SCO (FRA),昂热,175,2,0,,前锋,"matched,name_web"
+C组,摩洛哥,Morocco,MAR,29,18,DF,Defender,RIAD Chadi,里亚德,Chadi,RIAD,RIAD,17/06/2003,Crystal Palace FC (ENG),水晶宫,186,7,1,后卫,100,name_club
+C组,摩洛哥,Morocco,MAR,29,19,DF,Defender,BELAMMARI Youssef,贝拉马里,Youssef,BELAMMARI,BELAMMARI,20/09/1998,Al Ahly FC (EGY),拉加竞技,175,18,0,后卫,88.9,name_club
+C组,摩洛哥,Morocco,MAR,29,20,FW,Forward,EL KAABI Ayoub,卡埃比,Ayoub,EL KAABI,EL KAABI,25/06/1993,Olympiacos FC (GRE),奥林匹亚科斯,182,71,36,前锋,100,name_club
+C组,摩洛哥,Morocco,MAR,29,21,FW,Forward,AMAIMOUNI Ayoube,阿迈穆尼-埃奇古亚布,Ayoube,AMAIMOUNI,AMAIMOUNI,30/11/2004,Eintracht Frankfurt (GER),法兰克福,179,3,0,前锋,100,name_club
+C组,摩洛哥,Morocco,MAR,29,22,GK,Goalkeeper,TAGNAOUTI Ahmed Reda,塔格诺提,Ahmed Reda,TAGNAOUTI,TAGNAOUTI,05/04/1996,ASFAR (MAR),拉巴特皇家武裝,194,3,0,门将,100,name_club
+C组,摩洛哥,Morocco,MAR,29,23,MF,Midfielder,EL KHANNOUSS Bilal,埃尔哈努斯,Bilal,EL KHANNOUSS,EL KHANNOUSS,10/05/2004,VfB Stuttgart (GER),斯图加特,180,38,3,中场,100,name_club
+C组,摩洛哥,Morocco,MAR,29,24,MF,Midfielder,EL AYNAOUI Neil,艾纳维,Neil Yoni,EL AYNAOUI,EL AYNAOUI,02/07/2001,AS Roma (ITA),罗马,185,17,2,中场,100,name_club
+C组,摩洛哥,Morocco,MAR,29,25,DF,Defender,HALHAL Redouane,哈尔哈尔,Redouane,HALHAL,HALHAL,05/03/2003,KV Mechelen (BEL),梅赫伦,189,3,0,后卫,100,name_club
+C组,摩洛哥,Morocco,MAR,29,26,DF,Defender,SALAH EDDINE Anass,萨拉赫·埃丁,Anass,SALAH EDDINE,SALAH-EDDINE,18/01/2002,PSV Eindhoven (NED),埃因霍温,181,10,0,后卫,100,name_club
+F组,荷兰,Netherlands,NED,30,1,GK,Goalkeeper,VERBRUGGEN Bart,费布吕亨,Bart,VERBRUGGEN,VERBRUGGEN,18/08/2002,Brighton & Hove Albion FC (ENG),布莱顿,193,30,0,门将,89.5,name_club
+F组,荷兰,Netherlands,NED,30,2,DF,Defender,GEERTRUIDA Lutsharel,海特勒伊达,Lutsharel Emiliano,GEERTRUIDA,GEERTRUIDA,18/07/2000,Sunderland AFC (ENG),桑德兰,185,21,0,后卫,100,name_club
+F组,荷兰,Netherlands,NED,30,3,MF,Midfielder,DE ROON Marten,德罗恩,Marten Elco,DE ROON,DE ROON,29/03/1991,Atalanta Bergamo (ITA),亚特兰大,186,43,1,中场,100,name_club
+F组,荷兰,Netherlands,NED,30,4,DF,Defender,VAN DIJK Virgil,范戴克,Virgil,VAN DIJK,VIRGIL,08/07/1991,Liverpool FC (ENG),利物浦,195,93,13,,后卫,"matched,name_web"
+F组,荷兰,Netherlands,NED,30,5,DF,Defender,AKE Nathan,阿克,Nathan Benjamin,AKE,AKÉ,18/02/1995,Manchester City FC (ENG),曼城,180,60,5,后卫,100,name_club
+F组,荷兰,Netherlands,NED,30,6,DF,Defender,VAN HECKE Jan Paul,范赫克,Jan-Paul,VAN HECKE,VAN HECKE,08/06/2000,Brighton & Hove Albion FC (ENG),布莱顿,189,13,0,后卫,100,name_club
+F组,荷兰,Netherlands,NED,30,7,MF,Midfielder,KLUIVERT Justin,克鲁伊维特,Justin Dean,KLUIVERT,KLUIVERT,05/05/1999,AFC Bournemouth (ENG),伯恩茅斯,173,12,0,前锋,80,name_club
+F组,荷兰,Netherlands,NED,30,8,MF,Midfielder,GRAVENBERCH Ryan,格拉芬贝赫,Ryan Jiro,GRAVENBERCH,GRAVENBERCH,16/05/2002,Liverpool FC (ENG),利物浦,190,28,1,,中场,"matched,name_web"
+F组,荷兰,Netherlands,NED,30,9,FW,Forward,WEGHORST Wout,韦霍斯特,Wout François Maria,WEGHORST,WEGHORST,07/08/1992,AFC Ajax (NED),阿贾克斯,197,52,14,前锋,100,name_club
+F组,荷兰,Netherlands,NED,30,10,FW,Forward,DEPAY Memphis,德佩,Memphis,DEPAY,MEMPHIS,13/02/1994,SC Corinthians (BRA),科林蒂安,178,110,55,前锋,100,name_club
+F组,荷兰,Netherlands,NED,30,11,FW,Forward,GAKPO Cody,加克波,Cody Mathès,GAKPO,GAKPO,07/05/1999,Liverpool FC (ENG),利物浦,193,51,21,,前锋,"matched,name_web"
+F组,荷兰,Netherlands,NED,30,12,DF,Defender,WIEFFER Mats,马茨·维费尔,Mats Henrik Berne,WIEFFER,WIEFFER,16/11/1999,Brighton & Hove Albion FC (ENG),布莱顿,189,15,1,后卫,100,name_club
+F组,荷兰,Netherlands,NED,30,13,GK,Goalkeeper,ROEFS Robin,鲁夫斯,Robin Gerardus Petrus,ROEFS,ROEFS,17/01/2003,Sunderland AFC (ENG),桑德兰,193,1,0,门将,100,name_club
+F组,荷兰,Netherlands,NED,30,14,MF,Midfielder,REIJNDERS Tijjani,赖因德斯,Tijjani Martinus Jan,REIJNDERS,REIJNDERS,29/07/1998,Manchester City FC (ENG),曼城,178,33,7,中场,97.7,name_club
+F组,荷兰,Netherlands,NED,30,15,DF,Defender,VAN DE VEN Micky,范德芬,Micky,VAN DE VEN,VAN DE VEN,19/04/2001,Tottenham Hotspur FC (ENG),热刺,193,22,1,后卫,100,name_club
+F组,荷兰,Netherlands,NED,30,16,MF,Midfielder,TIL Guus,德容,Guus Berend,TIL,TIL,22/12/1997,PSV Eindhoven (NED),巴萨,188,7,1,中场,100,name_club
+F组,荷兰,Netherlands,NED,30,17,FW,Forward,LANG Noa,诺阿·朗,Noa Noëll,LANG,LANG,17/06/1999,Galatasaray SK (TUR),加拉塔萨雷/那不勒斯,176,15,3,前锋,100,name_club
+F组,荷兰,Netherlands,NED,30,18,FW,Forward,MALEN Donyell,马伦,Donyell,MALEN,MALEN,19/01/1999,AS Roma (ITA),罗马,178,54,13,前锋,100,name_club
+F组,荷兰,Netherlands,NED,30,19,FW,Forward,BROBBEY Brian,布罗比,Brian Ebenezer Adjei,BROBBEY,BROBBEY,01/02/2002,Sunderland AFC (ENG),桑德兰,181,13,1,前锋,100,name_club
+F组,荷兰,Netherlands,NED,30,20,MF,Midfielder,KOOPMEINERS Teun,库普梅纳斯,Teun,KOOPMEINERS,KOOPMEINERS,28/02/1998,Juventus FC (ITA),尤文,185,29,3,中场,90.9,name_club
+F组,荷兰,Netherlands,NED,30,21,MF,Midfielder,DE JONG Frenkie,弗兰基·德容,Frenkie,DE JONG,F. DE JONG,12/05/1997,FC Barcelona (ESP),巴塞罗那,181,67,2,,中场,"matched,name_web"
+F组,荷兰,Netherlands,NED,30,22,DF,Defender,DUMFRIES Denzel,邓弗里斯,Denzel Justus Morris,DUMFRIES,DUMFRIES,18/04/1996,FC Internazionale Milano (ITA),国米,188,73,11,后卫,88.9,name_club
+F组,荷兰,Netherlands,NED,30,23,GK,Goalkeeper,FLEKKEN Mark,弗莱肯,Mark Maria Hubertus,FLEKKEN,FLEKKEN,13/06/1993,Bayer 04 Leverkusen (GER),勒沃库森,195,12,0,门将,100,name_club
+F组,荷兰,Netherlands,NED,30,24,FW,Forward,SUMMERVILLE Crysencio,萨默维尔,Crysencio Jilbert Sylverio Cir,SUMMERVILLE,SUMMERVILLE,30/10/2001,West Ham United FC (ENG),西汉姆联,172,3,1,前锋,72.7,name_club
+F组,荷兰,Netherlands,NED,30,25,DF,Defender,HATO Jorrel,哈托,Jorrel Evan,HATO,HATO,07/03/2006,Chelsea FC (ENG),切尔西,182,8,0,后卫,100,name_club
+F组,荷兰,Netherlands,NED,30,26,MF,Midfielder,TIMBER Quinten,昆滕·廷伯,Quinten Ryan Crispito,TIMBER,Q. TIMBER,17/06/2001,Olympique Marseille (FRA),马赛,176,12,1,中场,100,name_club
+G组,新西兰,New Zealand,NZL,31,1,GK,Goalkeeper,CROCOMBE Max,马克斯·克罗科姆,Maxime Teremoana,CROCOMBE,CROCOMBE,12/08/1993,Millwall FC (ENG),米尔沃尔,190,25,0,,门将,"matched,name_web"
+G组,新西兰,New Zealand,NZL,31,2,DF,Defender,PAYNE Tim,蒂姆·佩恩,Timothy John,PAYNE,PAYNE,10/01/1994,Wellington Phoenix FC (NZL),惠灵顿凤凰,179,53,3,后卫,92.1,name_club
+G组,新西兰,New Zealand,NZL,31,3,DF,Defender,DE VRIES Francis,弗朗西斯·德弗里斯,Francis,DE VRIES,DE VRIES,28/11/1994,Auckland FC (NZL),奥克兰FC,181,20,1,后卫,100,name_club
+G组,新西兰,New Zealand,NZL,31,4,DF,Defender,BINDON Tyler,宾登·泰勒,Tyler Grant,BINDON,BINDON,27/01/2005,Shefield United FC (ENG),谢菲尔德联,190,26,2,后卫,100,name_club
+G组,新西兰,New Zealand,NZL,31,5,DF,Defender,BOXALL Michael,米切尔·伯克萨尔,Michael Joseph,BOXALL,BOXALL,18/08/1988,Minnesota United FC (USA),明尼苏达联,191,65,1,后卫,100,name_club
+G组,新西兰,New Zealand,NZL,31,6,MF,Midfielder,BELL Joe,拉克兰·贝利斯,Joe Zen Robert,BELL,BELL,27/04/1999,Viking Stavanger (NOR),维京,182,33,1,中场,100,name_club
+G组,新西兰,New Zealand,NZL,31,7,FW,Forward,ROGERSON Logan,洛根·罗杰森,Logan Tipene,ROGERSON,ROGERSON,28/05/1998,Auckland FC (NZL),奥克兰FC,182,18,2,,前锋,"matched,name_web"
+G组,新西兰,New Zealand,NZL,31,8,MF,Midfielder,STAMENIC Marko,马科·斯特梅克,Marko Seufatu Nikola,STAMENIC,STAMENIC,19/02/2002,Swansea City AFC (WAL),斯旺西,188,41,3,中场,72.7,name_club
+G组,新西兰,New Zealand,NZL,31,9,FW,Forward,WOOD Chris,克里斯·伍德,Christopher Grant,WOOD,WOOD,07/12/1991,Nottingham Forest FC (ENG),诺丁汉森林,191,91,45,前锋,92.1,name_club
+G组,新西兰,New Zealand,NZL,31,10,MF,Midfielder,SINGH Sarpreet,萨普里特·辛格,Sarpreet,SINGH,SINGH,20/02/1999,Wellington Phoenix FC (NZL),惠灵顿凤凰,180,29,3,中场,100,name_club
+G组,新西兰,New Zealand,NZL,31,11,MF,Midfielder,JUST Elijah,杰西·兰德尔,Elijah Henry,JUST,JUST,01/05/2000,Motherwell FC (SCO),奥克兰FC,176,45,11,前锋,100,name_club
+G组,新西兰,New Zealand,NZL,31,12,GK,Goalkeeper,PAULSEN Alex,亚历克斯·保尔森,Alexander Noah,PAULSEN,PAULSEN,04/07/2002,Lechia Gdańsk (POL),格但斯克莱希亚,193,8,0,,门将,"matched,name_web"
+G组,新西兰,New Zealand,NZL,31,13,DF,Defender,CACACE Liberato,里贝拉托·卡卡塞,Liberato Gianpaolo,CACACE,CACACE,27/09/2000,Wrexham AFC (WAL),雷克瑟姆,182,38,1,,后卫,"matched,name_web"
+G组,新西兰,New Zealand,NZL,31,14,MF,Midfielder,RUFER Alex,鲁费,Alex Arthur,RUFER,RUFER,12/06/1996,Wellington Phoenix FC (NZL),惠灵顿凤凰,180,26,0,中场,100,name_club
+G组,新西兰,New Zealand,NZL,31,15,DF,Defender,PIJNAKER Nando,南多·派纳克,Nando Zen,PIJNAKER,PIJNAKER,25/02/1999,Auckland FC (NZL),奥克兰FC,185,26,0,后卫,100,name_club
+G组,新西兰,New Zealand,NZL,31,16,DF,Defender,SURMAN Finn,苏尔曼,Finn,SURMAN,SURMAN,23/09/2003,Portland Timbers (USA),波特兰伐木工,190,20,2,后卫,100,name_club
+G组,新西兰,New Zealand,NZL,31,17,FW,Forward,BARBAROUSES Kosta,巴巴洛塞斯,Kosta,BARBAROUSES,BARBAROUSES,19/02/1990,WS Wanderers FC (AUS),西悉尼流浪者,171,76,10,前锋,100,name_club
+G组,新西兰,New Zealand,NZL,31,18,FW,Forward,WAINE Ben,本·韦恩,Benjamin Peter,WAINE,WAINE,11/06/2001,Port Vale FC (ENG),维尔港,185,31,9,前锋,100,name_club
+G组,新西兰,New Zealand,NZL,31,19,MF,Midfielder,OLD Ben,本·奥尔德,Benjamin Craig,OLD,OLD,13/08/2002,AS Saint-Etienne (FRA),圣埃蒂安,173,25,2,,中场,"matched,name_web"
+G组,新西兰,New Zealand,NZL,31,20,MF,Midfielder,McCOWATT Callum,卡勒姆·麦考瓦特,Callum William,MCCOWATT,MCCOWATT,30/04/1999,Silkeborg IF (DEN),锡尔克堡,180,34,5,,中场,"matched,name_web"
+G组,新西兰,New Zealand,NZL,31,21,FW,Forward,RANDALL Jesse,杰西·兰德尔,Jesse Carmichael,RANDALL,RANDALL,19/08/2002,Auckland FC (NZL),奥克兰FC,176,12,2,,前锋,"matched,name_web"
+G组,新西兰,New Zealand,NZL,31,22,GK,Goalkeeper,WOUD Michael,迈克尔·沃德,Michael Cornelis,WOUD,WOUD,16/01/1999,Auckland FC (NZL),奥克兰FC,196,7,0,门将,100,name_club
+G组,新西兰,New Zealand,NZL,31,23,MF,Midfielder,THOMAS Ryan,瑞安·托马斯,Ryan Jared,THOMAS,THOMAS,20/12/1994,PEC Zwolle (NED),兹沃勒,176,26,3,中场,100,name_club
+G组,新西兰,New Zealand,NZL,31,24,DF,Defender,ELLIOT Callan,卡兰·埃利奥特,Callan Rennie,ELLIOT,ELLIOT,07/07/1999,Auckland FC (NZL),奥克兰FC,177,12,0,后卫,100,name_club
+G组,新西兰,New Zealand,NZL,31,25,MF,Midfielder,BAYLISS Lachlan,拉克兰·贝利斯,Lachlan Ryan,BAYLISS,BAYLISS,24/07/2002,Newcastle United Jets FC (AUS),纽卡斯尔喷气机,178,4,0,,中场,"matched,name_web"
+G组,新西兰,New Zealand,NZL,31,26,DF,Defender,SMITH Tommy,汤米·史密斯,Thomas Jefferson,SMITH,SMITH,31/03/1990,Braintree Town FC (ENG),布伦特里,188,57,2,,后卫,"matched,name_web"
+I组,挪威,Norway,NOR,32,1,GK,Goalkeeper,NYLAND Orjan,伊恩·尼兰德,Ørjan Haskjold,NYLAND,NYLAND,10/09/1990,Sevilla FC (ESP),塞维利亚,192,71,0,门将,100,name_club
+I组,挪威,Norway,NOR,32,2,MF,Midfielder,THORSBY Morten,托尔斯比,Morten,THORSBY,THORSBY,05/05/1996,US Cremonese (ITA),克雷莫内塞,188,31,0,中前场,100,name_club
+I组,挪威,Norway,NOR,32,3,DF,Defender,AJER Kristoffer,克里斯托弗·阿耶尔,Kristoffer Vassbakk Köpp,AJER,VASSBAKK AJER,17/04/1998,Brentford FC (ENG),布伦特福德,198,52,2,后卫,100,name_club
+I组,挪威,Norway,NOR,32,4,DF,Defender,OSTIGARD Leo,莱奥·厄斯蒂加德,Leo Skiri,ØSTIGÅRD,ØSTIGÅRD,28/11/1999,Genoa CFC (ITA),热那亚,183,38,1,,后卫,"matched,name_web"
+I组,挪威,Norway,NOR,32,5,DF,Defender,MOLLER WOLFE David,大卫·莫勒·沃尔夫,David Møller,WOLFE,MØLLER WOLFE,23/04/2002,Wolverhampton Wanderers FC (ENG),狼队,185,22,1,,后卫,"matched,name_web"
+I组,挪威,Norway,NOR,32,6,MF,Midfielder,BERG Patrick,帕特里克·伯格,Patrick,BERG,BERG,24/11/1997,FK Bodø/Glimt (NOR),博德闪耀,178,43,0,中前场,100,name_club
+I组,挪威,Norway,NOR,32,7,FW,Forward,SORLOTH Alexander,瑟尔洛特,Alexander,SØRLOTH,SØRLOTH,05/12/1995,Atlético De Madrid (ESP),马竞,196,72,26,中前场,88.9,name_club
+I组,挪威,Norway,NOR,32,8,MF,Midfielder,BERGE Sander,桑德·博格,Sander Gard Bolin,BERGE,BERGE,14/02/1998,Fulham FC (ENG),富勒姆,195,66,1,中前场,100,name_club
+I组,挪威,Norway,NOR,32,9,FW,Forward,HAALAND Erling,哈兰德,Erling Braut,HAALAND,BRAUT HAALAND,21/07/2000,Manchester City FC (ENG),曼城,195,50,55,中前场,100,name_club
+I组,挪威,Norway,NOR,32,10,MF,Midfielder,ODEGAARD Martin,厄德高,Martín,ØDEGAARD,ØDEGAARD,17/12/1998,Arsenal FC (ENG),阿森纳,178,68,5,中前场,100,name_club
+I组,挪威,Norway,NOR,32,11,FW,Forward,STRAND LARSEN Jorgen,拉尔森,Jørgen Strand,LARSEN,STRAND LARSEN,06/02/2000,Crystal Palace FC (ENG),水晶宫,193,28,6,中前场,100,name_club
+I组,挪威,Norway,NOR,32,12,GK,Goalkeeper,TANGVIK Sander,唐维克·桑德,Sander,TANGVIK,TANGVIK,29/11/2002,Hamburger SV (GER),汉堡,193,0,0,门将,100,name_club
+I组,挪威,Norway,NOR,32,13,GK,Goalkeeper,SELVIK Egil,塞尔维克,Egil,SELVIK,SELVIK,30/07/1997,Watford FC (ENG),沃特福德,187,7,0,门将,100,name_club
+I组,挪威,Norway,NOR,32,14,MF,Midfielder,AURSNES Fredrik,弗雷德里克·奥尔斯内斯,Fredrik,AURSNES,AURSNES,10/12/1995,SL Benfica (POR),本菲卡,181,22,1,,中场,"matched,name_web"
+I组,挪威,Norway,NOR,32,15,DF,Defender,BJORKAN Fredrik Andre,弗雷德里克·比约坎,Fredrik André,BJØRKAN,BJØRKAN,21/08/1998,FK Bodø/Glimt (NOR),博德闪耀,180,21,1,后卫,100,name_club
+I组,挪威,Norway,NOR,32,16,DF,Defender,HOLMGREN PEDERSEN Marcus,马库斯·霍姆格伦·佩德森,Marcus Holmgren,PEDERSEN,HOLMGREN,16/07/2000,Torino FC (ITA),都灵,184,32,0,后卫,80,name_club
+I组,挪威,Norway,NOR,32,17,DF,Defender,HEGGEM Torbjorn,托比约恩·赫格姆,Torbjørn Lysaker,HEGGEM,HEGGEM,12/01/1999,Bologna FC (ITA),博洛尼亚,192,15,0,后卫,100,name_club
+I组,挪威,Norway,NOR,32,18,MF,Midfielder,THORSTVEDT Kristian,克里斯蒂安·托斯特维特,Kristian,THORSTVEDT,THORSTVEDT,13/03/1999,US Sassuolo (ITA),萨索洛,189,37,4,中前场,100,name_club
+I组,挪威,Norway,NOR,32,19,MF,Midfielder,AASGAARD Thelo,特洛·阿森加德,Thelonious Gerard,AASGAARD,AASGAARD,02/05/2002,Rangers FC (SCO),流浪者,188,8,5,,中场,"matched,name_web"
+I组,挪威,Norway,NOR,32,20,FW,Forward,NUSA Antonio,努萨,Antonio Eromonsele Nordby,NUSA,NUSA,17/04/2005,RB Leipzig (GER),莱比锡,183,24,8,中前场,100,name_club
+I组,挪威,Norway,NOR,32,21,MF,Midfielder,SCHJELDERUP Andreas,谢尔德鲁普,Andreas Rædergård,SCHJELDERUP,SCHJELDERUP,01/06/2004,SL Benfica (POR),本菲卡,177,12,1,中前场,76.9,name_club
+I组,挪威,Norway,NOR,32,22,MF,Midfielder,BOBB Oscar,鲍勃,Oscar,BOBB,BOBB,12/07/2003,Fulham FC (ENG),富勒姆,177,20,2,中前场,100,name_club
+I组,挪威,Norway,NOR,32,23,MF,Midfielder,HAUGE Jens Petter,海于格,Jens Petter,HAUGE,HAUGE,12/10/1999,FK Bodø/Glimt (NOR),博德闪耀,184,15,1,中前场,100,name_club
+I组,挪威,Norway,NOR,32,24,DF,Defender,LANGAS Sondre,桑德雷·朗格斯,Sondre Klingen,LANGÅS,LANGÅS,02/02/2001,Derby County FC (ENG),德比郡,190,3,0,后卫,98.2,name_club
+I组,挪威,Norway,NOR,32,25,DF,Defender,FALCHENER Henrik,亨里克·法尔切纳,Henrik Sælebakke,FALCHENER,FALCHENER,08/05/2003,Viking Stavanger (NOR),维京,194,1,0,,后卫,"matched,name_web"
+I组,挪威,Norway,NOR,32,26,FW,Forward,RYERSON Julian,朱利安·莱尔森,Julian,RYERSON,RYERSON,17/11/1997,Borussia Dortmund (GER),多特蒙德,186,43,1,后卫,100,cross_position_pinyin
+L组,巴拿马,Panama,PAN,33,1,GK,Goalkeeper,MEJIA Luis,路易斯·梅吉亚,Luis Ricardo,MEJÍA CAJAR,MEJIA,16/03/1991,Club Nacional (URU),佩纳罗尔,193,56,0,门将,100,name_club
+L组,巴拿马,Panama,PAN,33,2,DF,Defender,BLACKMAN Cesar,塞萨尔·布莱克曼,Cesar Rodolfo,BLACKMAN CAMARENA,BLACKMAN,02/04/1998,ŠK Slovan Bratislava (SVK),布拉迪斯拉法,174,40,3,后卫,100,name_club
+L组,巴拿马,Panama,PAN,33,3,DF,Defender,CORDOBA Jose,何塞·科尔多瓦,Jose Angel,CORDOBA CHAMBERS,CORDOBA,03/06/2001,Norwich City FC (ENG),诺维奇,189,32,1,后卫,95,name_club
+L组,巴拿马,Panama,PAN,33,4,DF,Defender,ESCOBAR Fidel,菲德尔·埃斯科瓦尔,Fidel,ESCOBAR MENDIETA,F. ESCOBAR,09/01/1995,Deportivo Saprissa (CRC),萨普里萨,184,99,4,,后卫,"matched,name_web"
+L组,巴拿马,Panama,PAN,33,5,DF,Defender,FARINA Edgardo,埃德加多·法里尼亚,Edgardo Issac,FARIÑA WYNTER,FARIÑA,19/10/2001,FC Pari Nizhny Novgorod (RUS),下诺夫哥罗德,195,18,0,,后卫,"matched,name_web"
+L组,巴拿马,Panama,PAN,33,6,MF,Midfielder,MARTINEZ Cristian,克里斯蒂安·马丁内斯,Cristian Jesus,MARTINEZ,MARTÍNEZ,06/02/1997,Hapoel Kiryat Shmona FC (ISR),谢莫纳夏普尔,170,67,2,中场,100,name_club
+L组,巴拿马,Panama,PAN,33,7,MF,Midfielder,RODRIGUEZ Jose Luis,何塞·路易斯·罗德里格斯,Jose Luis,RODRIGUEZ FRANCIS,J.L. RODRÍGUEZ,19/06/1998,FC Juárez (MEX),华雷斯,180,70,8,,中场,"matched,name_web"
+L组,巴拿马,Panama,PAN,33,8,MF,Midfielder,CARRASQUILLA Adalberto,卡拉斯基利亚,Adalberto Eliecer,CARRASQUILLA ALCAZAR,CARRASQUILLA,28/11/1998,Pumas UNAM (MEX),墨西哥美洲狮,171,73,3,中场,96.5,name_club
+L组,巴拿马,Panama,PAN,33,9,FW,Forward,RODRIGUEZ Tomas,罗德里格斯,Tomas Abdiel,RODRIGUEZ MENA,T. RODRÍGUEZ,09/03/1999,Deportivo Saprissa (CRC),萨普里萨,183,13,4,中场,90.9,name_club
+L组,巴拿马,Panama,PAN,33,10,MF,Midfielder,DIAZ Ismael,伊斯梅尔·迪亚斯,Ismael,DIAZ DE LEON,ISMAEL,12/05/1997,Club León (MEX),莱昂,184,56,17,,中场,"matched,name_web"
+L组,巴拿马,Panama,PAN,33,11,MF,Midfielder,BARCENAS Edgar Yoel,埃德加·约埃尔·巴塞纳斯,Edgar Yoel,BARCENAS HERRERA,BÁRCENAS,23/10/1993,Mazatlán FC (MEX),马萨特兰,175,104,10,,中场,"matched,name_web"
+L组,巴拿马,Panama,PAN,33,12,GK,Goalkeeper,SAMUDIO Cesar,塞萨尔·萨穆迪奥,Cesar Jair,SAMUDIO MURILLO,SAMUDIO,23/02/1994,CD Marathón (HON),CD马拉松,189,5,0,门将,100,name_club
+L组,巴拿马,Panama,PAN,33,13,DF,Defender,RAMOS Jiovany,吉奥瓦尼·拉莫斯,Jiovany Javier,RAMOS DIAZ,RAMOS,26/01/1997,Puerto Cabello CF (VEN),港发院,188,23,2,后卫,100,name_club
+L组,巴拿马,Panama,PAN,33,14,DF,Defender,HARVEY Carlos,卡洛斯·哈维,Carlos Miguel,HARVEY CESNEROS,HARVEY,03/02/2000,Minnesota United FC (USA),明尼苏达联,184,28,3,中场,100,cross_position_pinyin
+L组,巴拿马,Panama,PAN,33,15,DF,Defender,DAVIS Eric,埃里克·戴维斯,Eric Javier,DAVIS GRAJALES,DAVIS,31/03/1991,CD Plaza Amador (PAN),阿马多尔广场,180,107,9,后卫,100,name_club
+L组,巴拿马,Panama,PAN,33,16,DF,Defender,ANDRADE Andres,安德烈亚斯·安德雷德,Andres Alberto,ANDRADE CEDEÑO,ANDRADE,16/10/1998,LASK Linz (AUT),林茨,187,50,1,后卫,100,name_club
+L组,巴拿马,Panama,PAN,33,17,FW,Forward,FAJARDO Jose,法贾尔多,Jose,FAJARDO NELSON,FAJARDO,18/08/1993,CD Universidad Católica (ECU),卡托利卡大学,184,69,17,前锋,100,name_club
+L组,巴拿马,Panama,PAN,33,18,FW,Forward,WATERMAN Cecilio,塞西·沃特曼,Cecilio Alfonso,WATERMAN RUIZ,WATERMAN,13/04/1991,CD Universidad De Concepción (CHI),康塞普西翁大学,180,55,15,前锋,100,name_club
+L组,巴拿马,Panama,PAN,33,19,MF,Midfielder,QUINTERO Alberto,阿尔伯特·金特罗,Alberto Abdiel,QUINTERO MEDINA,QUINTERO,18/12/1987,CD Plaza Amador (PAN),阿马多尔广场,165,141,7,中场,97.7,name_club
+L组,巴拿马,Panama,PAN,33,20,MF,Midfielder,GODOY Anibal,戈多伊,Anibal Casis,GODOY LEMUS,GODOY,10/02/1990,San Diego FC (USA),圣迭戈FC,184,159,4,中场,100,name_club
+L组,巴拿马,Panama,PAN,33,21,MF,Midfielder,YANIS Cesar,亚尼斯,Cesar Augusto,YANIS VELASCO,YANIS,28/01/1996,CD Cobresal (CHI),科布雷萨尔,160,55,5,中场,100,name_club
+L组,巴拿马,Panama,PAN,33,22,GK,Goalkeeper,MOSQUERA Orlando,奥兰多·莫斯奎拉,Orlando,MOSQUERA,MOSQUERA,25/12/1994,Al Fayha FC (KSA),莫哈,191,49,0,门将,100,name_club
+L组,巴拿马,Panama,PAN,33,23,DF,Defender,MURILLO Amir,迈克尔·穆里略,Michael Amir,MURILLO BERMUDEZ,A. MURILLO,11/02/1996,Beşiktaş JK (TUR),贝西克塔斯,185,93,9,后卫,100,name_club
+L组,巴拿马,Panama,PAN,33,24,FW,Forward,LONDONO Azarias,阿扎里亚斯·伦多尼奥,Azarías Emmanuel,LONDOÑO GONZALEZ,LONDOÑO,21/06/2001,CD Universidad Católica (ECU),卡托利卡大学,185,12,1,中场,100,name_club
+L组,巴拿马,Panama,PAN,33,25,DF,Defender,MILLER Roderick,罗德里克·米勒,Roderick Alonso,MILLER MOLINA,MILLER,03/04/1992,Turan Tovuz (AZE),托武兹,190,49,2,后卫,68.4,name_club
+L组,巴拿马,Panama,PAN,33,26,DF,Defender,GUTIERREZ Jorge,豪尔赫·古铁雷斯,Jorge Abdiel,GUTIERREZ CORNEJO,GUTIÉRREZ,01/09/1998,Deportivo La Guaira (VEN),拉瓜伊拉,171,18,0,,后卫,"matched,name_web"
+D组,巴拉圭,Paraguay,PAR,34,1,GK,Goalkeeper,FERNANDEZ Gatito,加蒂托·费尔南德斯,Roberto Junior,FERNANDEZ TORRES,FERNÁNDEZ,29/03/1988,Cerro Porteño (PAR),波特诺山丘,191,30,0,门将,100,name_club
+D组,巴拉圭,Paraguay,PAR,34,2,DF,Defender,VELAZQUEZ Gustavo,古斯塔沃·贝拉斯克斯,Victor Gustavo,VELAZQUEZ RAMOS,VELÁZQUEZ,17/04/1991,Cerro Porteño (PAR),波特诺山丘,189,14,1,后卫,100,name_club
+D组,巴拉圭,Paraguay,PAR,34,3,DF,Defender,ALDERETE Omar,奥马尔·阿尔德雷特,Omar Federico,ALDERETE FERNANDEZ,ALDERETE,26/12/1996,Sunderland AFC (ENG),桑德兰,190,37,3,后卫,100,name_club
+D组,巴拉圭,Paraguay,PAR,34,4,DF,Defender,CACERES Juan Jose,胡安·卡塞雷斯,Juan Jose,CACERES,CÁCERES,01/06/2000,FC Dynamo Moscow (RUS),莫斯科迪纳摩,187,18,0,后卫,100,name_club
+D组,巴拉圭,Paraguay,PAR,34,5,DF,Defender,BALBUENA Fabian,法比安·巴尔武埃纳,Fabián Cornelio,BALBUENA GONZÁLEZ,BALBUENA,23/08/1991,Grêmio FBPA (BRA),格雷米奥,188,47,2,,后卫,"matched,name_web"
+D组,巴拉圭,Paraguay,PAR,34,6,DF,Defender,ALONSO Junior,儒尼奥尔·阿隆索,Júnior Osmar Ignacio,ALONSO MUJICA,ALONSO,09/02/1993,Atlético Mineiro (BRA),米内罗竞技,184,72,3,后卫,100,name_club
+D组,巴拉圭,Paraguay,PAR,34,7,MF,Midfielder,SOSA Ramon,拉蒙·索萨,Ramón,SOSA ACOSTA,SOSA,31/08/1999,SE Palmeiras (BRA),帕尔梅拉斯,178,30,1,前锋,100,name_club
+D组,巴拉圭,Paraguay,PAR,34,8,MF,Midfielder,GOMEZ Diego,迭戈·戈麦斯,Diego Alexander,GOMEZ AMARILLA,D. GÓMEZ,27/03/2003,Brighton & Hove Albion FC (ENG),布莱顿,183,25,3,中场,100,name_club
+D组,巴拉圭,Paraguay,PAR,34,9,FW,Forward,SANABRIA Antonio,安东尼奥·萨纳夫里亚,Arnaldo Antonio,SANABRIA AYALA,SANABRIA,04/03/1996,US Cremonese (ITA),克雷莫内塞,180,49,7,前锋,100,name_club
+D组,巴拉圭,Paraguay,PAR,34,10,MF,Midfielder,ALMIRON Miguel,米格尔·阿尔米隆,Miguel Angel,ALMIRON REJALA,ALMIRÓN,10/02/1994,Atlanta United FC (USA),亚特兰大联,178,77,10,,中场,"matched,name_web"
+D组,巴拉圭,Paraguay,PAR,34,11,MF,Midfielder,MAURICIO,毛里西奥,Mauricio,MAGALHAES PRADO,MAURICIO,22/06/2001,SE Palmeiras (BRA),帕尔梅拉斯,175,4,1,中场,100,name_club
+D组,巴拉圭,Paraguay,PAR,34,12,GK,Goalkeeper,GILL Orlando,奥兰多·吉尔,Orlando Daniel,GILL NOLDIN,O. GILL,11/06/2000,CA San Lorenzo (ARG),圣洛伦索,190,7,0,,门将,"matched,name_web"
+D组,巴拉圭,Paraguay,PAR,34,13,DF,Defender,CANALE Jose,何塞·卡纳莱,Jose Maria,CANALE DOMINGUEZ,CANALE,20/07/1996,CA Lanús (ARG),拉努斯,192,2,0,后卫,75,name_club
+D组,巴拉圭,Paraguay,PAR,34,14,MF,Midfielder,CUBAS Andres,安德烈斯·库巴斯,Adrián Andrés,CUBAS,CUBAS,11/05/1996,Vancouver Whitecaps FC (CAN),温哥华白浪,166,34,0,中场,100,name_club
+D组,巴拉圭,Paraguay,PAR,34,15,DF,Defender,GOMEZ Gustavo,古斯塔沃·戈麦斯,Gustavo Raul,GÓMEZ PORTILLO,G. GÓMEZ,06/05/1993,SE Palmeiras (BRA),帕尔梅拉斯,179,90,4,后卫,100,name_club
+D组,巴拉圭,Paraguay,PAR,34,16,MF,Midfielder,BOBADILLA Damian,达米安·博瓦迪利亚,Damián Josue,BOBADILLA BENITEZ,BOBADILLA,11/07/2001,São Paulo FC (BRA),圣保罗,180,20,1,,中场,"matched,name_web"
+D组,巴拉圭,Paraguay,PAR,34,17,FW,Forward,ROMERO GAMARRA Alejandro,亚历杭德罗·罗梅罗·加马拉,Alejandro Sebastian,ROMERO GAMARRA,R. GAMARRA,11/01/1995,Al Ain FC (UAE),阿尔艾因,165,35,6,,前锋,"matched,name_web"
+D组,巴拉圭,Paraguay,PAR,34,18,FW,Forward,ARCE Alex,亚历克斯·阿尔塞,Alex Adrian,ARCE BARRIOS,ARCE,16/06/1995,CS Independiente Rivadavia (ARG),独立,188,16,1,前锋,100,name_club
+D组,巴拉圭,Paraguay,PAR,34,19,FW,Forward,ENCISO Julio,胡利奥·恩西索,Julio Cesar,ENCISO ESPINOLA,ENCISO,23/01/2004,RC Strasbourg (FRA),斯特拉斯堡,168,33,4,前锋,97.7,name_club
+D组,巴拉圭,Paraguay,PAR,34,20,MF,Midfielder,OJEDA Braian,布拉扬·奥赫达,Braian Oscar,OJEDA RODRIGUEZ,OJEDA,27/06/2000,Orlando City SC (USA),奥兰多城,173,17,0,中场,100,name_club
+D组,巴拉圭,Paraguay,PAR,34,21,FW,Forward,AVALOS Gabriel,加夫列尔·阿瓦洛斯,Gabriel,AVALOS STUMPFS,AVALOS,09/07/1991,CA Independiente (ARG),独立,185,23,2,,前锋,"matched,name_web"
+D组,巴拉圭,Paraguay,PAR,34,22,GK,Goalkeeper,OLVEIRA Gaston,加斯东·奥利韦拉,Gastón Hernán,OLVEIRA ECHEVERRIA,OLVEIRA,21/04/1993,Club Olimpia (PAR),奥林匹亚,191,1,0,,门将,"matched,name_web"
+D组,巴拉圭,Paraguay,PAR,34,23,MF,Midfielder,GALARZA Matias,马蒂亚斯·加拉尔萨,Matias,GALARZA FONDA,GALARZA,11/02/2002,Atlanta United FC (USA),亚特兰大联,175,15,3,,中场,"matched,name_web"
+D组,巴拉圭,Paraguay,PAR,34,24,MF,Midfielder,CABALLERO Gustavo,米格尔·阿尔米隆,Gustavo Ruben,CABALLERO GONZALEZ,CABALLERO,21/09/2001,Portsmouth FC (ENG),亚特兰大联,189,2,1,前锋,100,name_club
+D组,巴拉圭,Paraguay,PAR,34,25,FW,Forward,PITTA Isidro,伊西德罗·皮塔,Isidro Miguel,PITTA SALDIVAR,PITTA,14/08/1999,Red Bull Bragantino (BRA),布拉甘蒂诺红牛,185,5,0,前锋,100,name_club
+D组,巴拉圭,Paraguay,PAR,34,26,DF,Defender,MAIDANA Alexandro,亚历杭德罗·迈达纳,Alexandro,MAIDANA MENDIETA,MAIDANA,26/07/2005,CA Talleres (ARG),塔列雷斯,173,2,1,后卫,94,name_club
+K组,葡萄牙,Portugal,POR,35,1,GK,Goalkeeper,DIOGO COSTA,迪奥戈·科斯塔,Diogo,MEIRELES DA COSTA,DIOGO COSTA,19/09/1999,FC Porto (POR),波尔图,188,43,0,门将,100,name_club
+K组,葡萄牙,Portugal,POR,35,2,DF,Defender,NELSON SEMEDO,塞梅多,Nélson,CABRAL SEMEDO,N. SEMEDO,16/11/1993,Fenerbahçe SK (TUR),费内巴切,179,50,0,后卫,100,name_club
+K组,葡萄牙,Portugal,POR,35,3,DF,Defender,RUBEN DIAS,鲁本·迪亚斯,Rúben,DOS SANTOS GATO ALVES DIAS,RÚBEN DIAS,14/05/1997,Manchester City FC (ENG),曼城,187,76,3,后卫,100,name_club
+K组,葡萄牙,Portugal,POR,35,4,DF,Defender,TOMAS ARAUJO,托马斯·阿劳若,Tomás,LEMOS ARAÚJO,TOMÁS A.,16/05/2002,SL Benfica (POR),本菲卡,187,5,0,后卫,80,name_club
+K组,葡萄牙,Portugal,POR,35,5,DF,Defender,DIOGO DALOT,迪奥戈·达洛特,José Diogo,DALOT TEIXEIRA,DALOT,18/03/1999,Manchester United FC (ENG),曼联,184,35,3,后卫,100,name_club
+K组,葡萄牙,Portugal,POR,35,6,MF,Midfielder,MATHEUS NUNES,马特乌斯·努内斯,Matheus Luiz,NUNES,MATHEUS N.,27/08/1998,Manchester City FC (ENG),曼城,183,20,2,后卫,100,cross_position_pinyin
+K组,葡萄牙,Portugal,POR,35,7,FW,Forward,CRISTIANO RONALDO,C罗,Cristiano Ronaldo,DOS SANTOS AVEIRO,RONALDO,05/02/1985,Al Nassr FC (KSA),利雅得胜利,185,228,143,前锋,100,name_club
+K组,葡萄牙,Portugal,POR,35,8,MF,Midfielder,BRUNO FERNANDES,布鲁诺·费尔南德斯,Bruno Miguel,BORGES FERNANDES,B. FERNANDES,08/09/1994,Manchester United FC (ENG),曼联,183,89,29,中场,100,name_club
+K组,葡萄牙,Portugal,POR,35,9,FW,Forward,GONCALO RAMOS,贡萨洛·拉莫斯,Gonçalo,MATIAS RAMOS,G. RAMOS,20/06/2001,Paris Saint-Germain (FRA),巴黎,185,25,10,前锋,80,name_club
+K组,葡萄牙,Portugal,POR,35,10,MF,Midfielder,BERNARDO SILVA,贝尔纳多·席尔瓦,Bernardo,MOTA VEIGA DE CARVALHO E SILVA,BERNARDO,10/08/1994,Manchester City FC (ENG),曼城,173,109,14,中场,100,name_club
+K组,葡萄牙,Portugal,POR,35,11,FW,Forward,JOAO FELIX,菲利克斯,João,FÉLIX SEQUEIRA,JOÃO FÉLIX,10/11/1999,Al Nassr FC (KSA),利雅得胜利,179,54,12,前锋,100,name_club
+K组,葡萄牙,Portugal,POR,35,12,GK,Goalkeeper,JOSE SA,若泽·萨,José Pedro,MALHEIRO DE SÁ,JOSÉ SÁ,17/01/1993,Wolverhampton Wanderers FC (ENG),狼队,192,5,0,门将,72.3,name_club
+K组,葡萄牙,Portugal,POR,35,13,DF,Defender,RENATO VEIGA,雷纳托·韦加,Renato,DA PALMA VEIGA,RENATO VEIGA,29/07/2003,Villarreal CF (ESP),比利亚雷亚尔,188,13,1,后卫,100,name_club
+K组,葡萄牙,Portugal,POR,35,14,DF,Defender,GONCALO INACIO,贡萨洛·伊纳西奥,Gonçalo,BERNARDO INÁCIO,G. INÁCIO,25/08/2001,Sporting CP (POR),葡萄牙体育,185,22,2,后卫,100,name_club
+K组,葡萄牙,Portugal,POR,35,15,MF,Midfielder,JOAO NEVES,若昂·内维斯,João Pedro,GONÇALVES NEVES,JOÃO NEVES,27/09/2004,Paris Saint-Germain (FRA),巴黎圣日耳曼,171,22,3,,中场,"matched,name_web"
+K组,葡萄牙,Portugal,POR,35,16,FW,Forward,FRANCISCO TRINCAO,特林康,Francisco António,MACHADO MOTA DE CASTRO TRINCÃO,TRINCÃO,29/12/1999,Sporting CP (POR),葡萄牙体育,184,18,3,前锋,100,name_club
+K组,葡萄牙,Portugal,POR,35,17,FW,Forward,RAFAEL LEAO,莱奥,Rafael Alexandre,DA CONCEIÇÃO LEÃO,RAFA LEÃO,10/06/1999,AC Milan (ITA),AC米兰,188,44,5,前锋,97.7,name_club
+K组,葡萄牙,Portugal,POR,35,18,FW,Forward,PEDRO NETO,佩德罗·内托,Pedro,LOMBA NETO,NETO,09/03/2000,Chelsea FC (ENG),切尔西,174,25,3,前锋,100,name_club
+K组,葡萄牙,Portugal,POR,35,19,FW,Forward,GONCALO GUEDES,贡萨洛·格德斯,Gonçalo Manuel,GANCHINHO GUEDES,G. GUEDES,29/11/1996,Real Sociedad (ESP),皇家社会,179,35,8,前锋,100,name_club
+K组,葡萄牙,Portugal,POR,35,20,DF,Defender,JOAO CANCELO,若昂·坎塞洛,João Pedro,CAVACO CANCELO,JOÃO CANCELO,27/05/1994,FC Barcelona (ESP),巴塞罗那,173,68,12,,后卫,"matched,name_web"
+K组,葡萄牙,Portugal,POR,35,21,MF,Midfielder,RUBEN NEVES,鲁本·内维斯,Rúben Diogo,DA SILVA NEVES,R. NEVES,13/03/1997,Al Hilal SC (KSA),利雅得新月,183,67,1,中场,100,name_club
+K组,葡萄牙,Portugal,POR,35,22,GK,Goalkeeper,RUI SILVA,鲁伊·席尔瓦,Rui Tiago,DANTAS DA SILVA,RUI SILVA,07/02/1994,Sporting CP (POR),葡萄牙体育,191,3,0,门将,100,name_club
+K组,葡萄牙,Portugal,POR,35,23,MF,Midfielder,VITINHA,维蒂尼亚,Vitor,MACHADO FERREIRA,VITINHA,13/02/2000,Paris Saint-Germain (FRA),巴黎,170,38,0,中场,75,name_club
+K组,葡萄牙,Portugal,POR,35,24,DF,Defender,SAMU COSTA,萨穆·科斯塔,Samuel,DE ALMEIDA COSTA,SAMU,27/11/2000,RCD Mallorca (ESP),马略卡,185,6,0,,后卫,"matched,name_web"
+K组,葡萄牙,Portugal,POR,35,25,DF,Defender,NUNO MENDES,努诺·门德斯,Nuno Alexandre,TAVARES MENDES,N. MENDES,19/06/2002,Paris Saint-Germain (FRA),巴黎,177,44,1,后卫,90.9,name_club
+K组,葡萄牙,Portugal,POR,35,26,FW,Forward,FRANCISCO CONCEICAO,弗朗西斯科·孔塞桑,Francisco,FERNANDES DA CONCEIÇÃO,F. CONCEIÇÃO,14/12/2002,Juventus FC (ITA),尤文图斯,166,17,4,,前锋,"matched,name_web"
+B组,卡塔尔,Qatar,QAT,36,1,GK,Goalkeeper,MAHMOUD ABUNADA,马穆德·阿布纳德,Mahmoud Ibrahim M,ABUNADA,ABUNADA,05/02/2000,Al Rayyan SC (QAT),赖扬,185,7,0,门将,100,name_club
+B组,卡塔尔,Qatar,QAT,36,2,DF,Defender,PEDRO MIGUEL,布阿莱姆·胡希,Pedro Miguel D D,CORREIA,PEDRO,06/08/1990,Al Sadd SC (QAT),多哈萨德,180,112,4,后卫,100,name_club
+B组,卡塔尔,Qatar,QAT,36,3,DF,Defender,LUCAS MENDES,卢卡斯·门德斯,Lucas Michel,MENDES,L.MENDES,03/07/1990,Al Wakrah SC (QAT),沃克拉,179,28,2,后卫,92.3,name_club
+B组,卡塔尔,Qatar,QAT,36,4,DF,Defender,ISSA LAYE,伊萨·拉耶,Gueye,SEYDINAISSALAYE,GUEYE,22/12/1997,Al Arabi SC (QAT),卢塞尔SC,178,5,0,后卫,87.7,name_club
+B组,卡塔尔,Qatar,QAT,36,5,DF,Defender,JASSEM GABER,贾西姆·阿卜杜勒萨拉姆,Jassem Gaber E,ABDULSALLAM,JASSEM,20/02/2002,Al Rayyan SC (QAT),赖扬,181,38,1,中场,100,cross_position_pinyin
+B组,卡塔尔,Qatar,QAT,36,6,MF,Midfielder,ABDULAZIZ HATEM,阿卜杜勒阿齐兹·哈特姆,Abdelaziz Hatim A,MOHAMED,A. AZIZ,01/01/1990,Al Rayyan SC (QAT),赖扬,179,132,11,中场,100,name_club
+B组,卡塔尔,Qatar,QAT,36,7,FW,Forward,AHMED ALAAELDIN,艾哈迈德·阿拉丁,Ahmed Alaaeldin B M,ABDELMOTAAL,ALAAELDIN,31/01/1993,Al Rayyan SC (QAT),赖扬,179,78,10,前锋,100,name_club
+B组,卡塔尔,Qatar,QAT,36,8,FW,Forward,EDMILSON JUNIOR,埃迪米森,Edmilson Junior P,DASILVA,EDMILSON JR.,19/08/1994,Al Duhail SC (QAT),杜海勒,180,17,0,前锋,95,name_club
+B组,卡塔尔,Qatar,QAT,36,9,FW,Forward,MOHAMMED MUNTARI,穆罕默德·蒙塔里,Mohammed,MUNTARI,MUNTARI,20/12/1993,Al Gharafa SC (QAT),加拉法,192,74,17,前锋,100,name_club
+B组,卡塔尔,Qatar,QAT,36,10,FW,Forward,HASSAN ALHAYDOS,哈桑·艾尔·海多斯,Hasan Khalid H,ALHAYDOS,ALHAYDOS,11/12/1990,Al Sadd SC (QAT),多哈萨德,174,190,39,前锋,100,name_club
+B组,卡塔尔,Qatar,QAT,36,11,FW,Forward,AKRAM AFIF,阿克拉姆·阿菲夫,Akram Hassan A Y,AFIF,AFIF,18/11/1996,Al Sadd SC (QAT),多哈萨德,176,137,40,前锋,100,name_club
+B组,卡塔尔,Qatar,QAT,36,12,MF,Midfielder,KARIM BOUDIAF,卡里姆·布迪亚夫,Karim,BOUDIAF,KARIM,16/09/1990,Al Duhail SC (QAT),杜海勒,190,129,6,中场,100,name_club
+B组,卡塔尔,Qatar,QAT,36,13,DF,Defender,AYOUB ALOUI,阿尤布·阿莱维,Ayoub Mohamed,ALOUI,AYOUB,11/03/2005,Al Gharafa SC (QAT),加拉法,181,8,0,后卫,100,name_club
+B组,卡塔尔,Qatar,QAT,36,14,DF,Defender,HOMAM AHMED,霍曼·艾哈迈德,Homam Elamin M,AHMED,HOMAM,25/08/1999,Cultural Leonesa (ESP),莱昂内萨,188,77,3,后卫,100,name_club
+B组,卡塔尔,Qatar,QAT,36,15,FW,Forward,YUSUF ABDURISAG,优素福·阿卜杜里萨格,Yusuf Abdurisag,YUSUF,YUSUF,06/08/1999,Al Wakrah SC (QAT),沃克拉体育,171,45,3,前锋,100,name_club
+B组,卡塔尔,Qatar,QAT,36,16,DF,Defender,BOUALEM KHOUKHI,佩德罗·米格尔,Boualem,KHOUKHI,KHOUKHI,09/07/1990,Al Sadd SC (QAT),多哈萨德,185,129,21,后卫,96.5,name_club
+B组,卡塔尔,Qatar,QAT,36,17,MF,Midfielder,AHMED ALGANEHI,艾哈迈德·贾内希,Ahmed Mohamed H K,ALGANEHI,A. ALGANEHI,22/09/2000,Al Gharafa SC (QAT),加拉法,175,15,1,前锋,96.5,name_club
+B组,卡塔尔,Qatar,QAT,36,18,DF,Defender,SULTAN ALBRAKE,苏丹·布雷克,Sultan Hussain M H,AL-BRAKE,SULTAN,07/04/1996,Al Duhail SC (QAT),杜海勒,178,20,0,后卫,100,name_club
+B组,卡塔尔,Qatar,QAT,36,19,FW,Forward,ALMOEZ ALI,埃莫兹·阿里,Almoez Ali Zainelabdeen M,ABDULLA,ALMOEZ,19/08/1996,Al Duhail SC (QAT),杜海勒,180,128,58,前锋,100,name_club
+B组,卡塔尔,Qatar,QAT,36,20,MF,Midfielder,AHMED FATHY,艾哈迈德·法特希,Ahmed Fathy M,ABDOULLA,A. FATHY,25/01/1993,Al Arabi SC (QAT),阿拉比SC,171,55,0,中场,76.9,name_club
+B组,卡塔尔,Qatar,QAT,36,21,GK,Goalkeeper,SALAH ZAKARIA,萨拉赫·扎卡里亚,Salah Zakaria M M,HASSAN,SALAH,24/04/1999,Al Duhail SC (QAT),杜海勒,186,10,0,门将,100,name_club
+B组,卡塔尔,Qatar,QAT,36,22,GK,Goalkeeper,MESHAAL BARSHAM,梅萨尔·巴沙姆,Meshaal Aissa M,BARSHAM,BARSHAM,14/02/1998,Al Sadd SC (QAT),多哈萨德,180,60,0,门将,100,name_club
+B组,卡塔尔,Qatar,QAT,36,23,MF,Midfielder,ASSIM MADIBO,阿西姆·马迪博,Assim Omer A,MADIBO,MADIBO,22/10/1996,Al Wakrah SC (QAT),沃克拉,168,65,0,中场,94,name_club
+B组,卡塔尔,Qatar,QAT,36,24,FW,Forward,TAHSIN MOHAMMED,塔辛·穆罕默德·贾姆希德,Tahsin Mohammad,JAMSHID,TAHSIN,16/06/2006,Al Duhail SC (QAT),海勒,166,5,0,前锋,83.3,name_club
+B组,卡塔尔,Qatar,QAT,36,25,DF,Defender,ALHASHMI ALHUSSEIN,阿尔·哈希米·阿尔·侯赛因,Alhashmi Alhussein A,MOHIALDIN,ALHASHMI,15/08/2003,Al Arabi SC (QAT),阿拉比SC,182,10,0,后卫,77.8,name_club
+B组,卡塔尔,Qatar,QAT,36,26,FW,Forward,MOHAMED MANAI,穆罕默德·马奈,Mohamed Naceur,MANAI,MANAI,25/10/2002,Al Shamal SC (QAT),北方体育,180,12,0,中场,100,name_club
+H组,沙特,Saudi Arabia,KSA,37,1,GK,Goalkeeper,NAWAF ALAQIDI,阿奇迪,Nawaf Dhahi F,ALAQIDI,ALAQIDI,10/05/2000,Al Nassr FC (KSA),利雅得胜利,186,24,0,门将,100,name_club
+H组,沙特,Saudi Arabia,KSA,37,2,DF,Defender,ALI MAJRASHI,阿里·马杰拉希,Ali Hassan M,MAJRASHI,MAJRASHI,02/10/1999,Al Ahli FC (KSA),吉达国民,169,21,0,,后卫,"matched,name_web"
+H组,沙特,Saudi Arabia,KSA,37,3,DF,Defender,ALI LAJAMI,拉贾米,Ali Mohammed A,LAJAMI,LAJAMI,24/04/1996,Al Hilal SC (KSA),利雅得新月,177,25,1,后卫,100,name_club
+H组,沙特,Saudi Arabia,KSA,37,4,DF,Defender,ABDULELAH ALAMRI,阿姆里,Abdulelah Ali A,ALAMRI,ALAMRI,15/01/1997,Al Nassr FC (KSA),利雅得胜利,185,45,2,后卫,100,name_club
+H组,沙特,Saudi Arabia,KSA,37,5,DF,Defender,HASSAN ALTAMBAKTI,坦巴克蒂,Hassan Mohammed O,ALTAMBAKTI,ALTAMBAKTI,09/02/1999,Al Hilal SC (KSA),利雅得新月,183,55,1,后卫,100,name_club
+H组,沙特,Saudi Arabia,KSA,37,6,MF,Midfielder,NASSER ALDAWSARI,纳赛尔·多萨里,Nasser Essa S,ALDAWSARI,NASSER,19/12/1998,Al Hilal SC (KSA),利雅得新月,178,48,1,中场,100,name_club
+H组,沙特,Saudi Arabia,KSA,37,7,MF,Midfielder,MUSAB ALJUWAYR,朱瓦伊尔,Musab Fahad Z,ALJUWAYR,MUSAB,20/06/2003,Al Qadsiah FC (KSA),胡拜尔库迪西亚,175,38,6,前锋,100,name_club
+H组,沙特,Saudi Arabia,KSA,37,8,FW,Forward,AIMAN YAHYA,哈姆丹,Aiman Yahya Y,AHMED,AIMAN,14/05/2001,Al Nassr FC (KSA),利雅得胜利,173,26,0,前锋,100,name_club
+H组,沙特,Saudi Arabia,KSA,37,9,FW,Forward,FERAS ALBRIKAN,费拉斯·阿尔布里坎,Feras Tariq N,ALBRIKAN,FERAS,14/05/2000,Al Ahli FC (KSA),吉达国民,185,73,16,,前锋,"matched,name_web"
+H组,沙特,Saudi Arabia,KSA,37,10,FW,Forward,SALEM ALDAWSARI,萨利姆·多萨里,Salem Mohammed S,ALDAWSARI,SALEM,19/08/1991,Al Hilal SC (KSA),利雅得新月,173,112,27,前锋,100,name_club
+H组,沙特,Saudi Arabia,KSA,37,11,FW,Forward,SALEH ALSHEHRI,谢赫里,Saleh Khalid M,ALSHEHRI,ALSHEHRI,01/11/1993,Al Ittihad (KSA),吉达联合,184,59,17,前锋,100,name_club
+H组,沙特,Saudi Arabia,KSA,37,12,DF,Defender,SAUD ABDULHAMID,阿卜杜勒哈米德,Saud Abdullah S,ABDULHAMID,SAUD,18/07/1999,RC Lens (FRA),朗斯,172,56,1,后卫,100,name_club
+H组,沙特,Saudi Arabia,KSA,37,13,DF,Defender,NAWAF BU WASHL,纳瓦夫·布瓦沙勒,Nawaf Meshari M,BU WASHL,NAWAF,16/09/1999,Al Nassr FC (KSA),利雅得胜利,173,28,0,,后卫,"matched,name_web"
+H组,沙特,Saudi Arabia,KSA,37,14,DF,Defender,HASSAN KADISH,卡迪什,Hassan Kadish Y,MAHBUB,KADISH,26/09/1992,Al Ittihad (KSA),吉达联合,179,21,2,后卫,100,name_club
+H组,沙特,Saudi Arabia,KSA,37,15,MF,Midfielder,ABDULLAH ALKHAIBARI,哈巴利,Abdullah Mohammed H,ALKHAIBARI,ALKHAIBARI,16/08/1996,Al Nassr FC (KSA),利雅得胜利,175,43,0,中场,100,name_club
+H组,沙特,Saudi Arabia,KSA,37,16,MF,Midfielder,ZIYAD ALJOHANI,齐亚德·乔哈尼,Ziyad Mubarak E,ALJOHANI,ZIYAD,11/11/2001,Al Ahli FC (KSA),吉达国民,180,12,0,,中场,"matched,name_web"
+H组,沙特,Saudi Arabia,KSA,37,17,FW,Forward,KHALID ALGHANNAM,叶海亚,Khalid Essa M,ALGHANNAM,KHALID,08/11/2000,Al Ettifaq FC (KSA),达曼联合,171,7,0,前锋,88.7,name_club
+H组,沙特,Saudi Arabia,KSA,37,18,MF,Midfielder,ALA ALHAJJI,阿拉·哈吉,Ala Mohsen A,ALHAJJI,ALHAJJI,03/12/1995,Neom SC (KSA),尼奥姆,178,4,0,,中场,"matched,name_web"
+H组,沙特,Saudi Arabia,KSA,37,19,FW,Forward,ABDULLAH ALHAMDDAN,布沙尔,Abdullah Abdulrahman A,ALHAMDDAN,ALHAMDDAN,13/09/1999,Al Nassr FC (KSA),利雅得胜利,186,53,13,中场,75.3,name_club
+H组,沙特,Saudi Arabia,KSA,37,20,FW,Forward,SULTAN MANDASH,曼达什,Sultan Ahmed M,MANDASH,MANDASH,17/10/1994,Al Hilal SC (KSA),利雅得新月,172,7,2,前锋,100,name_club
+H组,沙特,Saudi Arabia,KSA,37,21,GK,Goalkeeper,MOHAMMED ALOWAIS,阿洛瓦伊斯,Mohammed Khalil I,ALOWAIS,ALOWAIS,10/10/1991,Al Ula Saudi FC (KSA),利雅得新月,185,66,0,门将,100,name_club
+H组,沙特,Saudi Arabia,KSA,37,22,GK,Goalkeeper,AHMED ALKASSAR,卡萨尔,Ahmed Ali H,ALKASSAR,ALKASSAR,08/05/1991,Al Qadsiah FC (KSA),胡拜尔库迪西亚,178,9,0,门将,100,name_club
+H组,沙特,Saudi Arabia,KSA,37,23,MF,Midfielder,MOHAMED KANNO,卡努,Mohamed Ibrahim A,KANNO,KANNO,22/09/1994,Al Hilal SC (KSA),利雅得新月,191,80,8,中场,100,name_club
+H组,沙特,Saudi Arabia,KSA,37,24,DF,Defender,MOTEB ALHARBI,哈尔比,Moteb Saad S,ALHARBI,MOTEB,20/02/2000,Al Hilal SC (KSA),利雅得新月,177,14,0,后卫,100,name_club
+H组,沙特,Saudi Arabia,KSA,37,25,DF,Defender,JEHAD THIKRI,塔克里,Jehad Abdullatif A,THIKRI,JEHAD,21/07/2001,Al Qadsiah FC (KSA),胡拜尔库迪西亚,184,8,0,后卫,95,name_club
+H组,沙特,Saudi Arabia,KSA,37,26,DF,Defender,MOHAMMED ABU ALSHAMAT,阿布沙马特,Mohammed Waheeb S,ABU ALSHAMAT,MOHAMMED,11/08/2002,Al Qadsiah FC (KSA),胡拜尔库迪西亚,170,9,0,中场,100,cross_position_pinyin
+C组,苏格兰,Scotland,SCO,38,1,GK,Goalkeeper,GUNN Angus,安格斯·冈恩,Angus Fraser James,GUNN,GUNN,22/01/1996,Nottingham Forest FC (ENG),诺丁汉森林,196,23,0,门将,92.3,name_club
+C组,苏格兰,Scotland,SCO,38,2,DF,Defender,HICKEY Aaron,亚伦·希基,Aaron Buchanan,HICKEY,HICKEY,10/06/2002,Brentford FC (ENG),布伦特福德,185,22,0,后卫,75,name_club
+C组,苏格兰,Scotland,SCO,38,3,DF,Defender,ROBERTSON Andy,安德鲁·罗伯逊,Andrew Henry,ROBERTSON,ROBERTSON,11/03/1994,Liverpool FC (ENG),利物浦,178,95,4,,后卫,"matched,name_web"
+C组,苏格兰,Scotland,SCO,38,4,MF,Midfielder,McTOMINAY Scott,斯科特·麦克托米奈,Scott Francis,MCTOMINAY,MCTOMINAY,08/12/1996,SSC Napoli (ITA),那不勒斯,193,71,15,中场,100,name_club
+C组,苏格兰,Scotland,SCO,38,5,DF,Defender,HANLEY Grant,格兰特·汉利,Grant Campbell,HANLEY,HANLEY,20/11/1991,Hibernian FC (SCO),希伯尼安,188,69,2,后卫,100,name_club
+C组,苏格兰,Scotland,SCO,38,6,DF,Defender,TIERNEY Kieran,基兰·蒂尔尼,Kieran,TIERNEY,TIERNEY,05/06/1997,Celtic FC (SCO),凯尔特人,180,56,2,后卫,100,name_club
+C组,苏格兰,Scotland,SCO,38,7,MF,Midfielder,McGINN John,约翰·麦金,John,MCGINN,MCGINN,18/10/1994,Aston Villa FC (ENG),阿斯顿维拉,178,87,21,,中场,"matched,name_web"
+C组,苏格兰,Scotland,SCO,38,8,MF,Midfielder,FLETCHER Tyler,泰勒·弗莱彻,Tyler Robert,FLETCHER,FLETCHER,19/03/2007,Manchester United FC (ENG),曼联,183,2,0,中场,93.8,name_club
+C组,苏格兰,Scotland,SCO,38,9,FW,Forward,DYKES Lyndon,林登·戴克斯,Lyndon John,DYKES,DYKES,07/10/1995,Charlton Athletic FC (ENG),查尔顿,188,52,10,,前锋,"matched,name_web"
+C组,苏格兰,Scotland,SCO,38,10,FW,Forward,ADAMS Che,切·亚当斯,Che Sac Everton Fred,ADAMS,ADAMS,13/07/1996,Torino FC (ITA),都灵,175,48,13,,前锋,"matched,name_web"
+C组,苏格兰,Scotland,SCO,38,11,MF,Midfielder,CHRISTIE Ryan,乔治·赫斯特,Ryan,CHRISTIE,CHRISTIE,22/02/1995,AFC Bournemouth (ENG),伊普斯维奇,178,69,10,前锋,80,name_club
+C组,苏格兰,Scotland,SCO,38,12,GK,Goalkeeper,KELLY Liam,克雷格·戈登,Liam Patrick,KELLY,KELLY,23/01/1996,Rangers FC (SCO),哈茨,184,3,0,门将,70.5,name_club
+C组,苏格兰,Scotland,SCO,38,13,DF,Defender,HENDRY Jack,杰克·亨德里,Jack William,HENDRY,HENDRY,07/05/1995,Al Ettifaq FC (KSA),达曼联合,192,39,3,,后卫,"matched,name_web"
+C组,苏格兰,Scotland,SCO,38,14,FW,Forward,STEWART Ross,罗斯·斯图尔特,Ross Cameron,STEWART,STEWART,11/07/1996,Southampton FC (ENG),南安普顿,188,3,0,前锋,100,name_club
+C组,苏格兰,Scotland,SCO,38,15,DF,Defender,SOUTTAR John,约翰·苏塔尔,John Francis,SOUTTAR,SOUTTAR,25/09/1996,Rangers FC (SCO),格拉斯哥流浪者,186,24,2,后卫,72.3,name_club
+C组,苏格兰,Scotland,SCO,38,16,DF,Defender,HYAM Dominic,多米尼克·海厄姆,Dominic John,HYAM,HYAM,20/12/1995,Wrexham AFC (WAL),雷克瑟姆,188,4,0,后卫,75,name_club
+C组,苏格兰,Scotland,SCO,38,17,FW,Forward,GANNON-DOAK Ben,本·甘农-多克,Ben Gannon,DOAK,GANNON DOAK,11/11/2005,AFC Bournemouth (ENG),伯恩茅斯,173,15,1,,前锋,"matched,name_web"
+C组,苏格兰,Scotland,SCO,38,18,FW,Forward,HIRST George,瑞安·克里斯蒂,George David Eric,HIRST,HIRST,15/02/1999,Ipswich Town FC (ENG),伯恩茅斯,191,10,1,中场,100,name_club
+C组,苏格兰,Scotland,SCO,38,19,MF,Midfielder,FERGUSON Lewis,刘易斯·弗格森,Lewis,FERGUSON,FERGUSON,24/08/1999,Bologna FC (ITA),博洛尼亚,181,25,1,中场,100,name_club
+C组,苏格兰,Scotland,SCO,38,20,FW,Forward,SHANKLAND Lawrence,劳伦斯·尚克兰,Lawrence,SHANKLAND,SHANKLAND,10/08/1995,Heart Of Midlothian FC (SCO),哈茨,185,21,7,前锋,73.1,name_club
+C组,苏格兰,Scotland,SCO,38,21,GK,Goalkeeper,GORDON Craig,克雷格·戈登,Craig Sinclair,GORDON,GORDON,31/12/1982,Heart Of Midlothian FC (SCO),哈茨,193,84,0,,门将,"matched,name_web"
+C组,苏格兰,Scotland,SCO,38,22,DF,Defender,PATTERSON Nathan,内森·帕特森,Nathan Kenneth,PATTERSON,PATTERSON,16/10/2001,Everton FC (ENG),埃弗顿,183,27,1,后卫,70.5,name_club
+C组,苏格兰,Scotland,SCO,38,23,MF,Midfielder,McLEAN Kenny,肯尼·麦克莱恩,Kenneth,MCLEAN,MCLEAN,08/01/1992,Norwich City FC (ENG),诺维奇,183,59,3,中场,100,name_club
+C组,苏格兰,Scotland,SCO,38,24,DF,Defender,RALSTON Anthony,安东尼·拉尔斯顿,Anthony,RALSTON,RALSTON,16/11/1998,Celtic FC (SCO),凯尔特人,178,27,1,后卫,100,name_club
+C组,苏格兰,Scotland,SCO,38,25,FW,Forward,CURTIS Findlay,切·亚当斯,Findlay Kenneth,CURTIS,CURTIS,09/06/2006,Kilmarnock FC (SCO),基尔马诺克,180,4,1,前锋,100,name_club
+C组,苏格兰,Scotland,SCO,38,26,DF,Defender,McKENNA Scott,斯科特·麦肯纳,Scott Fraser,MCKENNA,MCKENNA,12/11/1996,GNK Dinamo Zagreb (CRO),萨格勒布迪纳摩,189,50,1,后卫,100,name_club
+I组,塞内加尔,Senegal,SEN,39,1,GK,Goalkeeper,DIOUF Yehvann,耶旺恩·迪乌夫,Yehvann Djibril Victor,DIOUF,Y. DIOUF,16/11/1999,OGC Nice (FRA),尼斯,188,2,0,门将,100,name_club
+I组,塞内加尔,Senegal,SEN,39,2,DF,Defender,SARR Mamadou,马马杜·萨尔,Mamadou,SARR,SARR,29/08/2005,Chelsea FC (ENG),切尔西,194,8,0,后卫,100,name_club
+I组,塞内加尔,Senegal,SEN,39,3,DF,Defender,KOULIBALY Kalidou,库利巴利,Kalidou,KOULIBALY,KOULIBALY,20/06/1991,Al Hilal SC (KSA),利雅得新月,186,104,2,后卫,100,name_club
+I组,塞内加尔,Senegal,SEN,39,4,DF,Defender,SECK Abdoulaye,阿卜杜拉耶·塞克,Abdoulaye,SECK,SECK,04/06/1992,Maccabi Haifa FC (ISR),海法马卡比,192,23,4,后卫,92.3,name_club
+I组,塞内加尔,Senegal,SEN,39,5,MF,Midfielder,GUEYE Idrissa Gana,伊德里萨·盖耶,Idrissa Gana,GUEYE,GANA,26/09/1989,Everton FC (ENG),埃弗顿,174,136,7,中场,71.4,name_club
+I组,塞内加尔,Senegal,SEN,39,6,MF,Midfielder,CISS Pathe,帕特·西斯,Ismaila Pathe,CISS,P.I. CISS,16/03/1994,Rayo Vallecano (ESP),巴列卡诺,186,31,0,中场,100,name_club
+I组,塞内加尔,Senegal,SEN,39,7,FW,Forward,DIAO Assane,阿萨尼·迪奥,Assane,DIAO,A. DIAO,07/09/2005,Como (ITA),科莫,185,5,0,前锋,85.7,name_club
+I组,塞内加尔,Senegal,SEN,39,8,MF,Midfielder,CAMARA Lamine,拉明·卡马拉,Lamine,CAMARA,LAMINE,01/01/2004,AS Monaco (FRA),摩纳哥,174,45,7,中场,90.9,name_club
+I组,塞内加尔,Senegal,SEN,39,9,FW,Forward,DIENG Bamba,班巴·迪昂,Cheikh Ahmadou Bamba Mbacke,DIENG,BAMBA,23/03/2000,FC Lorient (FRA),洛里昂,178,23,2,前锋,100,name_club
+I组,塞内加尔,Senegal,SEN,39,10,FW,Forward,MANE Sadio,萨迪奥·马内,Sadio,MANE,MANÉ,10/04/1992,Al Nassr FC (KSA),利雅得胜利,175,130,54,前锋,100,name_club
+I组,塞内加尔,Senegal,SEN,39,11,FW,Forward,JACKSON Nicolas,尼古拉斯·杰克逊,Nicolas,JACKSON,N. JACKSON,20/06/2001,FC Bayern München (GER),拜仁,187,34,8,前锋,87.5,name_club
+I组,塞内加尔,Senegal,SEN,39,12,FW,Forward,NDIAYE Cherif,谢里夫·恩迪亚耶,Pape Cherif,NDIAYE,CHÉRIF,23/01/1996,Samsunspor (TUR),桑桑体育,190,19,4,,前锋,"matched,name_web"
+I组,塞内加尔,Senegal,SEN,39,13,FW,Forward,NDIAYE Iliman,伊利曼·恩迪亚耶,Iliman Cheikh Baroy,NDIAYE,NDIAYE,06/03/2000,Everton FC (ENG),埃弗顿,180,41,4,前锋,78.3,name_club
+I组,塞内加尔,Senegal,SEN,39,14,DF,Defender,JAKOBS Ismail,伊斯梅尔·雅各布斯,Ismail Joshua,JAKOBS,JAKOBS,17/08/1999,Galatasaray SK (TUR),加拉塔萨雷,184,31,0,后卫,100,name_club
+I组,塞内加尔,Senegal,SEN,39,15,DF,Defender,DIATTA Krepin,克雷平·迪亚塔,Krepin,DIATTA,DIATTA,25/02/1999,AS Monaco (FRA),摩纳哥,173,62,2,后卫,78.3,name_club
+I组,塞内加尔,Senegal,SEN,39,16,GK,Goalkeeper,MENDY Edouard,爱德华·门迪,Edouard Osoque,MENDY,MENDY,01/03/1992,Al Ahli FC (KSA),吉达国民,194,58,0,门将,75.2,name_club
+I组,塞内加尔,Senegal,SEN,39,17,MF,Midfielder,SARR Pape Matar,帕佩·萨尔,Pape Matar,SARR,P.M. SARR,14/09/2002,Tottenham Hotspur FC (ENG),热刺,185,41,4,中场,100,name_club
+I组,塞内加尔,Senegal,SEN,39,18,FW,Forward,SARR Ismaila,伊斯梅拉·萨尔,Ismaila,SARR,ISMAÏLA,25/02/1998,Crystal Palace FC (ENG),水晶宫,185,84,19,前锋,100,name_club
+I组,塞内加尔,Senegal,SEN,39,19,DF,Defender,NIAKHATE Moussa,穆萨·尼亚卡泰,Moussa,NIAKHATE,NIAKHATÉ,08/03/1996,Olympique Lyonnais (FRA),里昂,190,32,0,后卫,76.9,name_club
+I组,塞内加尔,Senegal,SEN,39,20,FW,Forward,MBAYE Ibrahim,易卜拉欣·姆巴耶,Ibrahim,MBAYE,I. MBAYE,24/01/2008,Paris Saint-Germain (FRA),巴黎,175,11,3,前锋,78.3,name_club
+I组,塞内加尔,Senegal,SEN,39,21,MF,Midfielder,DIARRA Habib,哈比卜·迪亚拉,Mouhamadou Habib Mbacke,DIARRA,H. DIARRA,03/01/2004,Sunderland AFC (ENG),桑德兰,178,21,4,中场,95,name_club
+I组,塞内加尔,Senegal,SEN,39,22,MF,Midfielder,NDIAYE Bara Sapoko,巴拉·萨波科·恩迪亚耶,Bara Sapoko,NDIAYE,BARA,31/12/2007,FC Bayern München (GER),拜仁,180,1,0,中场,94.1,name_club
+I组,塞内加尔,Senegal,SEN,39,23,GK,Goalkeeper,DIAW Mory,莫里·迪奥,Mory,DIAW,DIAW,22/06/1993,Le Havre AC (FRA),勒阿弗尔,197,5,0,门将,75,name_club
+I组,塞内加尔,Senegal,SEN,39,24,DF,Defender,MENDY Antoine,安托万·门迪,Antoine Alpha,MENDY,A. MENDY,27/05/2004,OGC Nice (FRA),尼斯,187,7,0,后卫,100,name_club
+I组,塞内加尔,Senegal,SEN,39,25,DF,Defender,DIOUF El Hadji Malick,埃尔·哈吉·马利克·迪乌夫,El Hadji Malick,DIOUF,DIOUF,29/12/2004,West Ham United FC (ENG),西汉姆联,177,20,1,后卫,84.2,name_club
+I组,塞内加尔,Senegal,SEN,39,26,MF,Midfielder,GUEYE Pape,帕佩·盖耶,Pape Alassane,GUEYE,GUEYE,24/01/1999,Villarreal CF (ESP),比利亚雷亚尔,189,42,6,中场,100,name_club
+A组,南非,South Africa,RSA,40,1,GK,Goalkeeper,WILLIAMS Ronwen,隆文·威廉姆斯,Ronwen Hayden,WILLIAMS,WILLIAMS,21/01/1992,Mamelodi Sundowns FC (RSA),马梅洛迪日落,184,65,0,门将,72.7,name_club
+A组,南非,South Africa,RSA,40,2,DF,Defender,MATULUDI Thabang,托洛·塔邦·马图鲁迪,Tholo Thabang,MATULUDI,MATULUDI,14/01/1999,Polokwane City FC (RSA),波洛克瓦尼,189,3,0,后卫,100,name_club
+A组,南非,South Africa,RSA,40,3,DF,Defender,NDAMANE Khulumani,库鲁马尼·恩达马内,Khulumani,NDAMANE,NDAMANE,05/02/2004,Mamelodi Sundowns FC (RSA),马梅洛迪日落,183,5,0,后卫,94.1,name_club
+A组,南非,South Africa,RSA,40,4,MF,Midfielder,MOKOENA Teboho,特博霍·莫科纳,Teboho,MOKOENA,MOKOENA,24/01/1997,Mamelodi Sundowns FC (RSA),马梅洛迪日落,177,58,9,中场,100,name_club
+A组,南非,South Africa,RSA,40,5,MF,Midfielder,MBATHA Thalente,姆巴塔,Thalente Wandile,MBATHA,MBATHA,06/03/2000,Orlando Pirates FC (RSA),奥兰多海盗,179,17,3,中场,100,name_club
+A组,南非,South Africa,RSA,40,6,DF,Defender,MODIBA Aubrey,莫迪巴,Aubrey Maphosa,MODIBA,MODIBA,22/07/1995,Mamelodi Sundowns FC (RSA),马梅洛迪日落,171,49,3,后卫,100,name_club
+A组,南非,South Africa,RSA,40,7,FW,Forward,APPOLLIS Oswin,奥斯温·阿波利斯,Oswin Reagan,APPOLLIS,APPOLLIS,25/08/2001,Orlando Pirates FC (RSA),奥兰多海盗,171,28,8,前锋,97.7,name_club
+A组,南非,South Africa,RSA,40,8,FW,Forward,MOREMI Tshepang,莫雷米,Tshepang,MOREMI,MOREMI,02/10/2000,Orlando Pirates FC (RSA),奥兰多海盗,169,10,1,前锋,100,name_club
+A组,南非,South Africa,RSA,40,9,FW,Forward,FOSTER Lyle,莱尔·福斯特,Lyle Brent,FOSTER,FOSTER,03/09/2000,Burnley FC (ENG),伯恩利,185,32,10,前锋,100,name_club
+A组,南非,South Africa,RSA,40,10,FW,Forward,MOFOKENG Relebohile,莫佛肯,Relebohile,MOFOKENG,MOFOKENG,23/10/2004,Orlando Pirates FC (RSA),奥兰多海盗,168,14,1,前锋,100,name_club
+A组,南非,South Africa,RSA,40,11,MF,Midfielder,ZWANE Themba,特姆巴·兹瓦尼,Themba,ZWANE,ZWANE,03/08/1989,Mamelodi Sundowns FC (RSA),马梅洛迪日落,178,56,12,前锋,92.3,name_club
+A组,南非,South Africa,RSA,40,12,FW,Forward,MASEKO Thapelo,塔佩洛·马塞科,Thapelo,MASEKO,MASEKO,11/11/2003,AEL Limassol (CYP),AEL利马索尔,178,8,1,前锋,100,name_club
+A组,南非,South Africa,RSA,40,13,MF,Midfielder,SITHOLE Sphephelo,斯费费洛·西索莱,Sphephelo S'miso,SITHOLE,SITHOLE,03/03/1999,CD Tondela (POR),通德拉,197,30,1,,中场,"matched,name_web"
+A组,南非,South Africa,RSA,40,14,DF,Defender,MBOKAZI Mbekezeli,姆贝凯泽利·姆博卡齐,Mbekezeli Mfanufikile,MBOKAZI,MBOKAZI,19/09/2005,Chicago Fire FC (USA),芝加哥火焰,177,11,1,后卫,100,name_club
+A组,南非,South Africa,RSA,40,15,FW,Forward,RAYNERS Iqraam,伊克拉姆·雷纳斯,Iqraam,RAYNERS,RAYNERS,19/12/1995,Mamelodi Sundowns FC (RSA),马梅洛迪日落,174,21,5,前锋,80,name_club
+A组,南非,South Africa,RSA,40,16,GK,Goalkeeper,CHAINE Sipho,西波・沙内,Sipho Justin,CHAINE,CHAINE,14/12/1996,Orlando Pirates FC (RSA),奥兰多海盗,186,4,0,门将,100,name_club
+A组,南非,South Africa,RSA,40,17,FW,Forward,MAKGOPA Evidence,埃维登斯·马克戈帕,Sekotori Evidence,MAKGOPA,MAKGPA,05/06/2000,Orlando Pirates FC (RSA),奥兰多海盗,183,28,6,前锋,100,name_club
+A组,南非,South Africa,RSA,40,18,DF,Defender,KABINI Samukele,萨姆克罗·卡比尼,Samukele Alucious,KABINI,KABINI,15/03/2004,Molde FK (NOR),莫尔德,179,6,0,后卫,100,name_club
+A组,南非,South Africa,RSA,40,19,DF,Defender,SIBISI Nkosinathi,恩科西那提·斯比西,Nkosinathi Emmanuel,SIBISI,SIBISI,22/09/1995,Orlando Pirates FC (RSA),奥兰多海盗,172,22,0,后卫,100,name_club
+A组,南非,South Africa,RSA,40,20,DF,Defender,MUDAU Khuliso,胡利索·穆达乌,Khuliso Johnson,MUDAU,MUDAU,26/04/1995,Mamelodi Sundowns FC (RSA),马梅洛迪日落,179,35,1,后卫,76.2,name_club
+A组,南非,South Africa,RSA,40,21,DF,Defender,OKON Ime,伊梅·奥康,Ime Daniel,OKON,OKON,20/02/2004,Hannover 96 (GER),汉诺威96,187,9,1,后卫,100,name_club
+A组,南非,South Africa,RSA,40,22,GK,Goalkeeper,GOSS Ricardo,里卡多·戈斯,Stuart Ricardo,GOSS,GOSS,02/04/1994,Siwelele FC (RSA),西维勒,181,7,0,,门将,"matched,name_web"
+A组,南非,South Africa,RSA,40,23,MF,Midfielder,ADAMS Jayden,杰登·亚当斯,Jayden Oswin,ADAMS,ADAMS,05/05/2001,Mamelodi Sundowns FC (RSA),马梅洛迪日落,177,9,2,,中场,"matched,name_web"
+A组,南非,South Africa,RSA,40,24,DF,Defender,MAKHANYA Olwethu,奥尔韦图·马卡尼亚,Olwethu Mpilwenhle,MAKHANYA,MAKHANYA,30/04/2004,Philadelphia Union (USA),费城联合,185,1,0,后卫,100,name_club
+A组,南非,South Africa,RSA,40,25,FW,Forward,SEBELEBELE Kamogelo,塞贝莱贝莱,Kamogelo Michael,SEBELEBELE,SEBELEBELE,21/07/2002,Orlando Pirates FC (RSA),奥兰多海盗,166,9,1,后卫,100,cross_position_pinyin
+A组,南非,South Africa,RSA,40,26,DF,Defender,CROSS Bradley,布拉德利・克罗斯,Bradley Paul,CROSS,CROSS,30/01/2001,Kaizer Chiefs FC (RSA),恺撒酋长,175,1,0,后卫,100,name_club
+H组,西班牙,Spain,ESP,41,1,GK,Goalkeeper,RAYA David,大卫·拉亚,David,RAYA MARTÍN,RAYA,15/09/1995,Arsenal FC (ENG),阿森纳,186,13,0,门将,100,name_club
+H组,西班牙,Spain,ESP,41,2,DF,Defender,PUBILL Marc,普比尔,Marc,PUBILL PAGES,MARC PUBILL,20/06/2003,Atlético De Madrid (ESP),马竞,191,2,0,后卫,75.2,name_club
+H组,西班牙,Spain,ESP,41,3,DF,Defender,GRIMALDO Alex,格里马尔多,Alejandro,GRIMALDO GARCÍA,GRIMALDO,20/09/1995,Bayer 04 Leverkusen (GER),勒沃库森,171,14,0,后卫,100,name_club
+H组,西班牙,Spain,ESP,41,4,DF,Defender,GARCIA Eric,埃里克·加西亚,Eric,GARCÍA MARTRET,ERIC,09/01/2001,FC Barcelona (ESP),巴塞罗那,183,21,0,,后卫,"matched,name_web"
+H组,西班牙,Spain,ESP,41,5,DF,Defender,LLORENTE Marcos,马科斯·略伦特,Marcos,LLORENTE MORENO,M. LLORENTE,30/01/1995,Atlético De Madrid (ESP),马德里竞技,183,25,0,,后卫,"matched,name_web"
+H组,西班牙,Spain,ESP,41,6,MF,Midfielder,MERINO Mikel,梅里诺,Mikel,MERINO ZAZÓN,MERINO,22/06/1996,Arsenal FC (ENG),阿森纳,188,44,10,中场,100,name_club
+H组,西班牙,Spain,ESP,41,7,FW,Forward,TORRES Ferran,费兰·托雷斯,Ferran,TORRES GARCÍA,FERRAN,29/02/2000,FC Barcelona (ESP),巴塞罗那,183,58,24,,前锋,"matched,name_web"
+H组,西班牙,Spain,ESP,41,8,MF,Midfielder,RUIZ Fabian,法比安,Fabian,RUIZ PEÑA,FABIÁN,03/04/1996,Paris Saint-Germain (FRA),巴黎,188,43,6,中场,100,name_club
+H组,西班牙,Spain,ESP,41,9,MF,Midfielder,GAVI,加维,Pablo,PAEZ GAVIRA,GAVI,05/08/2004,FC Barcelona (ESP),巴塞罗那,173,31,5,,中场,"matched,name_web"
+H组,西班牙,Spain,ESP,41,10,FW,Forward,OLMO Dani,奥尔莫,Daniel,OLMO CARVAJAL,OLMO,07/05/1998,FC Barcelona (ESP),巴萨,179,51,12,前锋,100,name_club
+H组,西班牙,Spain,ESP,41,11,FW,Forward,PINO Yeremy,耶雷米·皮诺,Yeremy Jesús,PINO SANTOS,YEREMY,20/10/2002,Crystal Palace FC (ENG),水晶宫,174,23,4,前锋,100,name_club
+H组,西班牙,Spain,ESP,41,12,DF,Defender,PORRO Pedro,波罗,Pedro Antonio,PORRO SAUCEDA,PEDRO PORRO,13/09/1999,Tottenham Hotspur FC (ENG),热刺,173,18,0,后卫,85,name_club
+H组,西班牙,Spain,ESP,41,13,GK,Goalkeeper,GARCIA Joan,胡安·加西亚,Joan,GARCIA PONS,JOAN GARCIA,04/05/2001,FC Barcelona (ESP),巴塞罗那,194,2,0,,门将,"matched,name_web"
+H组,西班牙,Spain,ESP,41,14,DF,Defender,LAPORTE Aymeric,拉波尔特,Aymeric,LAPORTE FEVRE,LAPORTE,27/05/1994,Athletic Club (ESP),毕尔巴鄂竞技,191,47,2,后卫,100,name_club
+H组,西班牙,Spain,ESP,41,15,MF,Midfielder,BAENA Alex,亚历克斯·巴埃纳,Alejandro,BAENA RODRÍGUEZ,ALEX B.,20/07/2001,Atlético De Madrid (ESP),马德里竞技,172,17,2,,中场,"matched,name_web"
+H组,西班牙,Spain,ESP,41,16,MF,Midfielder,RODRI,罗德里,Rodrigo,HERNÁNDEZ CASCANTE,RODRIGO,22/06/1996,Manchester City FC (ENG),曼城,190,63,4,中场,100,name_club
+H组,西班牙,Spain,ESP,41,17,FW,Forward,WILLIAMS Nico,尼科·威廉姆斯,Nicholas,WILLIAMS ARTHUER,WILLIAMS JR.,12/07/2002,Athletic Club (ESP),毕尔巴鄂竞技,181,31,6,前锋,100,name_club
+H组,西班牙,Spain,ESP,41,18,MF,Midfielder,ZUBIMENDI Martin,苏维门迪,Martin,ZUBIMENDI IBAÑEZ,ZUBIMENDI,02/02/1999,Arsenal FC (ENG),阿森纳,181,26,3,中场,100,name_club
+H组,西班牙,Spain,ESP,41,19,FW,Forward,YAMAL Lamine,巴埃纳,Lamine Yamal,NASRAOUI EBANA,LAMINE YAMAL,13/07/2007,FC Barcelona (ESP),马竞,183,26,6,中场,75.2,name_club
+H组,西班牙,Spain,ESP,41,20,MF,Midfielder,PEDRI,佩德里,Pedro,GONZÁLEZ LÓPEZ,PEDRI,25/11/2002,FC Barcelona (ESP),巴萨,174,42,6,中场,100,name_club
+H组,西班牙,Spain,ESP,41,21,FW,Forward,OYARZABAL Mikel,奥亚萨瓦尔,Mikel,OYARZABAL UGARTE,OYARZABAL,21/04/1997,Real Sociedad (ESP),皇家社会,181,54,25,前锋,100,name_club
+H组,西班牙,Spain,ESP,41,22,DF,Defender,CUBARSI Pau,库巴西,Pau,CUBARSI I PAREDES,CUBARSÍ,22/01/2007,FC Barcelona (ESP),巴萨,183,13,0,后卫,85.7,name_club
+H组,西班牙,Spain,ESP,41,23,GK,Goalkeeper,SIMON Unai,乌奈·西蒙,Unai,SIMÓN MENDIBIL,UNAI SIMÓN,11/06/1997,Athletic Club (ESP),毕尔巴鄂竞技,190,59,0,门将,100,name_club
+H组,西班牙,Spain,ESP,41,24,DF,Defender,CUCURELLA Marc,库库雷利亚,Marc,CUCURELLA SASETA,CUCURELLA,22/07/1998,Chelsea FC (ENG),切尔西,173,25,1,后卫,100,name_club
+H组,西班牙,Spain,ESP,41,25,FW,Forward,MUNOZ Victor,维克托·穆尼奥斯,Victor,MUÑOZ VILLANUEVA,VICTOR M.V.,13/07/2003,CA Osasuna (ESP),奥萨苏纳,173,2,1,,前锋,"matched,name_web"
+H组,西班牙,Spain,ESP,41,26,FW,Forward,IGLESIAS Borja,博尔哈·伊格莱西亚斯,Borja,IGLESIAS QUINTÁS,B. IGLESIAS,17/01/1993,RC Celta Vigo (ESP),塞尔塔,187,8,0,前锋,100,name_club
+F组,瑞典,Sweden,SWE,42,1,GK,Goalkeeper,WIDELL ZETTERSTROM Jacob,雅各布·维德尔·泽特斯特伦,Jacob Mikael,WIDELL ZETTERSTRÖM,ZETTERSTRÖM,11/07/1998,Derby County FC (ENG),德比郡,197,3,0,门将,100,name_club
+F组,瑞典,Sweden,SWE,42,2,DF,Defender,LAGERBIELKE Gustaf,古斯塔夫·拉格比尔克,Gustaf Johan,LAGERBIELKE,LAGERBIELKE,10/04/2000,SC Braga (POR),布拉加,193,12,2,后卫,100,name_club
+F组,瑞典,Sweden,SWE,42,3,DF,Defender,LINDELOF Victor,林德洛夫,Victor Jörgen,NILSSON LINDELÖF,LINDELÖF,17/07/1994,Aston Villa FC (ENG),阿斯顿维拉,187,77,3,后卫,88.9,name_club
+F组,瑞典,Sweden,SWE,42,4,DF,Defender,HIEN Isak,伊萨克·希恩,Isak Malcolm Kwaku,HIEN,HIEN,13/01/1999,Atalanta Bergamo (ITA),亚特兰大,191,30,0,后卫,80.6,name_club
+F组,瑞典,Sweden,SWE,42,5,DF,Defender,GUDMUNDSSON Gabriel,加布里埃尔·古德蒙德松,Gabriel Johan,GUDMUNDSSON,GUDMUNDSSON,29/04/1999,Leeds United FC (ENG),利兹联,181,25,0,,后卫,"matched,name_web"
+F组,瑞典,Sweden,SWE,42,6,DF,Defender,JOHANSSON Herman,赫尔曼·约翰松,Herman Nils,JOHANSSON,H. JOHANSSON,16/10/1997,FC Dallas (USA),达拉斯,190,3,0,,后卫,"matched,name_web"
+F组,瑞典,Sweden,SWE,42,7,MF,Midfielder,BERGVALL Lucas,贝里瓦尔,Lucas Erik Holger,BERGVALL,BERGVALL,02/02/2006,Tottenham Hotspur FC (ENG),热刺,187,11,0,中前场,100,name_club
+F组,瑞典,Sweden,SWE,42,8,DF,Defender,SVENSSON Daniel,丹尼尔·斯文松,Daniel Jonathan,SVENSSON,SVENSSON,12/02/2002,Borussia Dortmund (GER),多特,183,14,0,后卫,70.5,name_club
+F组,瑞典,Sweden,SWE,42,9,FW,Forward,ISAK Alexander,伊萨克,Alexander,ISAK,ISAK,21/09/1999,Liverpool FC (ENG),利物浦,190,59,18,中前场,94,name_club
+F组,瑞典,Sweden,SWE,42,10,MF,Midfielder,NYGREN Benjamin,本杰明·尼格伦,Erik Benjamin,NYGREN,NYGREN,08/07/2001,Celtic FC (SCO),凯尔特人,187,12,3,中前场,100,name_club
+F组,瑞典,Sweden,SWE,42,11,FW,Forward,ELANGA Anthony,安东尼·埃兰加,Anthony David Junior,ELANGA,ELANGA,27/04/2002,Newcastle United FC (ENG),纽卡斯尔,178,31,6,,前锋,"matched,name_web"
+F组,瑞典,Sweden,SWE,42,12,GK,Goalkeeper,JOHANSSON Viktor,维克托·约翰松,Tobias Viktor,JOHANSSON,V. JOHANSSON,14/09/1998,Stoke City FC (ENG),斯托克城,187,12,0,,门将,"matched,name_web"
+F组,瑞典,Sweden,SWE,42,13,MF,Midfielder,SEMA Ken,肯·塞马,Ken,SEMA,SEMA,30/09/1993,Pafos FC (CYP),帕福斯,180,32,5,中前场,100,name_club
+F组,瑞典,Sweden,SWE,42,14,DF,Defender,EKDAL Hjalmar,埃克达尔,Hjalmar,EKDAL,EKDAL,21/10/1998,Burnley FC (ENG),伯恩利,187,13,0,后卫,100,name_club
+F组,瑞典,Sweden,SWE,42,15,DF,Defender,STARFELT Carl,卡尔·斯塔费尔特,Carl Anders Theodor,STARFELT,STARFELT,01/06/1995,RC Celta Vigo (ESP),塞尔塔,185,18,0,后卫,100,name_club
+F组,瑞典,Sweden,SWE,42,16,MF,Midfielder,KARLSTROM Jesper,加斯佩·卡尔斯特罗姆,Jesper Kewe,KARLSTRÖM,KARLSTRÖM,21/06/1995,Udinese (ITA),乌迪内斯,182,25,0,中前场,100,name_club
+F组,瑞典,Sweden,SWE,42,17,FW,Forward,GYOKERES Viktor,约克雷斯,Viktor Einar,GYÖKERES,GYÖKERES,04/06/1998,Arsenal FC (ENG),阿森纳,189,34,21,中前场,100,name_club
+F组,瑞典,Sweden,SWE,42,18,MF,Midfielder,AYARI Yasin,亚辛·阿亚里,Yasin,AYARI,AYARI,06/10/2003,Brighton & Hove Albion FC (ENG),布莱顿,172,22,5,中前场,100,name_club
+F组,瑞典,Sweden,SWE,42,19,MF,Midfielder,SVANBERG Mattias,马蒂亚斯·斯万贝里,Mattias Olof,SVANBERG,SVANBERG,05/01/1999,VfL Wolfsburg (GER),沃尔夫斯堡,186,41,3,中前场,100,name_club
+F组,瑞典,Sweden,SWE,42,20,DF,Defender,SMITH Eric,埃里克·史密斯,Eric Anders,SMITH,SMITH,08/01/1997,FC St. Pauli (GER),圣保利,192,2,0,后卫,91.4,name_club
+F组,瑞典,Sweden,SWE,42,21,DF,Defender,BERNHARDSSON Alexander,亚历山大·伯恩哈德松,Alexander Olof,BERNHARDSSON,BERNHARDSSON,08/09/1998,Holstein Kiel (GER),荷尔斯泰因基尔,184,12,0,,后卫,"matched,name_web"
+F组,瑞典,Sweden,SWE,42,22,MF,Midfielder,ZENELI Besfort,贝斯福特·泽内利,Besfort,ZENELI,ZENELI,21/11/2002,Royale Union Saint-Gilloise (BEL),圣吉罗斯,187,8,0,中前场,100,name_club
+F组,瑞典,Sweden,SWE,42,23,GK,Goalkeeper,NORDFELDT Kristoffer,克里斯托弗·诺德菲尔特,Bo Kristoffer,NORDFELDT,NORDFELDT,23/06/1989,AIK Stockholm (SWE),AIK索尔纳,190,22,0,门将,100,name_club
+F组,瑞典,Sweden,SWE,42,24,DF,Defender,STROUD Elliot,埃利奥特·斯特劳德,Elliot Karl,STROUD,STROUD,22/06/2002,Mjällby AIF (SWE),米亚尔比,185,2,0,后卫,80,name_club
+F组,瑞典,Sweden,SWE,42,25,FW,Forward,NILSSON Gustaf,古斯塔夫·尼尔松,Håkan Gustaf,NILSSON,NILSSON,23/05/1997,Club Brugge (BEL),布鲁日,197,9,4,中前场,100,name_club
+F组,瑞典,Sweden,SWE,42,26,FW,Forward,ALI Taha,塔哈·阿里,Taha Abdi,ALI,ALI,01/07/1998,Malmö FF (SWE),马尔默,174,2,0,中前场,94,name_club
+B组,瑞士,Switzerland,SUI,43,1,GK,Goalkeeper,KOBEL Gregor,科贝尔,Gregor,KOBEL,KOBEL,06/12/1997,Borussia Dortmund (GER),多特蒙德,196,22,0,门将,100,name_club
+B组,瑞士,Switzerland,SUI,43,2,DF,Defender,MUHEIM Miro,穆海姆,Miro Max Maria,MUHEIM,MUHEIM,24/03/1998,Hamburger SV (GER),汉堡,182,11,0,后卫,100,name_club
+B组,瑞士,Switzerland,SUI,43,3,DF,Defender,WIDMER Silvan,威德默,Silvan Dominic,WIDMER,WIDMER,05/03/1993,1. FSV Mainz 05 (GER),美因茨,183,60,5,后卫,100,name_club
+B组,瑞士,Switzerland,SUI,43,4,DF,Defender,ELVEDI Nico,埃尔维迪,Nico,ELVEDI,ELVEDI,30/09/1996,Borussia Mönchengladbach (GER),门兴格拉德巴赫,189,68,3,后卫,100,name_club
+B组,瑞士,Switzerland,SUI,43,5,DF,Defender,AKANJI Manuel,阿坎吉,Manuel Obafemi,AKANJI,AKANJI,19/07/1995,FC Internazionale Milano (ITA),国际米兰,188,82,4,后卫,100,name_club
+B组,瑞士,Switzerland,SUI,43,6,MF,Midfielder,ZAKARIA Denis,扎卡里亚,Denis Lemi,ZAKARIA LAKO LADO,ZAKARIA,20/11/1996,AS Monaco (FRA),摩纳哥,189,66,3,中场,85.7,name_club
+B组,瑞士,Switzerland,SUI,43,7,FW,Forward,EMBOLO Breel,恩博洛,Breel Donald,EMBOLO,EMBOLO,14/02/1997,Stade Rennais FC (FRA),雷恩,184,87,25,前锋,100,name_club
+B组,瑞士,Switzerland,SUI,43,8,MF,Midfielder,FREULER Remo,弗鲁勒,Remo Marco,FREULER,FREULER,15/04/1992,Bologna FC (ITA),博洛尼亚,181,89,11,中场,100,name_club
+B组,瑞士,Switzerland,SUI,43,9,MF,Midfielder,MANZAMBI Johan,曼赞比,Johan Kula,MANZAMBI,MANZAMBI,14/10/2005,SC Freiburg (GER),弗赖堡,182,13,3,中场,100,name_club
+B组,瑞士,Switzerland,SUI,43,10,MF,Midfielder,XHAKA Granit,扎卡,Granit,XHAKA,XHAKA,27/09/1992,Sunderland AFC (ENG),桑德兰,183,147,17,中场,100,name_club
+B组,瑞士,Switzerland,SUI,43,11,FW,Forward,NDOYE Dan,恩多耶,Dan,NDOYE,NDOYE,25/10/2000,Nottingham Forest FC (ENG),诺丁汉森林,184,32,8,前锋,100,name_club
+B组,瑞士,Switzerland,SUI,43,12,GK,Goalkeeper,MVOGO Yvon,姆沃戈,Yvon Landry,MVOGO NGANOMA,MVOGO,06/06/1994,FC Lorient (FRA),洛里昂,190,13,0,门将,100,name_club
+B组,瑞士,Switzerland,SUI,43,13,DF,Defender,RODRIGUEZ Ricardo,里卡多·罗德里格斯,Ricardo Ivan,RODRIGUEZ ARAYA,RODRIGUEZ,25/08/1992,Real Betis (ESP),贝蒂斯/塞维利亚,182,139,9,后卫,76.9,name_club
+B组,瑞士,Switzerland,SUI,43,14,MF,Midfielder,JASHARI Ardon,亚沙里,Ardon,JASHARI,JASHARI,30/07/2002,AC Milan (ITA),AC米兰,181,9,0,中场,100,name_club
+B组,瑞士,Switzerland,SUI,43,15,MF,Midfielder,SOW Djibril,索乌,Mohameth Djibril Ibrahima,SOW,SOW,06/02/1997,Sevilla FC (ESP),塞维利亚,183,52,0,中场,100,name_club
+B组,瑞士,Switzerland,SUI,43,16,FW,Forward,FASSNACHT Christian,法斯纳赫特,Christian Andreas,FASSNACHT,FASSNACHT,11/11/1993,BSC Young Boys (SUI),伯尔尼年轻人,185,23,5,前锋,100,name_club
+B组,瑞士,Switzerland,SUI,43,17,FW,Forward,VARGAS Ruben,鲁本·巴尔加斯,Ruben Estephan,VARGAS MARTINEZ,VARGAS,05/08/1998,Sevilla FC (ESP),塞维利亚,179,62,11,前锋,90.4,name_club
+B组,瑞士,Switzerland,SUI,43,18,DF,Defender,COEMERT Eray,科默特,Eray Ervin,CÖMERT,CÖMERT,04/02/1998,Valencia CF (ESP),瓦伦西亚,183,22,0,后卫,100,name_club
+B组,瑞士,Switzerland,SUI,43,19,FW,Forward,OKAFOR Noah,奥卡福,Noah Arinzechukwu,OKAFOR,OKAFOR,24/05/2000,Leeds United FC (ENG),利兹联,185,25,2,前锋,80,name_club
+B组,瑞士,Switzerland,SUI,43,20,MF,Midfielder,AEBISCHER Michel,埃比舍尔,Michel,AEBISCHER,AEBISCHER,06/01/1997,Pisa SC (ITA),比萨,183,41,2,中场,100,name_club
+B组,瑞士,Switzerland,SUI,43,21,GK,Goalkeeper,KELLER Marvin,凯勒,Marvin,KELLER,KELLER,03/07/2002,BSC Young Boys (SUI),年轻人,189,1,0,门将,100,name_club
+B组,瑞士,Switzerland,SUI,43,22,MF,Midfielder,RIEDER Fabian,法比安·里德,Fabian,RIEDER,RIEDER,16/02/2002,FC Augsburg (GER),奥格斯堡,181,29,1,中场,100,name_club
+B组,瑞士,Switzerland,SUI,43,23,FW,Forward,AMDOUNI Zeki,阿姆杜尼,Mohamed Zeki,AMDOUNI,AMDOUNI,04/12/2000,Burnley FC (ENG),伯恩利,183,30,11,前锋,100,name_club
+B组,瑞士,Switzerland,SUI,43,24,DF,Defender,AMENDA Aurele,阿曼达,Aurèle Florian,AMENDA,AMENDA,31/07/2003,Eintracht Frankfurt (GER),法兰克福,194,7,0,后卫,100,name_club
+B组,瑞士,Switzerland,SUI,43,25,DF,Defender,JAQUEZ Luca,雅克,Luca Antony,JAQUEZ,JAQUEZ,02/06/2003,VfB Stuttgart (GER),斯图加特,187,3,0,后卫,82,name_club
+B组,瑞士,Switzerland,SUI,43,26,FW,Forward,ITTEN Cedric,塞德里克·埃滕,Cedric Jan,ITTEN,ITTEN,27/12/1996,Fortuna Düsseldorf (GER),杜塞尔多夫,190,15,5,前锋,100,name_club
+F组,突尼斯,Tunisia,TUN,44,1,GK,Goalkeeper,CHAMAKH Mouhib,查马克,Abdelmouhib,CHAMAKH,CHAMAKH,25/08/2001,Club Africain (TUN),非洲人俱乐部,189,4,0,门将,86.8,name_club
+F组,突尼斯,Tunisia,TUN,44,2,DF,Defender,ABDI Ali,阿布迪,Ali,ELABDI,ABDI,20/12/1993,OGC Nice (FRA),尼斯,177,47,7,后卫,100,name_club
+F组,突尼斯,Tunisia,TUN,44,3,DF,Defender,TALBI Montassar,塔尔比,Montassar Omar,TALBI,TALBI,26/05/1998,FC Lorient (FRA),洛里昂,190,65,4,后卫,100,name_club
+F组,突尼斯,Tunisia,TUN,44,4,DF,Defender,REKIK Omar,奥马尔·雷基克,Omar,REKIK,REKIK,20/12/2001,NK Maribor (SVN),马里博尔,188,7,1,,后卫,"matched,name_web"
+F组,突尼斯,Tunisia,TUN,44,5,DF,Defender,AROUS Adam,阿鲁斯,Adam,AROUS,AROUS,17/07/2004,Kasımpaşa SK (TUR),卡斯帕萨,188,2,0,后卫,100,name_club
+F组,突尼斯,Tunisia,TUN,44,6,DF,Defender,BRONN Dylan,迪伦·布隆,Dylan Daniel Mahmoud,BRONN,BRONN,19/06/1995,Servette FC (SUI),塞维特,186,52,2,,后卫,"matched,name_web"
+F组,突尼斯,Tunisia,TUN,44,7,FW,Forward,ACHOURI Elias,阿乔里,Mohamed Elyes,ACHOURI,ACHOURI,10/02/1999,FC København (DEN),哥本哈根,187,31,5,前锋,100,name_club
+F组,突尼斯,Tunisia,TUN,44,8,FW,Forward,SAAD Elias,萨德,Elias,SAAD,SAAD,27/12/1999,Hannover 96 (GER),汉诺威96,185,16,3,前锋,100,name_club
+F组,突尼斯,Tunisia,TUN,44,9,FW,Forward,MASTOURI Hazem,马斯图里,Hazem,MASTOURI,MASTOURI,18/06/1997,FC Dynamo Makhachkala (RUS),安郅马哈奇卡拉,191,19,4,前锋,100,name_club
+F组,突尼斯,Tunisia,TUN,44,10,MF,Midfielder,MEJBRI Hannibal,汉尼拔·梅布里,Hannibal,MEJBRI,HANNIBAL,21/01/2003,Burnley FC (ENG),伯恩利,177,46,1,中场,100,name_club
+F组,突尼斯,Tunisia,TUN,44,11,MF,Midfielder,GHARBI Ismael,哈尔比,Ismael Seifallah,GHARBI,GHARBI,10/04/2004,FC Augsburg (GER),奥格斯堡,180,18,2,中场,100,name_club
+F组,突尼斯,Tunisia,TUN,44,12,DF,Defender,BEN OUANES Mortadha,乌安奈斯,Ahmed Mortadha,BEN OUANES,BEN OUANES,02/07/1994,Kasımpaşa SK (TUR),卡斯帕萨,188,18,0,中场,100,cross_position_pinyin
+F组,突尼斯,Tunisia,TUN,44,13,MF,Midfielder,KHEDIRA Rani,拉尼·赫迪拉,Rani,KHEDIRA,KHEDIRA,27/01/1994,1. FC Union Berlin (GER),柏林联合,188,4,0,中场,100,name_club
+F组,突尼斯,Tunisia,TUN,44,14,MF,Midfielder,AYARI Khalil,阿亚里,Khalil,AYARI,AYARI,02/02/2005,Paris Saint-Germain (FRA),巴黎,174,4,0,前锋,100,name_club
+F组,突尼斯,Tunisia,TUN,44,15,MF,Midfielder,HADJ MAHMOUD Mohamed,穆罕默德·哈吉·马哈茂德,Mohamed,BELHADJ MAHMOUD,HADJ MAHMOUD,24/04/2000,FC Lugano (SUI),卢加诺,179,10,0,,中场,"matched,name_web"
+F组,突尼斯,Tunisia,TUN,44,16,GK,Goalkeeper,DAHMEN Aymen,达门,Aymen,DAHMEN,DAHMEN,28/01/1997,CS Sfaxien (TUN),斯法克斯,188,37,0,门将,100,name_club
+F组,突尼斯,Tunisia,TUN,44,17,MF,Midfielder,SKHIRI Ellyes,斯希里,Ellyes Joris,SKHIRI,SKHIRI,10/05/1995,Eintracht Frankfurt (GER),法兰克福,185,84,4,中场,92.1,name_club
+F组,突尼斯,Tunisia,TUN,44,18,FW,Forward,ELLOUMI Rayan,埃卢米,Rayan,ELLOUMI,ELLOUMI,17/09/2007,Vancouver Whitecaps FC (CAN),温哥华白浪,180,4,0,前锋,100,name_club
+F组,突尼斯,Tunisia,TUN,44,19,FW,Forward,CHAOUAT Firas,查瓦,Firas,CHAOUAT,CHAOUAT,08/05/1996,Club Africain (TUN),非洲人,185,31,6,前锋,70.5,name_club
+F组,突尼斯,Tunisia,TUN,44,20,DF,Defender,VALERY Yan,优素福・瓦莱里,Yan,VALERY,VALERY,22/02/1999,BSC Young Boys (SUI),年轻人,181,23,0,后卫,100,name_club
+F组,突尼斯,Tunisia,TUN,44,21,DF,Defender,BEN HMIDA Mohamed Amine,哈米达,Mohamed Amine,BEN HMIDA,BEN HMIDA,15/12/1995,Espérance De Tunisie (TUN),突尼斯希望,181,14,0,后卫,100,name_club
+F组,突尼斯,Tunisia,TUN,44,22,GK,Goalkeeper,BEN HESSEN Sabri,本·黑森,Sabri,BEN HSAN,BEN HESSEN,13/06/1996,Étoile Du Sahel (TUN),沙希尔,189,1,0,门将,100,name_club
+F组,突尼斯,Tunisia,TUN,44,23,DF,Defender,NEFFATI Moutaz,内法蒂,Moutaz,NEFFATI,NEFFATI,04/09/2004,IFK Norrköping FK (SWE),北雪平,182,5,0,后卫,100,name_club
+F组,突尼斯,Tunisia,TUN,44,24,DF,Defender,CHIKHAOUI Raed,拉德·希考维,Raed,CHIKHAOUI,CHIKHAOUI,09/06/2004,US Monastir (TUN),莫纳斯提尔,191,0,0,,后卫,"matched,name_web"
+F组,突尼斯,Tunisia,TUN,44,25,MF,Midfielder,SLIMANE Anis,斯里曼尼,Anis,BEN SLIMANE,SLIMANE,16/03/2001,Norwich City FC (ENG),诺维奇,188,41,4,中场,100,name_club
+F组,突尼斯,Tunisia,TUN,44,26,MF,Midfielder,TOUNEKTI Sebastian,图内克提,Sebastian,TOUNEKTI,TOUNEKTI,13/07/2002,Celtic FC (SCO),凯尔特人,182,13,1,前锋,100,name_club
+D组,土耳其,Türkiye,TUR,45,1,GK,Goalkeeper,GUNOK Mert,默特·古诺克,Fehmi Mert,GÜNOK,MERT,01/03/1989,Fenerbahçe SK (TUR),费内巴切,196,37,0,门将,100,name_club
+D组,土耳其,Türkiye,TUR,45,2,DF,Defender,CELIK Zeki,泽基·切利克,Mehmet Zeki,ÇELIK,ZEKİ ÇELİK,17/02/1997,AS Roma (ITA),罗马,180,62,3,后卫,100,name_club
+D组,土耳其,Türkiye,TUR,45,3,DF,Defender,DEMIRAL Merih,德米拉尔,Merih,DEMİRAL,DEMİRAL,05/03/1998,Al Ahli FC (KSA),吉达国民,190,64,6,后卫,100,name_club
+D组,土耳其,Türkiye,TUR,45,4,DF,Defender,SOYUNCU Caglar,瑟云聚,Çağlar,SÖYÜNCÜ,ÇAĞLAR,23/05/1996,Fenerbahçe SK (TUR),费内巴切,185,60,2,后卫,100,name_club
+D组,土耳其,Türkiye,TUR,45,5,MF,Midfielder,OZCAN Salih,厄兹詹,Salih,ÖZCAN,ÖZCAN,11/01/1998,Borussia Dortmund (GER),多特蒙德,182,31,1,中场,97.7,name_club
+D组,土耳其,Türkiye,TUR,45,6,MF,Midfielder,KOKCU Orkun,奥尔奎·科克库,Orkun,KÖKÇÜ,ORKUN KÖKÇÜ,29/12/2000,Beşiktaş JK (TUR),贝西克塔斯,175,51,4,中场,100,name_club
+D组,土耳其,Türkiye,TUR,45,7,FW,Forward,AKTURKOGLU Kerem,阿克蒂尔克奥卢,Muhammed Kerem,AKTÜRKOĞLU,AKTÜRKOĞLU,21/10/1998,Fenerbahçe SK (TUR),费内巴切,172,53,15,前锋,100,name_club
+D组,土耳其,Türkiye,TUR,45,8,FW,Forward,GULER Arda,居莱尔,Arda,GÜLER,ARDA GÜLER,25/02/2005,Real Madrid C. F. (ESP),皇家马德里,175,31,6,前锋,68.4,name_club
+D组,土耳其,Türkiye,TUR,45,9,FW,Forward,GUL Deniz,德尼兹·居尔,Deniz Daniel,GÜL,DENİZ GÜL,02/07/2004,FC Porto (POR),波尔图,192,9,2,前锋,100,name_club
+D组,土耳其,Türkiye,TUR,45,10,MF,Midfielder,CALHANOGLU Hakan,恰尔汗奥卢,Hakan,ÇALHANOĞLU,ÇALHANOĞLU,08/02/1994,FC Internazionale Milano (ITA),国际米兰,178,107,22,中场,80,name_club
+D组,土耳其,Türkiye,TUR,45,11,FW,Forward,YILDIZ Kenan,凯南·伊尔迪兹,Kenan,YILDIZ,YILDIZ,04/05/2005,Juventus FC (ITA),尤文图斯,187,29,5,前锋,92.3,name_club
+D组,土耳其,Türkiye,TUR,45,12,GK,Goalkeeper,BAYINDIR Altay,阿勒泰·巴延德尔,Altay,BAYINDIR,ALTAY,14/04/1998,Manchester United FC (ENG),曼联,198,12,0,门将,100,name_club
+D组,土耳其,Türkiye,TUR,45,13,DF,Defender,ELMALI Eren,埃伦·埃尔马利,Evren Eren,ELMALI,EREN ELMALI,07/07/2000,Galatasaray SK (TUR),加拉塔萨雷,181,23,0,后卫,100,name_club
+D组,土耳其,Türkiye,TUR,45,14,DF,Defender,BARDAKCI Abdulkerim,阿卜杜勒克里姆·巴尔达克彻,Abdülkerİm,BARDAKCI,ABDÜLKERİM,07/09/1994,Galatasaray SK (TUR),加拉塔萨雷,185,28,2,后卫,100,name_club
+D组,土耳其,Türkiye,TUR,45,15,DF,Defender,KABAK Ozan,卡巴克,Ozan Muhammed,KABAK,OZAN KABAK,25/03/2000,TSG Hoffenheim (GER),霍芬海姆,187,30,2,后卫,100,name_club
+D组,土耳其,Türkiye,TUR,45,16,MF,Midfielder,YUKSEK Ismail,伊斯梅尔·尤克塞克,İsmaİl,YÜKSEK,İSMAİL,26/01/1999,Fenerbahçe SK (TUR),费内巴切,183,33,1,中场,100,name_club
+D组,土耳其,Türkiye,TUR,45,17,FW,Forward,KAHVECI Irfan Can,卡维奇,İrfan,KAHVECİ,KAHVECİ,15/07/1995,Kasımpaşa SK (TUR),卡斯帕萨,180,47,6,前锋,100,name_club
+D组,土耳其,Türkiye,TUR,45,18,DF,Defender,MULDUR Mert,默特·穆尔杜,Mert,MÜLDÜR,MERT MÜLDÜR,03/04/1999,Fenerbahçe SK (TUR),费内巴切,184,46,3,后卫,100,name_club
+D组,土耳其,Türkiye,TUR,45,19,FW,Forward,AKGUN Yunus,尤努斯·阿克金,Yunus,AKGÜN,YUNUS,07/07/2000,Galatasaray SK (TUR),加拉塔萨雷,173,20,4,前锋,100,name_club
+D组,土耳其,Türkiye,TUR,45,20,DF,Defender,KADIOGLU Ferdi,卡迪奥卢,Ferdi Erenay,KADIOĞLU,F. KADIOĞLU,07/10/1999,Brighton & Hove Albion FC (ENG),布莱顿,174,31,2,后卫,100,name_club
+D组,土耳其,Türkiye,TUR,45,21,FW,Forward,YILMAZ Baris Alper,巴勒什·阿尔佩尔·伊尔马兹,Barış Alper,YILMAZ,BARIŞ,23/05/2000,Galatasaray SK (TUR),加拉塔萨雷,186,36,4,前锋,100,name_club
+D组,土耳其,Türkiye,TUR,45,22,MF,Midfielder,AYHAN Kaan,卡安·艾汗,Kaan,AYHAN,KAAN,10/11/1994,Galatasaray SK (TUR),加拉塔萨雷,185,73,5,中场,100,name_club
+D组,土耳其,Türkiye,TUR,45,23,GK,Goalkeeper,CAKIR Ugurcan,乌古尔坎·恰基尔,Uğurcan,ÇAKIR,UĞURCAN,05/04/1996,Galatasaray SK (TUR),加拉塔萨雷,191,40,0,门将,100,name_club
+D组,土耳其,Türkiye,TUR,45,24,FW,Forward,AYDIN Oguz,奥古兹·艾丁,Oğuz,AYDIN,OĞUZ,27/10/2000,Fenerbahçe SK (TUR),费内巴切,183,11,0,前锋,100,name_club
+D组,土耳其,Türkiye,TUR,45,25,DF,Defender,AKAYDIN Samet,萨梅特·阿卡丁,Samet,AKAYDIN,SAMET AKAYDIN,13/03/1994,Çaykur Rizespor (TUR),里泽斯堡,190,19,1,后卫,84.6,name_club
+D组,土耳其,Türkiye,TUR,45,26,FW,Forward,UZUN Can,乌尊,Can Yılmaz,UZUN,CAN UZUN,11/11/2005,Eintracht Frankfurt (GER),法兰克福,186,6,1,前锋,100,name_club
+H组,乌拉圭,Uruguay,URU,46,1,GK,Goalkeeper,ROCHET Sergio,塞尔吉奥·罗切特,Sergio Ramón,ROCHET ALVAREZ,S. ROCHET,23/03/1993,SC Internacional (BRA),巴西国际,189,35,0,门将,100,name_club
+H组,乌拉圭,Uruguay,URU,46,2,DF,Defender,GIMENEZ Jose Maria,何塞·马里亚·吉梅内斯,José María,GIMÉNEZ DE VARGAS,J.M. GIMÉNEZ,20/01/1995,Atlético De Madrid (ESP),马德里竞技,186,99,8,后卫,97.7,name_club
+H组,乌拉圭,Uruguay,URU,46,3,DF,Defender,CACERES Sebastian,塞巴斯蒂安·卡塞雷斯,Sebastián Enzo,CÁCERES RAMOS,S. CACERES,18/08/1999,Club América (MEX),墨西哥美洲,180,24,0,后卫,78.3,name_club
+H组,乌拉圭,Uruguay,URU,46,4,DF,Defender,ARAUJO Ronald,罗纳德·阿劳霍,Ronald Federico,ARAÚJO DA SILVA,R. ARAUJO,07/03/1999,FC Barcelona (ESP),巴塞罗那,185,27,1,,后卫,"matched,name_web"
+H组,乌拉圭,Uruguay,URU,46,5,MF,Midfielder,UGARTE Manuel,曼努埃尔·乌加特,Manuel,UGARTE RIBEIRO,M. UGARTE,11/04/2001,Manchester United FC (ENG),曼联,182,36,1,中场,95.4,name_club
+H组,乌拉圭,Uruguay,URU,46,6,MF,Midfielder,BENTANCUR Rodrigo,罗德里戈·本坦库尔,Rodrigo,BENTANCUR COLMÁN,R. BENTANCUR,25/06/1997,Tottenham Hotspur FC (ENG),热刺,187,74,3,中场,100,name_club
+H组,乌拉圭,Uruguay,URU,46,7,MF,Midfielder,DE LA CRUZ Nicolas,尼古拉斯·德拉克鲁兹,Diego Nicolás,DE LA CRUZ ARCOSA,N. DE LA CRUZ,01/06/1997,CR Flamengo (BRA),弗拉门戈,167,35,5,中场,100,name_club
+H组,乌拉圭,Uruguay,URU,46,8,MF,Midfielder,VALVERDE Federico,费德里科·巴尔韦德,Federico Santiago,VALVERDE DIPETTA,F. VALVERDE,22/07/1998,Real Madrid C. F. (ESP),皇家马德里,182,74,9,,中场,"matched,name_web"
+H组,乌拉圭,Uruguay,URU,46,9,FW,Forward,NUNEZ Darwin,努涅斯,Darwin Gabriel,NUÑEZ RIBEIRO,D. NUÑEZ,24/06/1999,Al Hilal SC (KSA),利雅得新月,185,39,13,前锋,100,name_club
+H组,乌拉圭,Uruguay,URU,46,10,MF,Midfielder,DE ARRASCAETA Giorgian,乔治亚·德·阿拉斯凯塔,Giorgian Daniel,DE ARRASCAETA BENEDETTI,G. DE ARRASCAETA,01/06/1994,CR Flamengo (BRA),弗拉门戈,177,59,13,中场,100,name_club
+H组,乌拉圭,Uruguay,URU,46,11,FW,Forward,PELLISTRI Facundo,法昆多·佩利斯特里,Facundo,PELLISTRI REBOLLO,F. PELLISTRI,20/12/2001,Panathinaikos FC (GRE),帕纳辛奈科斯,174,39,2,中场,100,name_club
+H组,乌拉圭,Uruguay,URU,46,12,GK,Goalkeeper,MELE Santiago,圣地亚哥·梅莱,Santiago Andres,MELE CASTAÑERO,S. MELE,06/09/1997,CF Monterrey (MEX),蒙特雷,185,8,0,,门将,"matched,name_web"
+H组,乌拉圭,Uruguay,URU,46,13,DF,Defender,VARELA Guillermo,吉列尔莫·瓦雷拉,Guillermo,VARELA OLIVERA,G. VARELA,24/03/1993,CR Flamengo (BRA),弗拉门戈,174,28,0,后卫,100,name_club
+H组,乌拉圭,Uruguay,URU,46,14,MF,Midfielder,CANOBBIO Agustin,奥古斯汀·卡诺比奥,Agustin,CANOBBIO,A. CANOBBIO,01/10/1998,Fluminense FC (BRA),弗卢米嫩塞,176,15,1,中场,100,name_club
+H组,乌拉圭,Uruguay,URU,46,15,MF,Midfielder,MARTINEZ Emiliano,埃米里亚诺·马丁内斯,Emiliano,MARTÍNEZ TORANZA,E. MARTINEZ,17/08/1999,SE Palmeiras (BRA),帕尔梅拉斯,184,10,0,中场,100,name_club
+H组,乌拉圭,Uruguay,URU,46,16,DF,Defender,OLIVERA Mathias,马蒂亚斯·奥利维拉,Mathías,OLIVERA MIRAMONTES,M. OLIVERA,31/10/1997,SSC Napoli (ITA),那不勒斯,174,36,2,后卫,100,name_club
+H组,乌拉圭,Uruguay,URU,46,17,DF,Defender,VINA Matias,马蒂亚斯·比尼亚,Matías Nicolas,VIÑA SUSPERREGUY,M. VIÑA,09/11/1997,CA River Plate (ARG),河床,180,44,1,后卫,94.8,name_club
+H组,乌拉圭,Uruguay,URU,46,18,FW,Forward,RODRIGUEZ Brian,布莱恩·罗德里格斯,Paul Brian,RODRÍGUEZ BRAVO,B. RODRIGUEZ,20/05/2000,Club América (MEX),墨西哥美洲,175,34,4,中场,85.7,name_club
+H组,乌拉圭,Uruguay,URU,46,19,FW,Forward,AGUIRRE Rodrigo,罗德里戈·阿吉雷,Rodrigo Sebastian,AGUIRRE SOTO,R. AGUIRRE,01/10/1994,Tigres UANL (MEX),老虎,182,11,3,,前锋,"matched,name_web"
+H组,乌拉圭,Uruguay,URU,46,20,MF,Midfielder,ARAUJO Maxi,马克西米利亚诺·阿劳霍,Maximiliano Javier,ARAÚJO VILCHES,M. ARAUJO,15/02/2000,Sporting CP (POR),葡萄牙体育,176,29,4,中场,99.5,name_club
+H组,乌拉圭,Uruguay,URU,46,21,FW,Forward,VINAS Federico,费德里科·比尼亚斯,Federico Sebastian,VIÑAS BARBOZA,F. VIÑAS,30/06/1998,Real Oviedo (ESP),皇家奥维耶多,181,12,2,,前锋,"matched,name_web"
+H组,乌拉圭,Uruguay,URU,46,22,MF,Midfielder,PIQUEREZ Joaquin,华金·皮克雷斯,Joaquin,PIQUEREZ MOREIRA,J. PIQUEREZ,24/08/1998,SE Palmeiras (BRA),帕尔梅拉斯,185,19,0,后卫,100,cross_position_pinyin
+H组,乌拉圭,Uruguay,URU,46,23,GK,Goalkeeper,MUSLERA Fernando,费尔南多·穆斯莱拉,Nestor Fernando,MUSLERA MICOL,F. MUSLERA,16/06/1986,Estudiantes LP (ARG),拉普拉塔大学生,190,135,0,门将,100,name_club
+H组,乌拉圭,Uruguay,URU,46,24,DF,Defender,BUENO Santiago,圣地亚哥·布埃诺,Santiago Ignacio,BUENO SCIUTTO,S. BUENO,09/11/1998,Wolverhampton Wanderers FC (ENG),狼队,191,8,0,,后卫,"matched,name_web"
+H组,乌拉圭,Uruguay,URU,46,25,MF,Midfielder,SANABRIA Juan Manuel,胡安·曼努埃尔·萨纳布里亚,Juan Manuel,SANABRIA MAGOLÉ,J.M. SANABRIA,29/03/2000,Real Salt Lake (USA),皇家盐湖城,170,6,1,,中场,"matched,name_web"
+H组,乌拉圭,Uruguay,URU,46,26,MF,Midfielder,ZALAZAR Rodrigo,罗德里戈·萨拉萨尔,Radrigo,ZALAZAR MARTINEZ,R. ZALAZAR,12/08/1999,SC Braga (POR),布拉加,175,7,2,中场,100,name_club
+D组,美国,USA,USA,47,1,GK,Goalkeeper,TURNER Matt,马特·特纳,Matthew Charles,TURNER,TURNER,24/06/1994,New England Revolution (USA),新英格兰革命,190,54,0,,门将,"matched,name_web"
+D组,美国,USA,USA,47,2,DF,Defender,DEST Sergino,德斯特,Sergiño Gianni,DEST,DEST,03/11/2000,PSV Eindhoven (NED),埃因霍温,173,40,3,后卫,100,name_club
+D组,美国,USA,USA,47,3,DF,Defender,RICHARDS Chris,理查兹,Christopher Jeffrey,RICHARDS,RICHARDS,28/03/2000,Crystal Palace FC (ENG),水晶宫,189,37,3,后卫,100,name_club
+D组,美国,USA,USA,47,4,MF,Midfielder,ADAMS Tyler,泰勒·亚当斯,Tyler Shaan,ADAMS,ADAMS,14/02/1999,AFC Bournemouth (ENG),伯恩茅斯,175,55,2,,中场,"matched,name_web"
+D组,美国,USA,USA,47,5,DF,Defender,ROBINSON Antonee,安东尼·罗宾逊,Antonee,ROBINSON,A. ROBINSON,08/08/1997,Fulham FC (ENG),富勒姆,183,55,5,后卫,100,name_club
+D组,美国,USA,USA,47,6,DF,Defender,TRUSTY Auston,特鲁斯蒂,Auston Levi-Jesaiah,TRUSTY,TRUSTY,12/08/1998,Celtic FC (SCO),凯尔特人,190,8,0,后卫,100,name_club
+D组,美国,USA,USA,47,7,MF,Midfielder,REYNA Giovanni,吉奥瓦尼·雷纳,Giovanni Alejandro,REYNA,REYNA,13/11/2002,Borussia Mönchengladbach (GER),门兴格拉德巴赫,187,39,10,,中场,"matched,name_web"
+D组,美国,USA,USA,47,8,MF,Midfielder,McKENNIE Weston,麦肯尼,Weston James Earl,MC KENNIE,MCKENNIE,28/08/1998,Juventus FC (ITA),尤文图斯,180,67,12,中场,75.2,name_club
+D组,美国,USA,USA,47,9,FW,Forward,PEPI Ricardo,佩皮,Ricardo Daniel,PEPI,PEPI,09/01/2003,PSV Eindhoven (NED),埃因霍温,185,38,13,前锋,100,name_club
+D组,美国,USA,USA,47,10,FW,Forward,PULISIC Christian,普利西奇,Christian Mate,PULISIC,PULISIC,18/09/1998,AC Milan (ITA),AC米兰,177,87,33,前锋,100,name_club
+D组,美国,USA,USA,47,11,FW,Forward,AARONSON Brenden,布伦登·阿伦森,Brenden Russell,AARONSON,AARONSON,22/10/2000,Leeds United FC (ENG),利兹联,177,58,9,,前锋,"matched,name_web"
+D组,美国,USA,USA,47,12,DF,Defender,ROBINSON Miles,迈尔斯·罗宾逊,Miles Gordon,ROBINSON,M. ROBINSON,14/03/1997,FC Cincinnatti (USA),辛辛那提,187,40,3,,后卫,"matched,name_web"
+D组,美国,USA,USA,47,13,DF,Defender,REAM Tim,弗里曼,Timothy Michael,REAM,REAM,05/10/1987,Charlotte FC (USA),比利亚雷亚尔,186,83,1,后卫,100,name_club
+D组,美国,USA,USA,47,14,MF,Midfielder,BERHALTER Sebastian,伯哈尔特,Sebastian Matthew,BERHALTER,BERHALTER,10/05/2001,Vancouver Whitecaps FC (CAN),温哥华白浪,175,14,1,中场,100,name_club
+D组,美国,USA,USA,47,15,MF,Midfielder,ROLDAN Cristian,罗尔丹,Cristian,ROLDAN,ROLDAN,03/06/1995,Seattle Sounders FC (USA),西雅图海湾人,173,47,0,中场,100,name_club
+D组,美国,USA,USA,47,16,DF,Defender,FREEMAN Alex,亚历克斯·弗里曼,Alexander Michael,FREEMAN,FREEMAN,09/08/2004,Villarreal CF (ESP),比利亚雷亚尔,188,18,2,,后卫,"matched,name_web"
+D组,美国,USA,USA,47,17,MF,Midfielder,TILLMAN Malik,蒂尔曼,Malik Leon,TILLMAN,TILLMAN,28/05/2002,Bayer 04 Leverkusen (GER),勒沃库森,187,31,3,中场,100,name_club
+D组,美国,USA,USA,47,18,DF,Defender,ARFSTEN Max,阿夫斯坦,Maximilian Michael,ARFSTEN,ARFSTEN,19/04/2001,Columbus Crew (USA),哥伦布机员,185,20,1,后卫,75,name_club
+D组,美国,USA,USA,47,19,FW,Forward,WRIGHT Haji,哈吉·赖特,Haji Amir,WRIGHT,WRIGHT,27/03/1998,Coventry City FC (ENG),考文垂,191,20,7,,前锋,"matched,name_web"
+D组,美国,USA,USA,47,20,FW,Forward,BALOGUN Folarin,巴洛贡,Folarin Jolaoluwa,BALOGUN,BALOGUN,03/07/2001,AS Monaco (FRA),摩纳哥,179,28,11,前锋,85.7,name_club
+D组,美国,USA,USA,47,21,FW,Forward,WEAH Timothy,蒂莫西·维阿,Timothy Tarpeh,WEAH,WEAH,22/02/2000,Olympique Marseille (FRA),马赛,183,52,7,前锋,100,name_club
+D组,美国,USA,USA,47,22,DF,Defender,McKENZIE Mark,麦肯齐,Mark Alexander,MCKENZIE,MCKENZIE,25/02/1999,Toulouse FC (FRA),图卢兹,186,29,0,后卫,100,name_club
+D组,美国,USA,USA,47,23,DF,Defender,SCALLY Joe,斯卡利,Joseph Michael,SCALLY,SCALLY,31/12/2002,Borussia Mönchengladbach (GER),门兴,184,26,0,后卫,75,name_club
+D组,美国,USA,USA,47,24,GK,Goalkeeper,FREESE Matt,马特·弗里斯,Matthew Andrew Geary,FREESE,FREESE,02/09/1998,New York City FC (USA),纽约城,198,16,0,门将,100,name_club
+D组,美国,USA,USA,47,25,GK,Goalkeeper,BRADY Chris,克里斯·布雷迪,Christopher Keith,BRADY,BRADY,03/03/2004,Chicago Fire FC (USA),芝加哥火焰,193,1,0,门将,95,name_club
+D组,美国,USA,USA,47,26,FW,Forward,ZENDEJAS Alex,亚历杭德罗·曾德哈斯,Alejandro,ZENDEJAS SAAVEDRA,ZENDEJAS,07/02/1998,Club América (MEX),墨西哥美洲,167,14,2,中场,70.5,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,1,GK,Goalkeeper,YUSUPOV Utkir,尤茨基尔·尤索波夫,Utkir,YUSUPOV,YUSUPOV,04/01/1991,PFC Navbahor Namangan (UZB),纳曼干新春,185,45,0,,门将,"matched,name_web"
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,2,DF,Defender,KHUSANOV Abdukodir,胡桑诺夫,Abdukodir,KHUSANOV,KHUSANOV,29/02/2004,Manchester City FC (ENG),曼城,186,27,0,后卫,100,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,3,DF,Defender,ALIJONOV Khojiakbar,阿里扎诺夫,Khojiakbar,ALIJONOV,ALIJONOV,19/04/1997,Pakhtakor Tashkent FK (UZB),塔什干棉农,180,52,3,后卫,87.6,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,4,DF,Defender,SAYFIEV Farrukh,法鲁克·萨菲耶夫,Farrukh,SAYFIEV,SAYFIEV,17/01/1991,FK Neftchi Farg'ona (UZB),费尔干纳油工,183,71,1,后卫,100,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,5,DF,Defender,ASHURMATOV Rustam,拉斯塔马乔·阿舒马托夫,Rustamjon,ASHURMATOV,ASHURMATOV,07/07/1996,Esteghlal Tehran FC (IRN),德黑兰独立,186,51,1,后卫,100,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,6,MF,Midfielder,MOZGOVOY Akmal,阿克玛·莫兹戈沃伊,Akmal,MOZGOVOY,MOZGOVOY,02/04/1999,Pakhtakor Tashkent FK (UZB),纳萨夫,180,25,1,中场,93.3,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,7,MF,Midfielder,SHUKUROV Otabek,奥塔贝克·舒库罗夫,Otabek,SHUKUROV,SHUKUROV,22/06/1996,Baniyas Club (UAE),班尼亚斯,183,90,10,中场,100,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,8,MF,Midfielder,ISKANDEROV Jamshid,贾姆什德·伊斯坎德罗夫,Jamshid,ISKANDEROV,ISKANDEROV,16/10/1993,FK Neftchi Farg'ona (UZB),费尔干纳油工,171,46,4,中场,100,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,9,MF,Midfielder,XAMROBEKOV Odiljon,奥迪忠·坎罗布科夫,Odiljon,XAMROBEKOV,XAMROBEKOV,13/02/1996,Tractor Sazi Tabriz FC (IRN),大不里士拖拉机,180,76,1,中场,96.5,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,10,MF,Midfielder,JIYANOV Ruslanbek,鲁斯兰别克·吉亚诺夫,Ruslanbek,JIYANOV,JIYANOV,05/06/2001,PFC Navbahor Namangan (UZB),纳曼干新春,176,8,1,,中场,"matched,name_web"
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,11,MF,Midfielder,URUNOV Oston,乌鲁诺夫,Oston,URUNOV,URUNOV,19/12/2000,Persepolis FC (IRN),波斯波利斯,181,45,10,前锋,97.7,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,12,GK,Goalkeeper,NEMATOV Abduvohid,阿卜杜沃赫德·内马托夫,Abduvakhid,NEMATOV,NEMATOV,20/03/2001,Nasaf Qarshi FC (UZB),纳萨夫,182,15,0,门将,100,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,13,DF,Defender,NASRULLAEV Sherzod,谢尔佐德·纳斯鲁拉耶夫,Sherzod,NASRULLAEV,NASRULLAEV,23/07/1998,Pakhtakor Tashkent FK (UZB),塔什干棉农,183,40,2,后卫,100,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,14,FW,Forward,SHOMURODOV Eldor,肖穆罗多夫,Eldor,SHOMURODOV,SHOMURODOV,29/06/1995,Başakşehir FK (TUR),伊斯坦布尔,190,93,44,前锋,100,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,15,DF,Defender,ESHMURODOV Umar,埃什穆罗多夫,Umarbek,ESHMURODOV,ESHMURODOV,30/11/1992,Nasaf Qarshi FC (UZB),纳萨夫,185,40,0,后卫,100,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,16,GK,Goalkeeper,ERGASHEV Botirali,博蒂拉里·叶尔加舍夫,Botirali,ERGASHEV,ERGASHEV,23/06/1995,FK Neftchi Farg'ona (UZB),费尔干纳油工,189,5,0,门将,100,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,17,MF,Midfielder,KHAMDAMOV Dostonbek,多斯通贝克·哈姆达莫夫,Dostonbek,KHAMDAMOV,KHAMDAMOV,24/07/1996,Pakhtakor Tashkent FK (UZB),塔什干棉农,178,37,5,前锋,100,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,18,DF,Defender,ABDULLAEV Abdulla,阿卜杜拉·阿卜杜拉耶夫,Abdulla,ABDULLAEV,ABDULLAEV,01/09/1997,Dibba FC (UAE),迪巴SCC,181,29,0,后卫,76.5,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,19,MF,Midfielder,GANIEV Azizjon,阿齐兹翁·加尼耶夫,Azizjon,GANIEV,GANIEV,22/02/1998,Al Bataeh Club (UAE),巴塔赫,178,24,0,,中场,"matched,name_web"
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,20,FW,Forward,AMONOV Azizbek,阿齐兹贝克·阿莫诺夫,Azizbek,AMONOV,AMONOV,30/10/1997,FK Dinamo Samarkand (UZB),萨马尔罕迪那摩,181,13,2,前锋,100,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,21,FW,Forward,SERGEEV Igor,谢尔盖耶夫,Igor,SERGEEV,SERGEEV,30/04/1993,Persepolis FC (IRN),波斯波利斯,185,85,25,前锋,100,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,22,MF,Midfielder,FAYZULLAEV Abbosbek,费祖拉耶夫,Abbosbek,FAYZULLAEV,FAYZULLAEV,03/10/2003,Başakşehir FK (TUR),伊斯坦布尔,167,32,8,前锋,94.4,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,23,MF,Midfielder,ESANOV Sherzod,谢尔佐德·埃萨诺夫,Sherzod,ESANOV,ESANOV,01/02/2003,FK Buxoro (UZB),布哈拉,190,1,0,中场,100,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,24,DF,Defender,KARIMOV Behruzjon,卡里莫夫,Behruzjon,KARIMOV,KARIMOV,07/08/2007,Surkhon FK (UZB),特尔梅兹,172,2,0,后卫,100,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,25,DF,Defender,ULMASALIYEV Avazbek,乌尔马萨利耶夫,Avazbek,ULMASALIYEV,ULMASALIYEV,27/03/2000,OKMK FK (UZB),阿尔马雷克,187,0,0,后卫,100,name_club
+K组,乌兹别克斯坦,Uzbekistan,UZB,48,26,DF,Defender,UROZOV Jakhongir,扎洪吉尔·乌罗佐夫,Jakhongir,UROZOV,UROZOV,18/01/2004,FK Dinamo Samarkand (UZB),撒马尔罕迪纳摩,190,4,1,,后卫,"matched,name_web"

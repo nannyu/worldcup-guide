@@ -22,6 +22,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun src/lib/db/migrate.ts",
     "db:seed:fifa": "bun src/lib/db/seed-fifa-schedule.ts",
+    "db:import:fifa-players": "bun src/lib/db/import-fifa-players.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:drop": "drizzle-kit drop"

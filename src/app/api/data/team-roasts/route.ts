@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getTeamRoastSnapshot } from "@/lib/ai/team-roasts";
-import { teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
+import { teamsWithPlayerProfilesFromOfficialSchedule } from "@/lib/team-profiles.server";
 
 export async function GET(request: NextRequest) {
   const refreshRequested = request.nextUrl.searchParams.get("refresh") === "1";
-  const teams = teamsWithBuiltInProfilesFromOfficialSchedule();
+  const teams = await teamsWithPlayerProfilesFromOfficialSchedule();
   const snapshot = await getTeamRoastSnapshot(teams, {
     cacheMode: refreshRequested ? "refresh" : "cache-only",
   });

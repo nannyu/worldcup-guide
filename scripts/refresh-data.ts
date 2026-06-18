@@ -1,6 +1,7 @@
 import { config } from "dotenv";
 import { runDataRefresh } from "@/lib/data-sources/refresh-runner";
 import { closeDatabase, isDatabaseConfigured } from "@/lib/db/client";
+import { importFifaPlayersFromCsv } from "@/lib/db/import-fifa-players";
 import { seedFifaSchedule } from "@/lib/db/seed-fifa-schedule";
 
 config({ path: ".env" });
@@ -10,6 +11,7 @@ const mode = process.argv.includes("--init") ? "initialize" : "scheduled";
 async function main() {
   if (mode === "initialize" && isDatabaseConfigured) {
     await seedFifaSchedule();
+    await importFifaPlayersFromCsv();
   }
 
   const result = await runDataRefresh(mode);

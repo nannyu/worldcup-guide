@@ -34,7 +34,8 @@ import {
   getStoredCanonicalMatches,
   persistCanonicalMatches,
 } from "@/lib/db/queries/world-cup";
-import { findBuiltInPlayerProfile, teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
+import { findBuiltInPlayerProfile } from "@/lib/team-profiles";
+import { teamsWithPlayerProfilesFromOfficialSchedule } from "@/lib/team-profiles.server";
 import {
   allMatches,
   ENGLAND_FLAG,
@@ -3607,7 +3608,7 @@ export async function getAggregatedTeams(options: AggregationReadOptions = {}): 
   diagnostics: SourceDiagnostic[];
 }> {
   const { dataSources, updatedAt } = await readAdminConfig();
-  const snapshotKey = `teams:v5:world-cup:${updatedAt}`;
+  const snapshotKey = `teams:v7:world-cup:${updatedAt}`;
   const persisted = await readSnapshotCache<Team[]>(snapshotKey);
   if (shouldUseSnapshot(persisted, (payload) => payload.length > 0, options)) {
     return {
@@ -3629,7 +3630,7 @@ export async function getAggregatedTeams(options: AggregationReadOptions = {}): 
   }
 
   if (isCacheOnly(options)) {
-    return { teams: teamsWithBuiltInProfilesFromOfficialSchedule(), source: "fallback", diagnostics: [] };
+    return { teams: await teamsWithPlayerProfilesFromOfficialSchedule(), source: "fallback", diagnostics: [] };
   }
 
   const diagnostics: SourceDiagnostic[] = [];
@@ -3670,7 +3671,7 @@ export async function getAggregatedTeams(options: AggregationReadOptions = {}): 
     }
   }
 
-  const officialTeams = teamsWithBuiltInProfilesFromOfficialSchedule();
+  const officialTeams = await teamsWithPlayerProfilesFromOfficialSchedule();
   const teams = await enrichApiFootballTeamsWithAuxSources(
     mergeTeamLists([officialTeams, ...teamLists]),
     dataSources,

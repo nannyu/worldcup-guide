@@ -18,7 +18,7 @@ import {
   enqueueArticleTranslations,
 } from "@/lib/background/news-translation-jobs";
 import { recordIngestionRun } from "@/lib/db/queries/ingestion-runs";
-import { teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
+import { teamsWithPlayerProfilesFromOfficialSchedule } from "@/lib/team-profiles.server";
 import { morningBriefTranslationArticle } from "@/lib/translation/article-translation";
 import {
   allScheduleDayGroups,
@@ -150,7 +150,8 @@ async function refreshNewsWindow(daysAgo: number): Promise<RefreshTaskResult> {
 }
 
 async function refreshTeamRoasts(mode: "scheduled" | "initialize"): Promise<RefreshTaskResult> {
-  const snapshot = await getTeamRoastSnapshot(teamsWithBuiltInProfilesFromOfficialSchedule(), {
+  const teams = await teamsWithPlayerProfilesFromOfficialSchedule();
+  const snapshot = await getTeamRoastSnapshot(teams, {
     cacheMode: mode === "initialize" ? "refresh" : "cache-first",
   });
   return {
@@ -163,7 +164,8 @@ async function refreshTeamRoasts(mode: "scheduled" | "initialize"): Promise<Refr
 }
 
 async function refreshPlayerRoasts(mode: "scheduled" | "initialize"): Promise<RefreshTaskResult> {
-  const snapshot = await getPlayerRoastSnapshot(teamsWithBuiltInProfilesFromOfficialSchedule(), {
+  const teams = await teamsWithPlayerProfilesFromOfficialSchedule();
+  const snapshot = await getPlayerRoastSnapshot(teams, {
     cacheMode: mode === "initialize" ? "refresh" : "cache-first",
   });
   return {

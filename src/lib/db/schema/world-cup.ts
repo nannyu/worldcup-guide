@@ -40,6 +40,49 @@ export const teams = pgTable(
   }),
 );
 
+export const players = pgTable(
+  "players",
+  {
+    id: varchar("id", { length: 160 }).primaryKey(),
+    teamId: varchar("team_id", { length: 128 }).references(() => teams.id, {
+      onDelete: "cascade",
+    }),
+    teamCode: varchar("team_code", { length: 8 }).notNull(),
+    teamName: text("team_name").notNull(),
+    teamNameZh: text("team_name_zh"),
+    groupName: varchar("group_name", { length: 16 }),
+    shirtNumber: integer("shirt_number").notNull(),
+    positionCode: varchar("position_code", { length: 8 }).notNull(),
+    position: text("position").notNull(),
+    positionZh: text("position_zh").notNull(),
+    playerName: text("player_name").notNull(),
+    firstName: text("first_name"),
+    lastName: text("last_name"),
+    shirtName: text("shirt_name"),
+    nameZh: text("name_zh"),
+    dateOfBirth: date("date_of_birth"),
+    club: text("club"),
+    clubZh: text("club_zh"),
+    photoUrl: text("photo_url"),
+    avatarUrl: text("avatar_url"),
+    heightCm: integer("height_cm"),
+    caps: integer("caps"),
+    goals: integer("goals"),
+    sourceId: varchar("source_id", { length: 128 }).notNull(),
+    sourcePage: integer("source_page"),
+    matchStatus: varchar("match_status", { length: 32 }).notNull().default("unmatched"),
+    matchScore: numeric("match_score", { precision: 6, scale: 2 }),
+    raw: jsonb("raw").$type<unknown>().notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    teamCodeIdx: index("players_team_code_idx").on(table.teamCode),
+    teamPositionIdx: index("players_team_position_idx").on(table.teamCode, table.positionCode),
+    teamShirtUnique: uniqueIndex("players_team_shirt_unique").on(table.teamCode, table.shirtNumber),
+  }),
+);
+
 export const venues = pgTable(
   "venues",
   {
@@ -177,6 +220,7 @@ export const newsArticles = pgTable(
 
 export type Competition = InferSelectModel<typeof competitions>;
 export type TeamRecord = InferSelectModel<typeof teams>;
+export type PlayerRecord = InferSelectModel<typeof players>;
 export type Venue = InferSelectModel<typeof venues>;
 export type MatchRecord = InferSelectModel<typeof matches>;
 export type MarketSnapshot = InferSelectModel<typeof marketSnapshots>;

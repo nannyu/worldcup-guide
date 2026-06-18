@@ -27,7 +27,7 @@ import {
   getCanonicalNewsArticlesByIds,
   upsertCanonicalNewsArticles,
 } from "@/lib/db/queries/news-articles";
-import { teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
+import { teamsWithPlayerProfilesFromOfficialSchedule } from "@/lib/team-profiles.server";
 import {
   morningBriefTranslationArticle,
   translateArticleAndCache,
@@ -367,11 +367,11 @@ async function executeBackgroundJobPayload(type: BackgroundJobType, payload: unk
   }
 
   if (type === "team-roasts.refresh") {
-    return getTeamRoastSnapshot(teamsWithBuiltInProfilesFromOfficialSchedule(), { cacheMode: "refresh" });
+    return getTeamRoastSnapshot(await teamsWithPlayerProfilesFromOfficialSchedule(), { cacheMode: "refresh" });
   }
 
   if (type === "player-roasts.refresh") {
-    return getPlayerRoastSnapshot(teamsWithBuiltInProfilesFromOfficialSchedule(), { cacheMode: "refresh" });
+    return getPlayerRoastSnapshot(await teamsWithPlayerProfilesFromOfficialSchedule(), { cacheMode: "refresh" });
   }
 
   if (type === "refresh.full") {
