@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
+import { CommentThread } from "@/components/comments/comment-thread";
+import { displayMatchEventPlayerName } from "@/lib/player-names";
 import {
   allMatches,
   allScheduleDayGroups,
@@ -88,7 +90,7 @@ function latestEventText(match: Match, locale: string): string {
         : event.type === "red"
           ? tr(locale, "红牌", "Red")
           : tr(locale, "黄牌", "Yellow");
-  return `${event.minute}' ${label} · ${event.player}`;
+  return `${event.minute}' ${label} · ${displayMatchEventPlayerName(match, event, locale)}`;
 }
 
 function statValue(match: Match, type: string, side: "home" | "away"): string {
@@ -310,9 +312,8 @@ function MatchRow({ match, locale, matchNo }: { match: Match; locale: string; ma
   const hasOdds = match.oddsImpliedHome > 0 || match.oddsImpliedDraw > 0 || match.oddsImpliedAway > 0;
   const rich = hasRichMatchData(match);
   return (
-    <Link
-      href={`/match/${match.id}`}
-      className="block border border-[#241A14] bg-[#FAF7F0] px-3 py-2 transition-colors hover:bg-white"
+    <article
+      className="border border-[#241A14] bg-[#FAF7F0] px-3 py-2"
       style={{ boxShadow: "2px 2px 0 0 #241A14" }}
     >
       <div className="flex flex-wrap items-center gap-2 text-sm text-[#241A14]">
@@ -373,7 +374,13 @@ function MatchRow({ match, locale, matchNo }: { match: Match; locale: string; ma
           </div>
         </div>
       )}
-    </Link>
+      <div className="mt-2 flex justify-end border-t border-dashed border-[#241A14]/25 pt-2">
+        <Link href={`/match/${match.id}`} className="text-[11px] font-black text-[#D36E52] hover:underline">
+          {tr(locale, "完整赛报 →", "Full report →")}
+        </Link>
+      </div>
+      <CommentThread targetType="match" targetId={match.id} />
+    </article>
   );
 }
 

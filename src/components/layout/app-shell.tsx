@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { BottomNav, SidebarNav } from "@/components/layout/nav";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { UserBadge } from "@/components/user-profile/user-badge";
 import { AnalyticsTracker } from "@/components/analytics/analytics-tracker";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -23,6 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex justify-end gap-1 px-4 pt-3 md:px-6">
             <ThemeToggle />
             <LanguageSwitcher />
+            <UserBadge />
           </div>
           {children}
         </main>

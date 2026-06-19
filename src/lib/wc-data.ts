@@ -386,6 +386,7 @@ export interface PlayerProfile {
 export interface TeamInjury {
   id: string;
   playerName: string;
+  playerNameZh?: string;
   playerId?: number;
   type?: string;
   reason?: string;

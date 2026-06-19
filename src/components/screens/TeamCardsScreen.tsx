@@ -3,6 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import { CommentThread } from "@/components/comments/comment-thread";
+import {
+  displayPlayerProfileName,
+  displayTeamInjuryPlayerName,
+  secondaryPlayerProfileInfo,
+} from "@/lib/player-names";
 import { teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
 import { type PlayerProfile, type PlayerRoastItem, type Team, type TeamRoastItem } from "@/lib/wc-data";
 import { groupLabel, isZh, teamName, tr } from "@/lib/i18n/content";
@@ -32,14 +38,11 @@ function HotStars({ count }: { count: number }) {
 }
 
 function playerPrimaryName(player: PlayerProfile, locale: string): string {
-  return isZh(locale) && player.nameZh ? player.nameZh : player.name;
+  return displayPlayerProfileName(player, locale);
 }
 
 function playerSecondaryInfo(player: PlayerProfile, locale: string): string {
-  return [
-    isZh(locale) && player.nameZh ? player.name : "",
-    player.position,
-  ].filter(Boolean).join(" · ");
+  return secondaryPlayerProfileInfo(player, locale);
 }
 
 function playerMarker(player: PlayerProfile): string {
@@ -250,6 +253,7 @@ function TeamCard({ team, onClick, locale }: { team: Team; onClick: () => void; 
       <div className="mt-2.5 text-right">
         <span className="text-[11px] font-bold text-[#D36E52]">{tr(locale, "点击速成聊天素材 →", "Open quick notes →")}</span>
       </div>
+      <CommentThread targetType="team" targetId={team.code || team.id} />
     </motion.div>
   );
 }
@@ -426,7 +430,7 @@ function TeamDetailModal({
               <div className="space-y-2">
                 {team.injuries?.slice(0, 8).map((injury) => (
                   <div key={injury.id} className="border border-[#241A14] bg-[#F5F1E8] p-2 text-xs text-[#5C524C]">
-                    <div className="font-bold text-[#241A14]">{injury.playerName}</div>
+                    <div className="font-bold text-[#241A14]">{displayTeamInjuryPlayerName(team, injury, locale)}</div>
                     <div>{[injury.type, injury.reason, injury.fixtureDate ? new Date(injury.fixtureDate).toLocaleDateString(locale) : ""].filter(Boolean).join(" · ") || tr(locale, "伤停原因待确认", "Reason pending")}</div>
                   </div>
                 ))}

@@ -5,10 +5,13 @@ import { motion } from "framer-motion";
 import { History } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
+import { CommentThread } from "@/components/comments/comment-thread";
+import { displayMatchEventPlayerName } from "@/lib/player-names";
 import {
   browserScheduleDateQuery,
   type GossipItem,
   type Match,
+  type MatchEvent,
   type MorningBrief,
   type NewsArticle,
 } from "@/lib/wc-data";
@@ -99,6 +102,25 @@ function hasMatchStarted(match: Match, now: Date): boolean {
   if (match.status === "live" || match.status === "finished") return true;
   const kickoff = matchKickoffDate(match);
   return kickoff ? now.getTime() >= kickoff.getTime() : false;
+}
+
+function morningEventDescription(match: Match, event: MatchEvent, locale: string): string | undefined {
+  if (event.type === "subst" && event.assistPlayer) {
+    return tr(
+      locale,
+      `换上 ${displayMatchEventPlayerName(match, event, locale, "assist")}，换下 ${displayMatchEventPlayerName(match, event, locale)}`,
+      event.description || `On: ${event.assistPlayer}`,
+    );
+  }
+  if (event.type === "goal" && event.assistPlayer) {
+    const detail = event.description?.split(" · ")[0] || "Normal Goal";
+    return tr(
+      locale,
+      `${detail} · 助攻：${displayMatchEventPlayerName(match, event, locale, "assist")}`,
+      event.description || `Assist: ${event.assistPlayer}`,
+    );
+  }
+  return event.description;
 }
 
 function probabilityPreview(match: Match, locale: string): string | undefined {
@@ -284,13 +306,14 @@ function MatchResultCard({ match, locale, now = new Date() }: { match: Match; lo
           >
             {eventCount > 0 ? match.events?.map((ev, i) => {
               const tag = tagLabels[ev.type] || tagLabels.goal;
+              const description = morningEventDescription(match, ev, locale);
               return (
                 <div key={i} className="flex items-center gap-2 text-xs">
                   <span className="w-10 text-right text-[#9E948C] font-mono">{ev.minute}&apos;</span>
                   <span className={`px-1.5 py-0.5 text-[10px] font-bold ${tag.color}`}>{tag.label}</span>
                   <span className="text-[#5C524C]">
-                    {ev.player}
-                    {ev.description ? `（${ev.description}）` : ""}
+                    {displayMatchEventPlayerName(match, ev, locale)}
+                    {description ? `（${description}）` : ""}
                   </span>
                 </div>
               );
@@ -461,6 +484,7 @@ function NewsCard({ item, locale }: { item: NewsArticle; locale: string }) {
         {translationLabel && <span>· {translationLabel}</span>}
         {item.bodySource && <span>· {item.bodySource === "original-page" || item.bodySource === "provider-api" ? tr(locale, "已抓全文", "full text") : tr(locale, "正文预览", "body preview")}</span>}
       </div>
+      <CommentThread targetType="news" targetId={item.id} />
     </motion.div>
   );
 }

@@ -16,6 +16,33 @@
     "delete": "删除",
     "userId": "用户 ID"
   },
+  "auth": {
+    "eyebrow": "账号系统",
+    "loginRegister": "登录/注册",
+    "loginTitle": "登录账号",
+    "registerTitle": "注册账号",
+    "signUp": "注册",
+    "createAccount": "创建账号",
+    "email": "邮箱",
+    "password": "密码",
+    "genericError": "操作失败，请稍后再试"
+  },
+  "settings": {
+    "eyebrow": "个人设置",
+    "title": "用户设置",
+    "profile": "个人资料",
+    "name": "昵称",
+    "bio": "简介",
+    "favoriteTeams": "支持球队",
+    "favoritePlayers": "支持球星",
+    "searchPlayers": "搜索球星",
+    "password": "修改密码",
+    "currentPassword": "当前密码",
+    "newPassword": "新密码",
+    "changePassword": "保存新密码",
+    "saved": "设置已保存",
+    "passwordSaved": "密码已修改"
+  },
   "language": {
     "label": "语言",
     "triggerLabel": "语言：{{language}}",
