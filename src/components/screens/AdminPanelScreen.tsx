@@ -32,6 +32,77 @@ type SourceHealthStatus = {
   activityMode?: string;
 };
 
+type AnalyticsReport = {
+  generatedAt: string;
+  range: {
+    from: string;
+    to: string;
+    days: number;
+  };
+  storage: "database" | "disabled" | "unavailable";
+  totals: {
+    events: number;
+    pageViews: number;
+    clicks: number;
+    sessions: number;
+    uniqueVisitors: number;
+    uniqueIps: number;
+    averageDurationSeconds: number;
+    totalDurationSeconds: number;
+  };
+  trends: Array<{
+    bucket: string;
+    pageViews: number;
+    clicks: number;
+    uniqueVisitors: number;
+    averageDurationSeconds: number;
+  }>;
+  features: Array<{
+    feature: string;
+    pageViews: number;
+    clicks: number;
+    uniqueVisitors: number;
+    averageDurationSeconds: number;
+    totalDurationSeconds: number;
+  }>;
+  pages: Array<{
+    path: string;
+    feature: string;
+    pageViews: number;
+    clicks: number;
+    uniqueVisitors: number;
+    averageDurationSeconds: number;
+    totalDurationSeconds: number;
+  }>;
+  clicks: Array<{
+    targetLabel: string;
+    targetType: string;
+    path: string;
+    feature: string;
+    targetHref?: string | null;
+    clicks: number;
+    uniqueVisitors: number;
+  }>;
+  ips: Array<{
+    ipAddress: string;
+    pageViews: number;
+    clicks: number;
+    sessions: number;
+    uniqueVisitors: number;
+    lastSeenAt: string;
+  }>;
+  recentEvents: Array<{
+    eventType: string;
+    feature: string;
+    path: string;
+    targetLabel?: string | null;
+    targetType?: string | null;
+    ipAddress?: string | null;
+    durationSeconds?: number | null;
+    occurredAt: string;
+  }>;
+};
+
 const dataSourceTypes: DataSourceType[] = [
   "schedule",
   "scores",
@@ -74,6 +145,8 @@ const aiProviderTypes: AiProviderType[] = [
   "bigmodel",
   "custom",
 ];
+
+const analyticsRangeOptions = [1, 7, 30, 90];
 
 function createDataSource(): DataSourceConfig {
   const id = `source-${Date.now()}`;
@@ -166,6 +239,35 @@ function formatDateTime(value: string | undefined) {
   return date.toLocaleString("zh-CN", { hour12: false });
 }
 
+function formatNumber(value: number | undefined): string {
+  return new Intl.NumberFormat("zh-CN").format(Math.max(0, Math.round(value || 0)));
+}
+
+function formatDuration(value: number | undefined): string {
+  const seconds = Math.max(0, value || 0);
+  if (seconds < 60) return `${seconds >= 10 ? Math.round(seconds) : seconds.toFixed(1)}秒`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}分${Math.round(seconds % 60)}秒`;
+  return `${(seconds / 3600).toFixed(1)}小时`;
+}
+
+function eventTypeLabel(value: string): string {
+  if (value === "page_view") return "访问";
+  if (value === "page_leave") return "停留";
+  if (value === "click") return "点击";
+  return value;
+}
+
+async function fetchAnalyticsReport(days: number): Promise<AnalyticsReport | null> {
+  try {
+    const res = await fetch(`/api/admin/analytics?days=${days}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return (data.report || null) as AnalyticsReport | null;
+  } catch {
+    return null;
+  }
+}
+
 function healthLabel(health: SourceHealthStatus["health"]) {
   if (health === "healthy") return "健康";
   if (health === "stale") return "待刷新";
@@ -201,6 +303,259 @@ function SectionHeader({
       </div>
       {action}
     </div>
+  );
+}
+
+function MetricTile({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint: string;
+}) {
+  return (
+    <div className="border border-[#241A14] bg-[#F5F1E8] p-3">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#9E948C]" style={{ fontFamily: "var(--font-heading)" }}>
+        {label}
+      </p>
+      <p className="mt-1 text-2xl font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
+        {value}
+      </p>
+      <p className="mt-1 text-[11px] leading-relaxed text-[#5C524C]">{hint}</p>
+    </div>
+  );
+}
+
+function TrendBars({ report }: { report: AnalyticsReport }) {
+  const points = report.trends.slice(-32);
+  const maxValue = Math.max(1, ...points.map((point) => Math.max(point.pageViews, point.clicks)));
+  if (!points.length) {
+    return <div className="border border-[#241A14] bg-[#F5F1E8] p-3 text-xs text-[#9E948C]">暂无趋势数据。</div>;
+  }
+
+  return (
+    <div className="border border-[#241A14] bg-[#F5F1E8] p-3">
+      <div className="mb-2 flex items-center justify-between text-[11px] font-bold text-[#5C524C]">
+        <span>访问/点击趋势</span>
+        <span>PV 橙色 · 点击绿色</span>
+      </div>
+      <div className="flex h-28 items-end gap-1">
+        {points.map((point) => {
+          const label = formatDateTime(point.bucket);
+          return (
+            <div key={point.bucket} className="flex min-w-0 flex-1 items-end gap-[2px]" title={`${label} PV ${point.pageViews} / 点击 ${point.clicks}`}>
+              <span
+                className="w-1/2 border border-[#241A14] bg-[#D36E52]"
+                style={{ height: `${Math.max(6, (point.pageViews / maxValue) * 100)}%` }}
+              />
+              <span
+                className="w-1/2 border border-[#241A14] bg-[#9CB48A]"
+                style={{ height: `${Math.max(6, (point.clicks / maxValue) * 100)}%` }}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function AnalyticsReportSection({
+  report,
+  loading,
+  rangeDays,
+  onRangeChange,
+  onRefresh,
+}: {
+  report: AnalyticsReport | null;
+  loading: boolean;
+  rangeDays: number;
+  onRangeChange: (days: number) => void;
+  onRefresh: () => void;
+}) {
+  const totals = report?.totals;
+
+  return (
+    <section className="space-y-4 border-2 border-[#241A14] bg-[#FAF7F0] p-4" style={{ boxShadow: "4px 4px 0 0 #241A14" }}>
+      <SectionHeader
+        title="访问统计报告"
+        desc="统计全站 PV、UV、访问 IP、页面/功能停留时间、点击目标和最近事件。前台页面自动埋点，报表每分钟刷新。"
+        action={
+          <div className="flex shrink-0 items-center gap-2">
+            <select
+              value={rangeDays}
+              onChange={(event) => onRangeChange(Number(event.target.value))}
+              className="border border-[#241A14] bg-[#F5F1E8] px-2 py-1 text-xs font-bold text-[#241A14]"
+              aria-label="统计周期"
+            >
+              {analyticsRangeOptions.map((days) => (
+                <option key={days} value={days}>
+                  近 {days} 天
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={loading}
+              className="border border-[#241A14] bg-[#241A14] px-3 py-1 text-xs font-bold text-white hover:bg-[#D36E52] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading ? "刷新中" : "刷新"}
+            </button>
+          </div>
+        }
+      />
+
+      {!report && (
+        <div className="border border-[#241A14] bg-[#F5F1E8] p-3 text-xs text-[#9E948C]">
+          {loading ? "加载访问统计..." : "暂无访问统计报告。"}
+        </div>
+      )}
+
+      {report?.storage === "disabled" && (
+        <div className="border border-[#C79A4B] bg-[#C79A4B]/10 p-3 text-xs text-[#5C524C]">
+          当前未配置 `DATABASE_URL`，埋点 API 会返回成功但不写入统计数据。配置数据库并执行迁移后开始记录。
+        </div>
+      )}
+
+      {report?.storage === "unavailable" && (
+        <div className="border border-[#C79A4B] bg-[#C79A4B]/10 p-3 text-xs text-[#5C524C]">
+          统计表暂不可用。请执行 `bun run db:migrate` 应用 `0005_analytics_events` 后刷新报表。
+        </div>
+      )}
+
+      {report && (
+        <>
+          <div className="grid gap-3 md:grid-cols-4">
+            <MetricTile label="PV" value={formatNumber(totals?.pageViews)} hint={`事件总量 ${formatNumber(totals?.events)}`} />
+            <MetricTile label="UV" value={formatNumber(totals?.uniqueVisitors)} hint={`会话 ${formatNumber(totals?.sessions)}`} />
+            <MetricTile label="访问 IP" value={formatNumber(totals?.uniqueIps)} hint="按服务端请求 IP 去重" />
+            <MetricTile label="平均停留" value={formatDuration(totals?.averageDurationSeconds)} hint={`累计 ${formatDuration(totals?.totalDurationSeconds)}`} />
+          </div>
+
+          <TrendBars report={report} />
+
+          <div className="grid gap-3 lg:grid-cols-2">
+            <div className="space-y-2 border border-[#241A14] bg-[#F5F1E8] p-3">
+              <h3 className="text-sm font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>功能模块排行</h3>
+              <div className="space-y-2">
+                {report.features.length === 0 && <p className="text-xs text-[#9E948C]">暂无功能数据。</p>}
+                {report.features.map((item) => (
+                  <div key={item.feature} className="grid grid-cols-[1fr_auto] gap-3 border-b border-[#241A14]/20 pb-2 text-xs last:border-b-0 last:pb-0">
+                    <div>
+                      <p className="font-black text-[#241A14]">{item.feature}</p>
+                      <p className="mt-0.5 text-[11px] text-[#5C524C]">
+                        PV {formatNumber(item.pageViews)} · 点击 {formatNumber(item.clicks)} · UV {formatNumber(item.uniqueVisitors)}
+                      </p>
+                    </div>
+                    <div className="text-right text-[11px] text-[#5C524C]">
+                      <p>均停 {formatDuration(item.averageDurationSeconds)}</p>
+                      <p>累计 {formatDuration(item.totalDurationSeconds)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2 border border-[#241A14] bg-[#F5F1E8] p-3">
+              <h3 className="text-sm font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>点击目标排行</h3>
+              <div className="space-y-2">
+                {report.clicks.length === 0 && <p className="text-xs text-[#9E948C]">暂无点击数据。</p>}
+                {report.clicks.slice(0, 10).map((item) => (
+                  <div key={`${item.path}:${item.targetType}:${item.targetLabel}`} className="grid grid-cols-[1fr_auto] gap-3 border-b border-[#241A14]/20 pb-2 text-xs last:border-b-0 last:pb-0">
+                    <div className="min-w-0">
+                      <p className="truncate font-black text-[#241A14]">{item.targetLabel}</p>
+                      <p className="mt-0.5 truncate text-[11px] text-[#5C524C]">{item.feature} · {item.path}</p>
+                    </div>
+                    <div className="text-right text-[11px] text-[#5C524C]">
+                      <p className="font-black text-[#D36E52]">{formatNumber(item.clicks)} 次</p>
+                      <p>UV {formatNumber(item.uniqueVisitors)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-2">
+            <div className="overflow-x-auto border border-[#241A14] bg-[#F5F1E8] p-3">
+              <h3 className="mb-2 text-sm font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>页面停留排行</h3>
+              <table className="w-full min-w-[560px] text-left text-[11px]">
+                <thead className="border-b border-[#241A14] text-[#9E948C]">
+                  <tr>
+                    <th className="py-1 pr-3">页面</th>
+                    <th className="py-1 pr-3">PV</th>
+                    <th className="py-1 pr-3">点击</th>
+                    <th className="py-1 pr-3">均停</th>
+                    <th className="py-1">累计</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#241A14]/15 text-[#5C524C]">
+                  {report.pages.slice(0, 12).map((item) => (
+                    <tr key={item.path}>
+                      <td className="max-w-[220px] truncate py-1.5 pr-3 font-bold text-[#241A14]">{item.path}</td>
+                      <td className="py-1.5 pr-3">{formatNumber(item.pageViews)}</td>
+                      <td className="py-1.5 pr-3">{formatNumber(item.clicks)}</td>
+                      <td className="py-1.5 pr-3">{formatDuration(item.averageDurationSeconds)}</td>
+                      <td className="py-1.5">{formatDuration(item.totalDurationSeconds)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="overflow-x-auto border border-[#241A14] bg-[#F5F1E8] p-3">
+              <h3 className="mb-2 text-sm font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>访问 IP</h3>
+              <table className="w-full min-w-[520px] text-left text-[11px]">
+                <thead className="border-b border-[#241A14] text-[#9E948C]">
+                  <tr>
+                    <th className="py-1 pr-3">IP</th>
+                    <th className="py-1 pr-3">PV</th>
+                    <th className="py-1 pr-3">点击</th>
+                    <th className="py-1 pr-3">会话</th>
+                    <th className="py-1">最近访问</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#241A14]/15 text-[#5C524C]">
+                  {report.ips.slice(0, 12).map((item) => (
+                    <tr key={item.ipAddress}>
+                      <td className="py-1.5 pr-3 font-bold text-[#241A14]">{item.ipAddress}</td>
+                      <td className="py-1.5 pr-3">{formatNumber(item.pageViews)}</td>
+                      <td className="py-1.5 pr-3">{formatNumber(item.clicks)}</td>
+                      <td className="py-1.5 pr-3">{formatNumber(item.sessions)}</td>
+                      <td className="py-1.5">{formatDateTime(item.lastSeenAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="border border-[#241A14] bg-[#F5F1E8] p-3">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>最近事件</h3>
+              <p className="text-[11px] text-[#9E948C]">生成于 {formatDateTime(report.generatedAt)}</p>
+            </div>
+            <div className="grid gap-1 text-[11px] text-[#5C524C]">
+              {report.recentEvents.length === 0 && <p className="text-xs text-[#9E948C]">暂无事件。</p>}
+              {report.recentEvents.slice(0, 12).map((item, index) => (
+                <div key={`${item.occurredAt}:${index}`} className="grid gap-1 border-b border-[#241A14]/15 py-1.5 last:border-b-0 md:grid-cols-[96px_1fr_128px]">
+                  <span className="font-bold text-[#241A14]">{eventTypeLabel(item.eventType)}</span>
+                  <span className="min-w-0 truncate">
+                    {item.feature} · {item.path}
+                    {item.targetLabel ? ` · ${item.targetLabel}` : ""}
+                    {item.durationSeconds ? ` · ${formatDuration(item.durationSeconds)}` : ""}
+                  </span>
+                  <span className="text-[#9E948C] md:text-right">{formatDateTime(item.occurredAt)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </section>
   );
 }
 
@@ -465,6 +820,9 @@ export function AdminPanelScreen() {
   const [session, setSession] = useState<SessionState | null>(null);
   const [config, setConfig] = useState<AdminConfig | null>(null);
   const [sourceHealth, setSourceHealth] = useState<Record<string, SourceHealthStatus>>({});
+  const [analytics, setAnalytics] = useState<AnalyticsReport | null>(null);
+  const [analyticsRangeDays, setAnalyticsRangeDays] = useState(7);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -536,6 +894,33 @@ export function AdminPanelScreen() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!session?.authenticated) return;
+    let cancelled = false;
+
+    async function syncAnalytics() {
+      setAnalyticsLoading(true);
+      const report = await fetchAnalyticsReport(analyticsRangeDays);
+      if (cancelled) return;
+      setAnalytics(report);
+      setAnalyticsLoading(false);
+    }
+
+    void syncAnalytics();
+    const timer = window.setInterval(() => void syncAnalytics(), 60_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [session?.authenticated, analyticsRangeDays]);
+
+  async function refreshAnalytics() {
+    setAnalyticsLoading(true);
+    const report = await fetchAnalyticsReport(analyticsRangeDays);
+    setAnalytics(report);
+    setAnalyticsLoading(false);
+  }
+
   async function saveConfig() {
     if (!config) return;
     setSaving(true);
@@ -559,6 +944,7 @@ export function AdminPanelScreen() {
   async function logout() {
     await fetch("/api/admin/logout", { method: "POST" });
     setConfig(null);
+    setAnalytics(null);
     await loadSession();
   }
 
@@ -601,6 +987,14 @@ export function AdminPanelScreen() {
             当前使用开发默认密码。部署前请设置 `ADMIN_PASSWORD` 和 `ADMIN_SESSION_SECRET`。
           </div>
         )}
+
+        <AnalyticsReportSection
+          report={analytics}
+          loading={analyticsLoading}
+          rangeDays={analyticsRangeDays}
+          onRangeChange={setAnalyticsRangeDays}
+          onRefresh={() => void refreshAnalytics()}
+        />
 
         <section className="space-y-4 border-2 border-[#241A14] bg-[#FAF7F0] p-4" style={{ boxShadow: "4px 4px 0 0 #241A14" }}>
           <SectionHeader
