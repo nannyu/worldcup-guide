@@ -4,7 +4,13 @@ import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { findBuiltInPlayerProfile } from "@/lib/team-profiles";
+import {
+  displayLineupPlayerName,
+  displayMatchEventPlayerName,
+  enrichedLineupPlayer,
+  samePlayer,
+  secondaryLineupPlayerName,
+} from "@/lib/player-names";
 import {
   allMatches,
   browserScheduleDateQuery,
@@ -260,37 +266,12 @@ function lineupRows(lineup: MatchLineup): MatchLineupPlayer[][] {
   return rows.filter((row) => row.length);
 }
 
-function normalizePlayerLookup(input: string | undefined): string {
-  return String(input || "")
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, "");
-}
-
-function enrichedPlayer(lineup: MatchLineup, player: MatchLineupPlayer): MatchLineupPlayer {
-  const profile = findBuiltInPlayerProfile(lineup.teamName, player);
-  return {
-    ...player,
-    nameZh: profile ? profile.nameZh : player.nameZh,
-    fullName: profile ? profile.name : player.fullName,
-  };
-}
-
 function displayPlayerName(player: MatchLineupPlayer, lineup: MatchLineup, locale: string): string {
-  const enriched = enrichedPlayer(lineup, player);
-  return isZh(locale)
-    ? enriched.nameZh || enriched.fullName || enriched.name
-    : enriched.fullName || enriched.name;
+  return displayLineupPlayerName(player, lineup, locale);
 }
 
 function secondaryPlayerName(player: MatchLineupPlayer, lineup: MatchLineup, locale: string): string | undefined {
-  const enriched = enrichedPlayer(lineup, player);
-  const english = enriched.fullName || enriched.name;
-  if (!isZh(locale) || !enriched.nameZh || normalizePlayerLookup(enriched.nameZh) === normalizePlayerLookup(english)) {
-    return undefined;
-  }
-  return english;
+  return secondaryLineupPlayerName(player, lineup, locale);
 }
 
 function positionLabel(position: string | undefined, locale: string): string {
@@ -472,14 +453,8 @@ function MatchInsightSummary({ match, locale }: { match: Match; locale: string }
   );
 }
 
-function samePlayer(left: MatchLineupPlayer, eventName: string | undefined, eventId?: number): boolean {
-  if (eventId && left.id && eventId === left.id) return true;
-  const candidates = [left.name, left.fullName, left.nameZh].map(normalizePlayerLookup).filter(Boolean);
-  return candidates.includes(normalizePlayerLookup(eventName));
-}
-
 function playerEvents(match: Match, lineup: MatchLineup, player: MatchLineupPlayer): MatchEvent[] {
-  const enriched = enrichedPlayer(lineup, player);
+  const enriched = enrichedLineupPlayer(lineup, player);
   return (match.events || []).filter((event) =>
     event.team === lineup.team
     && (
@@ -500,7 +475,7 @@ function playerEventChips(events: MatchEvent[], locale: string): string[] {
 }
 
 function substitutionMinute(match: Match, lineup: MatchLineup, player: MatchLineupPlayer): number | undefined {
-  const enriched = enrichedPlayer(lineup, player);
+  const enriched = enrichedLineupPlayer(lineup, player);
   return (match.events || []).find((event) =>
     event.type === "subst"
     && event.team === lineup.team
@@ -713,14 +688,7 @@ function CombinedLineupPitch({ match, lineups, locale }: { match?: Match; lineup
 }
 
 function eventPlayerName(match: Match, event: MatchEvent, locale: string, role: "player" | "assist" = "player"): string {
-  const lineup = match.lineups?.find((item) => item.team === event.team);
-  const rawName = role === "assist" ? event.assistPlayer : event.player;
-  const rawId = role === "assist" ? event.assistPlayerId : event.playerId;
-  if (!lineup) return rawName || "";
-  const player = [...lineup.startXI, ...lineup.substitutes]
-    .map((item) => enrichedPlayer(lineup, item))
-    .find((item) => samePlayer(item, rawName, rawId));
-  return player ? displayPlayerName(player, lineup, locale) : rawName || "";
+  return displayMatchEventPlayerName(match, event, locale, role);
 }
 
 function eventDescription(match: Match, event: MatchEvent, locale: string): string | undefined {

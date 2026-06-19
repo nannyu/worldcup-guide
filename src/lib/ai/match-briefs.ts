@@ -1,6 +1,7 @@
 import type { AiProviderConfig } from "@/lib/admin/config";
 import { callAnthropicMessagesJson } from "@/lib/ai/anthropic-messages";
 import { runAiTaskQueue, type AiTask } from "@/lib/ai/task-orchestrator";
+import { displayMatchEventPlayerName } from "@/lib/player-names";
 import type { Match } from "@/lib/wc-data";
 
 const MATCH_BRIEF_AI_TIMEOUT_MS = Number(process.env.MORNING_MATCH_BRIEF_AI_TIMEOUT_MS) || 60_000;
@@ -91,6 +92,7 @@ function buildPrompt(match: Match): string {
       minute: event.minute,
       type: event.type,
       player: event.player,
+      playerZh: displayMatchEventPlayerName(match, event, "zh-CN"),
       team: event.team,
       description: event.description,
     })),

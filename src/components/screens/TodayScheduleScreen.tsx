@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { CommentThread } from "@/components/comments/comment-thread";
+import { displayMatchEventPlayerName } from "@/lib/player-names";
 import {
   allMatches,
   allScheduleDayGroups,
@@ -89,7 +90,7 @@ function latestEventText(match: Match, locale: string): string {
         : event.type === "red"
           ? tr(locale, "红牌", "Red")
           : tr(locale, "黄牌", "Yellow");
-  return `${event.minute}' ${label} · ${event.player}`;
+  return `${event.minute}' ${label} · ${displayMatchEventPlayerName(match, event, locale)}`;
 }
 
 function statValue(match: Match, type: string, side: "home" | "away"): string {

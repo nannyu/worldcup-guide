@@ -1,5 +1,6 @@
 import type { AiProviderConfig } from "@/lib/admin/config";
 import { callAnthropicMessagesJson } from "@/lib/ai/anthropic-messages";
+import { displayMatchEventPlayerName } from "@/lib/player-names";
 import type { Match, MorningQuote, NewsArticle } from "@/lib/wc-data";
 
 const MORNING_QUOTE_AI_TIMEOUT_MS = Number(process.env.MORNING_QUOTE_AI_TIMEOUT_MS) || 45_000;
@@ -63,6 +64,7 @@ function matchFacts(match: Match) {
       minute: event.minute,
       type: event.type,
       player: event.player,
+      playerZh: displayMatchEventPlayerName(match, event, "zh-CN"),
       team: event.team,
       description: event.description,
     })),

@@ -1975,18 +1975,26 @@ function transformApiFootballStandings(data: ApiFootballStandingsResponse): Map<
 function transformApiFootballSquads(data: ApiFootballSquadResponse): Map<string, Team["roster"]> {
   const byKey = new Map<string, Team["roster"]>();
   for (const item of data.response || []) {
+    const teamName = item.team?.name || "";
     const roster = (item.players || [])
       .filter((player) => player.name)
-      .map((player) => ({
-        id: `api-football-player-${player.id || `${item.team?.id}-${player.name}`}`,
-        name: player.name || "",
-        shirtNumber: player.number,
-        position: player.position || "",
-        age: player.age,
-        photoUrl: player.photo,
-        avatarUrl: player.photo,
-        intro: "API-Football Pro squad profile.",
-      }));
+      .map((player) => {
+        const profile = findBuiltInPlayerProfile(teamName, {
+          number: player.number,
+          name: player.name,
+        });
+        return {
+          id: `api-football-player-${player.id || `${item.team?.id}-${player.name}`}`,
+          name: player.name || profile?.name || "",
+          nameZh: profile?.nameZh,
+          shirtNumber: player.number,
+          position: player.position || "",
+          age: player.age,
+          photoUrl: player.photo,
+          avatarUrl: player.photo,
+          intro: "API-Football Pro squad profile.",
+        };
+      });
     for (const key of teamMergeKeys(item.team?.id, item.team?.name)) byKey.set(key, roster);
   }
   return byKey;
@@ -1996,9 +2004,13 @@ function transformApiFootballInjuries(data: ApiFootballInjuryResponse): Map<stri
   const byKey = new Map<string, TeamInjury[]>();
   for (const item of data.response || []) {
     if (!item.player?.name) continue;
+    const profile = findBuiltInPlayerProfile(item.team?.name, {
+      name: item.player.name,
+    });
     const injury: TeamInjury = {
       id: `api-football-injury-${item.fixture?.id || "fixture"}-${item.player.id || item.player.name}`,
       playerName: item.player.name,
+      playerNameZh: profile?.nameZh,
       playerId: item.player.id,
       type: item.player.type,
       reason: item.player.reason,
