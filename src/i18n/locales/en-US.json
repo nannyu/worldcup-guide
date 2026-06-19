@@ -16,6 +16,33 @@
     "delete": "Delete",
     "userId": "User ID"
   },
+  "auth": {
+    "eyebrow": "Account",
+    "loginRegister": "Sign in / Join",
+    "loginTitle": "Sign in",
+    "registerTitle": "Create account",
+    "signUp": "Join",
+    "createAccount": "Create account",
+    "email": "Email",
+    "password": "Password",
+    "genericError": "Something went wrong. Please try again."
+  },
+  "settings": {
+    "eyebrow": "Profile",
+    "title": "User settings",
+    "profile": "Profile",
+    "name": "Nickname",
+    "bio": "Bio",
+    "favoriteTeams": "Supported teams",
+    "favoritePlayers": "Supported stars",
+    "searchPlayers": "Search stars",
+    "password": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "changePassword": "Save new password",
+    "saved": "Settings saved",
+    "passwordSaved": "Password updated"
+  },
   "language": {
     "label": "Language",
     "triggerLabel": "Language: {{language}}",

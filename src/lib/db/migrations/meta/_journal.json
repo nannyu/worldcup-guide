@@ -36,6 +36,27 @@
       "when": 1781172000000,
       "tag": "0004_match_canonical_payload",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1781840400000,
+      "tag": "0005_local_user_accounts",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781863200000,
+      "tag": "0006_comments",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1781866800000,
+      "tag": "0007_comment_replies_ai",
+      "breakpoints": true
     }
   ]
 }

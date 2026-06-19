@@ -5,3 +5,4 @@ export * from "./background-jobs";
 export * from "./ingestion-runs";
 export * from "./market-snapshots";
 export * from "./news-articles";
+export * from "./comments";

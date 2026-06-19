@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { History } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
+import { CommentThread } from "@/components/comments/comment-thread";
 import {
   browserScheduleDateQuery,
   type GossipItem,
@@ -461,6 +462,7 @@ function NewsCard({ item, locale }: { item: NewsArticle; locale: string }) {
         {translationLabel && <span>· {translationLabel}</span>}
         {item.bodySource && <span>· {item.bodySource === "original-page" || item.bodySource === "provider-api" ? tr(locale, "已抓全文", "full text") : tr(locale, "正文预览", "body preview")}</span>}
       </div>
+      <CommentThread targetType="news" targetId={item.id} />
     </motion.div>
   );
 }
