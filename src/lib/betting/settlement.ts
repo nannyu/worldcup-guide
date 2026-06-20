@@ -36,8 +36,6 @@ export async function resolveMatchIdFromMarket(marketId: string): Promise<string
 
 type BetOutcome = "win" | "lose" | "push";
 
-const MAX_PAYOUT_MULTIPLIER = 10;
-
 export async function settleMatchBets(matchId: string): Promise<SettlementResult> {
   const [matchRow] = await getDb()
     .select({
@@ -72,10 +70,7 @@ export async function settleMatchBets(matchId: string): Promise<SettlementResult
 
     if (outcome === "win") {
       won = true;
-      payout = Math.min(
-        Math.floor(amount * Number(bet.oddsAtBet)),
-        amount * MAX_PAYOUT_MULTIPLIER,
-      );
+      payout = Math.floor(amount * Number(bet.oddsAtBet));
     } else if (outcome === "push") {
       // Refund original amount on push
       payout = amount;
