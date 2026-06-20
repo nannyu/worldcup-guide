@@ -6,6 +6,7 @@ import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { AnalyticsTracker } from "@/components/analytics/analytics-tracker";
 import { UserSyncEffect } from "@/components/user-profile/user-sync-effect";
+import { UserBadge } from "@/components/user-profile/user-badge";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -22,9 +23,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-svh">
         <SidebarNav />
         <main className="flex-1 flex flex-col min-w-0 pb-[72px] md:pb-0">
-          <div className="flex justify-end gap-1 px-4 pt-3 md:px-6">
+          <div className="flex justify-end items-center gap-2 px-4 pt-3 md:px-6">
             <ThemeToggle />
             <LanguageSwitcher />
+            <UserBadge />
           </div>
           {children}
         </main>

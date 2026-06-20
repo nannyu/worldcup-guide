@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Coins, Loader2, Plus, X, Check } from "lucide-react";
 import { request } from "@/lib/api/request";
+import { auth } from "@eazo/sdk";
+import { useEazo } from "@eazo/sdk/react";
 
 type Locale = "zh" | "en" | string;
 
@@ -162,6 +164,7 @@ const t = {
 } as const;
 
 export function BetTab({ locale }: { locale: Locale }) {
+  const user = useEazo((s) => s.auth.user);
   const [balance, setBalance] = useState<BalanceData | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
   const [parlays, setParlays] = useState<ParlayEntry[]>([]);
@@ -213,7 +216,18 @@ export function BetTab({ locale }: { locale: Locale }) {
     fetchAll();
   }, [fetchAll]);
 
+  const requireLogin = useCallback(async (): Promise<boolean> => {
+    if (user) return true;
+    try {
+      await auth.login();
+    } catch {
+      // login cancelled or failed
+    }
+    return false;
+  }, [user]);
+
   const claimChips = async () => {
+    if (!(await requireLogin())) return;
     setClaiming(true);
     setMessage(null);
     try {
@@ -274,6 +288,7 @@ export function BetTab({ locale }: { locale: Locale }) {
   const combinedOdds = slipLegs.reduce((acc, l) => acc * l.odds, 1);
 
   const placeSingleBet = async (leg: SlipLeg) => {
+    if (!(await requireLogin())) return;
     setPlacing(true);
     setMessage(null);
     try {
@@ -307,6 +322,7 @@ export function BetTab({ locale }: { locale: Locale }) {
   };
 
   const placeParlayBet = async () => {
+    if (!(await requireLogin())) return;
     if (slipLegs.length < 2 || !balance) return;
     setPlacing(true);
     setMessage(null);
