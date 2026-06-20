@@ -785,7 +785,7 @@
       "date": "2026-06-20",
       "localTime": "22:00",
       "localUtcOffset": "UTC-6",
-      "kickoffBeijing": "2026-06-20T12:00:00+08:00",
+      "kickoffBeijing": "2026-06-21T12:00:00+08:00",
       "city": "Monterrey",
       "venue": "Estadio Monterrey",
       "home": {
@@ -796,9 +796,9 @@
         "code": "JPN",
         "name": "Japan"
       },
-      "easternDate": "2026-06-20",
+      "easternDate": "2026-06-21",
       "easternTime": "00:00",
-      "localDate": "2026-06-19"
+      "localDate": "2026-06-20"
     },
     {
       "matchNo": 37,
