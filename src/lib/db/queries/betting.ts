@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { and, asc, desc, eq, count as drizzleCount, sql } from "drizzle-orm";
-import { getDb } from "../client";
+import { getDb, getSql } from "../client";
 import { bets, chipMints, userBalances, type Bet, type ChipMint, type UserBalance } from "../schema/betting";
 import { users } from "../schema/users";
 
@@ -63,18 +63,21 @@ export async function incrementBalance(
 
   const sets: Record<string, unknown> = { updatedAt: new Date() };
   if (delta.minted) {
-    sets.balance = sql`COALESCE(${userBalances.balance}, 0) + ${delta.minted}`;
     sets.totalMinted = sql`COALESCE(${userBalances.totalMinted}, 0) + ${delta.minted}`;
   }
   if (delta.wagered) {
-    sets.balance = sql`COALESCE(${userBalances.balance}, 0) - ${delta.wagered}`;
     sets.totalWagered = sql`COALESCE(${userBalances.totalWagered}, 0) + ${delta.wagered}`;
     sets.betCount = sql`COALESCE(${userBalances.betCount}, 0) + 1`;
   }
   if (delta.won) {
-    sets.balance = sql`COALESCE(${userBalances.balance}, 0) + ${delta.won}`;
     sets.totalWon = sql`COALESCE(${userBalances.totalWon}, 0) + ${delta.won}`;
     sets.winCount = sql`COALESCE(${userBalances.winCount}, 0) + 1`;
+  }
+  if (delta.minted || delta.wagered || delta.won) {
+    const minted = delta.minted ?? 0;
+    const wagered = delta.wagered ?? 0;
+    const won = delta.won ?? 0;
+    sets.balance = sql`COALESCE(${userBalances.balance}, 0) + ${minted} - ${wagered} + ${won}`;
   }
 
   await db.update(userBalances).set(sets).where(eq(userBalances.userId, userId));
@@ -101,20 +104,22 @@ export async function placeBet(input: PlaceBetInput): Promise<Bet> {
   const db = getDb();
   const betId = randomUUID();
 
+  // Atomic balance check-and-deduct via raw SQL (avoids TOCTOU race)
+  const deductionResult = await getSql().unsafe(`
+    UPDATE user_balances
+    SET balance = COALESCE(balance, 0) - $1,
+        total_wagered = COALESCE(total_wagered, 0) + $1,
+        bet_count = COALESCE(bet_count, 0) + 1,
+        updated_at = now()
+    WHERE user_id = $2
+      AND COALESCE(balance, 0) >= $1
+  `, [input.amount, input.userId]);
+
+  if (deductionResult.count === 0) {
+    throw new Error("INSUFFICIENT_BALANCE");
+  }
+
   return db.transaction(async (tx) => {
-    const [bal] = await tx.select().from(userBalances).where(eq(userBalances.userId, input.userId)).limit(1);
-    const currentBalance = bal?.balance ?? 0;
-    if (currentBalance < input.amount) {
-      throw new Error("INSUFFICIENT_BALANCE");
-    }
-
-    await tx.update(userBalances).set({
-      balance: sql`COALESCE(${userBalances.balance}, 0) - ${input.amount}`,
-      totalWagered: sql`COALESCE(${userBalances.totalWagered}, 0) + ${input.amount}`,
-      betCount: sql`COALESCE(${userBalances.betCount}, 0) + 1`,
-      updatedAt: new Date(),
-    }).where(eq(userBalances.userId, input.userId));
-
     const [bet] = await tx
       .insert(bets)
       .values({
@@ -181,7 +186,7 @@ export async function settleBets(matchId: string, results: BetSettlementResult[]
     let settled = 0;
 
     for (const r of results) {
-      const status = r.won ? "won" : "lost";
+      const status = r.won ? "won" : r.payout > 0 ? "push" : "lost";
 
       await tx
         .update(bets)
@@ -192,13 +197,22 @@ export async function settleBets(matchId: string, results: BetSettlementResult[]
         })
         .where(eq(bets.id, r.betId));
 
-      if (r.won && r.payout > 0) {
-        await tx.update(userBalances).set({
-          balance: sql`COALESCE(${userBalances.balance}, 0) + ${r.payout}`,
-          totalWon: sql`COALESCE(${userBalances.totalWon}, 0) + ${r.payout}`,
-          winCount: sql`COALESCE(${userBalances.winCount}, 0) + 1`,
-          updatedAt: new Date(),
-        }).where(eq(userBalances.userId, r.userId));
+      if (r.payout > 0) {
+        if (r.won) {
+          // Win: credit profit
+          await tx.update(userBalances).set({
+            balance: sql`COALESCE(${userBalances.balance}, 0) + ${r.payout}`,
+            totalWon: sql`COALESCE(${userBalances.totalWon}, 0) + ${r.payout}`,
+            winCount: sql`COALESCE(${userBalances.winCount}, 0) + 1`,
+            updatedAt: new Date(),
+          }).where(eq(userBalances.userId, r.userId));
+        } else {
+          // Push: refund original amount
+          await tx.update(userBalances).set({
+            balance: sql`COALESCE(${userBalances.balance}, 0) + ${r.payout}`,
+            updatedAt: new Date(),
+          }).where(eq(userBalances.userId, r.userId));
+        }
       }
 
       settled++;

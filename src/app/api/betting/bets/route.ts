@@ -4,10 +4,11 @@ import { requireAuth } from "@/lib/auth";
 import { rateLimit } from "@/lib/api/rate-limit";
 import { placeBet, getUserBets, getOrCreateBalance, getBetCountPerOutcome } from "@/lib/db/queries/betting";
 import { readLatestRadarMarketSnapshots } from "@/lib/db/queries/market-snapshots";
+import { resolveMatchIdFromMarket } from "@/lib/betting/settlement";
 
 const PlaceBetSchema = z.object({
   marketId: z.string().min(1).max(256),
-  matchId: z.string().min(1).max(128),
+  matchId: z.string().min(1).max(128).optional(),
   category: z.enum(["moneyline", "spread", "total", "halftime", "corners", "goals", "assists", "shots", "prop"]),
   outcomeIndex: z.number().int().min(0).max(2),
   outcomeLabel: z.string().min(1).max(256),
@@ -35,10 +36,8 @@ export async function POST(request: NextRequest) {
 
   const data = parsed.data;
 
-  const balance = await getOrCreateBalance(auth.user.id);
-  if (balance.balance < data.amount) {
-    return NextResponse.json({ ok: false, error: "Insufficient chips" }, { status: 400 });
-  }
+  // Ensure balance record exists (atomic check happens in placeBet transaction)
+  await getOrCreateBalance(auth.user.id);
 
   const radarMatches = await readLatestRadarMarketSnapshots();
   const market = radarMatches.find((m) => m.id === data.marketId);
@@ -48,6 +47,12 @@ export async function POST(request: NextRequest) {
 
   if (market.status === "finished") {
     return NextResponse.json({ ok: false, error: "Market already settled" }, { status: 400 });
+  }
+
+  // Resolve FIFA match ID from market_snapshots for settlement
+  const resolvedMatchId = await resolveMatchIdFromMarket(data.marketId);
+  if (!resolvedMatchId) {
+    return NextResponse.json({ ok: false, error: "Market not linked to a match" }, { status: 400 });
   }
 
   const probability = data.outcomeIndex === 0
@@ -64,7 +69,7 @@ export async function POST(request: NextRequest) {
     const bet = await placeBet({
       userId: auth.user.id,
       marketId: data.marketId,
-      matchId: data.matchId,
+      matchId: resolvedMatchId,
       category: data.category,
       outcomeIndex: data.outcomeIndex,
       outcomeLabel: data.outcomeLabel,

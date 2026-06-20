@@ -220,7 +220,6 @@ export function BetTab({ locale }: { locale: Locale }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           marketId: betSlip.market.id,
-          matchId: betSlip.market.id,
           category: "moneyline",
           outcomeIndex: betSlip.outcomeIndex,
           outcomeLabel: betSlip.outcomeLabel,

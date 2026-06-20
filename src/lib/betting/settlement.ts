@@ -1,7 +1,7 @@
 import { getDb } from "@/lib/db/client";
-import { matches } from "@/lib/db/schema/world-cup";
+import { matches, marketSnapshots } from "@/lib/db/schema/world-cup";
 import { type Bet } from "@/lib/db/schema/betting";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import {
   getPendingBetsForMatch,
   settleBets,
@@ -19,6 +19,24 @@ export type SettlementResult = {
   settled: number;
   skipped?: string;
 };
+
+/**
+ * Resolve a RadarMatch market ID (e.g. "polymarket-0x...") to a FIFA match ID
+ * by querying market_snapshots.
+ */
+export async function resolveMatchIdFromMarket(marketId: string): Promise<string | null> {
+  const [row] = await getDb()
+    .select({ matchId: marketSnapshots.matchId })
+    .from(marketSnapshots)
+    .where(eq(marketSnapshots.externalMarketId, marketId))
+    .orderBy(desc(marketSnapshots.capturedAt))
+    .limit(1);
+  return row?.matchId ?? null;
+}
+
+type BetOutcome = "win" | "lose" | "push";
+
+const MAX_PAYOUT_MULTIPLIER = 10;
 
 export async function settleMatchBets(matchId: string): Promise<SettlementResult> {
   const [matchRow] = await getDb()
@@ -47,8 +65,24 @@ export async function settleMatchBets(matchId: string): Promise<SettlementResult
   if (pendingBets.length === 0) return { settled: 0 };
 
   const results: BetSettlementResult[] = pendingBets.map((bet) => {
-    const won = evaluateBetOutcome(bet, match);
-    const payout = won ? Math.floor(Number(bet.amount) * Number(bet.oddsAtBet)) : 0;
+    const outcome = evaluateBetOutcome(bet, match);
+    const amount = Number(bet.amount);
+    let payout = 0;
+    let won = false;
+
+    if (outcome === "win") {
+      won = true;
+      payout = Math.min(
+        Math.floor(amount * Number(bet.oddsAtBet)),
+        amount * MAX_PAYOUT_MULTIPLIER,
+      );
+    } else if (outcome === "push") {
+      // Refund original amount on push
+      payout = amount;
+      won = false;
+    }
+    // "lose" → payout = 0
+
     return { betId: bet.id, userId: bet.userId, won, payout };
   });
 
@@ -56,32 +90,37 @@ export async function settleMatchBets(matchId: string): Promise<SettlementResult
   return { settled };
 }
 
-function evaluateBetOutcome(bet: Bet, match: MatchRecord): boolean {
+function evaluateBetOutcome(bet: Bet, match: MatchRecord): BetOutcome {
   const homeScore = match.homeScore ?? 0;
   const awayScore = match.awayScore ?? 0;
 
   switch (bet.category) {
     case "moneyline": {
-      if (bet.outcomeIndex === 0) return homeScore > awayScore;
-      if (bet.outcomeIndex === 1) return awayScore > homeScore;
-      return homeScore === awayScore;
+      if (bet.outcomeIndex === 2) return homeScore === awayScore ? "win" : "lose";
+      if (bet.outcomeIndex === 0) return homeScore > awayScore ? "win" : homeScore < awayScore ? "lose" : "push";
+      return awayScore > homeScore ? "win" : awayScore < homeScore ? "lose" : "push";
     }
     case "spread": {
       const line = parseLine(bet.outcomeLabel);
-      if (line === null) return false;
+      if (line === null) return "lose";
       const diff = homeScore - awayScore;
-      if (bet.outcomeIndex === 0) return diff > line;
-      return -diff > line;
+      if (bet.outcomeIndex === 0) {
+        return diff > line ? "win" : diff < line ? "lose" : "push";
+      }
+      const revDiff = -diff;
+      return revDiff > line ? "win" : revDiff < line ? "lose" : "push";
     }
     case "total": {
       const line = parseLine(bet.outcomeLabel);
-      if (line === null) return false;
+      if (line === null) return "lose";
       const total = homeScore + awayScore;
-      if (bet.outcomeIndex === 0) return total > line;
-      return total < line;
+      if (bet.outcomeIndex === 0) {
+        return total > line ? "win" : total < line ? "lose" : "push";
+      }
+      return total < line ? "win" : total > line ? "lose" : "push";
     }
     default:
-      return false;
+      return "lose";
   }
 }
 
