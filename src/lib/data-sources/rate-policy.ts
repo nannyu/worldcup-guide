@@ -87,8 +87,8 @@ const defaultPolicyByType: Record<DataSourceType, SourceRatePolicy> = {
     docsUrl: "https://docs.polymarket.com/developers/gamma-markets-api/overview",
     quietRefreshSeconds: 21600,
     tournamentRefreshSeconds: 900,
-    matchWindowRefreshSeconds: 120,
-    note: "Public market API, 2min during match window, 15min during tournament.",
+    matchWindowRefreshSeconds: 10,
+    note: "Public market API, 10s during match window, 15min during tournament.",
   },
   odds: {
     docsUrl: "https://the-odds-api.com/liveapi/guides/v4/",

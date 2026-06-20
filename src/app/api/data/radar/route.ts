@@ -1,17 +1,21 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/api/rate-limit";
-import { enqueueRadarRefresh } from "@/lib/background/tasks";
 import { getAggregatedRadar } from "@/lib/data-sources/aggregate";
 import { readMarketHistory } from "@/lib/db/queries/market-snapshots";
 
 export async function GET(request: NextRequest) {
   const blocked = rateLimit(request);
   if (blocked) return blocked;
-  const refreshRequested = request.nextUrl.searchParams.get("refresh") === "1";
-  const cacheMode = "cache-only";
-  const result = await getAggregatedRadar({ cacheMode });
+  const forceRefresh = request.nextUrl.searchParams.get("refresh") === "1";
+  const cacheMode = forceRefresh ? "refresh" as const : "cache-only" as const;
+  let result = await getAggregatedRadar({ cacheMode });
   const isStale = result.diagnostics.some((item) => item.message?.includes("stale"));
   const hasRadarMatches = () => (result.radarMatches || []).length > 0;
+
+  // Inline refresh when stale or empty — no background worker needed
+  if (!forceRefresh && (result.source === "fallback" || isStale || !hasRadarMatches())) {
+    result = await getAggregatedRadar({ cacheMode: "refresh" });
+  }
 
   const radarMatches = result.radarMatches || [];
 
@@ -28,12 +32,11 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const backgroundTask = refreshRequested || result.source === "fallback" || isStale || !hasRadarMatches() ? await enqueueRadarRefresh() : undefined;
   return NextResponse.json(
-    { ok: true, cacheMode, stale: isStale, backgroundTask, source: result.source, radarMatches },
+    { ok: true, cacheMode, source: result.source, radarMatches },
     {
       headers: {
-        "Cache-Control": "s-maxage=60, stale-while-revalidate=600",
+        "Cache-Control": "s-maxage=15, stale-while-revalidate=60",
       },
     },
   );

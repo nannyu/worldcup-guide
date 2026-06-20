@@ -832,8 +832,13 @@ export function RadarEyeScreen() {
     }
 
     void loadData();
+    // Poll radar every 30s during match window for near-real-time odds
+    const pollInterval = window.setInterval(() => {
+      if (!cancelled) void loadData();
+    }, 10_000);
     return () => {
       cancelled = true;
+      window.clearInterval(pollInterval);
     };
   }, []);
 
