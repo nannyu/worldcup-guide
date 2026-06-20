@@ -199,6 +199,26 @@ const teamDisplay: Record<string, { name: string; flag: string }> = {
   COL: { name: "哥伦比亚", flag: "🇨🇴" },
 };
 
+const venueZh: Record<string, string> = {
+  "Estadio Azteca": "阿兹特克体育场",
+  "BC Place": "BC 展馆",
+  "Toronto Stadium": "多伦多体育场",
+  "Estadio Guadalajara": "瓜达拉哈拉体育场",
+  "Estadio蒙特雷": "蒙特雷体育场",
+  "Estadio Monterrey": "蒙特雷体育场",
+  "Atlanta Stadium": "亚特兰大体育场",
+  "Boston Stadium": "波士顿体育场",
+  "Dallas Stadium": "达拉斯体育场",
+  "Houston Stadium": "休斯顿体育场",
+  "Kansas City Stadium": "堪萨斯城体育场",
+  "Los Angeles Stadium": "洛杉矶体育场",
+  "Miami Stadium": "迈阿密体育场",
+  "New York New Jersey Stadium": "纽约新泽西体育场",
+  "Philadelphia Stadium": "费城体育场",
+  "Bay Area Stadium": "旧金山湾区体育场",
+  "Seattle Stadium": "西雅图体育场",
+};
+
 function formatBeijingKickoff(input: string): string {
   const [, month, day, hour, minute] =
     input.match(/^2026-(\d{2})-(\d{2})T(\d{2}):(\d{2})/) || [];
@@ -249,7 +269,7 @@ export function fifaRecordToMatch(record: FifaScheduleRecord): Match {
     oddsImpliedHome: 0,
     oddsImpliedDraw: 0,
     oddsImpliedAway: 0,
-    venue: `${record.venue}，${record.city}`,
+    venue: `${venueZh[record.venue] || record.venue}，${record.city}`,
     previewText: `FIFA 官方赛程第 ${record.matchNo} 场。PDF 标注 ${record.easternDate} ${record.easternTime}（ET），举办地当地时间 ${record.localDate} ${record.localTime}（${record.localUtcOffset}），北京时间 ${formatBeijingKickoff(record.kickoffBeijing)}。`,
     updatedAt: "FIFA 官方赛程 · 本地快照",
     events: [],

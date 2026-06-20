@@ -7,6 +7,7 @@ import { I18nProvider } from "@/components/i18n/i18n-provider";
 import { getServerLocale } from "@/lib/i18n/server-preference";
 import { AppShell } from "@/components/layout/app-shell";
 import { ThemeProvider } from "@/components/theme/theme-provider";
+import { EazoProvider } from "@eazo/sdk/react";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -67,12 +68,14 @@ export default async function RootLayout({
       className={cn("h-full antialiased", "font-sans", geist.variable)}
     >
       <body className="min-h-full flex flex-col bg-[#F5F1E8]">
-        <ThemeProvider>
-          <I18nProvider>
-            <AppShell>{children}</AppShell>
-            <Toaster />
-          </I18nProvider>
-        </ThemeProvider>
+        <EazoProvider>
+          <ThemeProvider>
+            <I18nProvider>
+              <AppShell>{children}</AppShell>
+              <Toaster />
+            </I18nProvider>
+          </ThemeProvider>
+        </EazoProvider>
       </body>
     </html>
   );

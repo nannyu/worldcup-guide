@@ -42,6 +42,22 @@
     "sources": "Sources: football-data.org · The Odds API · FIFA",
     "disclaimer": "For reference only, not betting advice"
   },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "name": "Name",
+    "namePlaceholder": "Enter your name",
+    "email": "Email",
+    "avatar": "Avatar",
+    "avatarUrlPlaceholder": "Enter avatar URL",
+    "save": "Save changes",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "error": "Failed to save, please try again",
+    "userId": "User ID",
+    "account": "Account",
+    "signOut": "Sign out"
+  },
   "errors": {
     "notFound": {
       "code": "404",

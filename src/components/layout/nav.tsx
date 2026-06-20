@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslation } from "react-i18next";
+import { UserBadge } from "@/components/user-profile/user-badge";
+import { Settings } from "lucide-react";
 
 const tabs = [
   {
@@ -160,10 +162,22 @@ export function SidebarNav() {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-[#241A14]/20 text-[10px] text-[#9E948C] text-center">
-        {t("layout.sources")}
-        <br />
-        {t("layout.disclaimer")}
+      <div className="p-4 border-t border-[#241A14]/20">
+        <div className="flex items-center justify-between mb-3">
+          <UserBadge />
+          <Link
+            href="/settings"
+            className="p-2 rounded-lg hover:bg-[#EDE9E0] transition-colors text-[#5C524C]"
+            title={t("settings.title")}
+          >
+            <Settings className="h-4 w-4" />
+          </Link>
+        </div>
+        <div className="text-[10px] text-[#9E948C] text-center">
+          {t("layout.sources")}
+          <br />
+          {t("layout.disclaimer")}
+        </div>
       </div>
     </aside>
   );

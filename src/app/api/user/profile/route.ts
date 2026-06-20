@@ -1,6 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { requireAuth } from "@/lib/auth";
-import { upsertUser } from "@/lib/db/queries";
+import { upsertUser, updateUser } from "@/lib/db/queries";
+
+const UpdateProfileSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  avatarUrl: z.string().url().max(500).optional(),
+});
 
 /**
  * GET /api/user/profile
@@ -25,4 +31,32 @@ export async function GET(request: NextRequest) {
   });
 
   return NextResponse.json({ ok: true, user });
+}
+
+/**
+ * PUT /api/user/profile
+ * Update the authenticated user's profile (name, avatar).
+ */
+export async function PUT(request: NextRequest) {
+  const auth = requireAuth(request);
+  if (!auth.ok) return auth.response;
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const parsed = UpdateProfileSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ ok: false, error: "Invalid profile data" }, { status: 400 });
+  }
+
+  const updated = await updateUser(auth.user.id, parsed.data);
+  if (!updated) {
+    return NextResponse.json({ ok: false, error: "User not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({ ok: true, user: updated });
 }

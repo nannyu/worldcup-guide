@@ -45,6 +45,7 @@ export const venues = pgTable(
   {
     id: varchar("id", { length: 128 }).primaryKey(),
     name: text("name").notNull(),
+    nameZh: text("name_zh"),
     city: text("city").notNull(),
     countryCode: varchar("country_code", { length: 8 }),
     utcOffset: varchar("utc_offset", { length: 16 }),
