@@ -529,6 +529,10 @@ export interface RadarMatch {
   updatedAt: string;
   volume?: string;
   volumeUsd?: number;
+  bestBid?: number;
+  bestAsk?: number;
+  lastTradePrice?: number;
+  volume24hr?: number;
   marketLabel?: string;
   outcomes?: Array<{
     label: string;

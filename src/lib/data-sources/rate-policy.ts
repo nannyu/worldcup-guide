@@ -86,9 +86,9 @@ const defaultPolicyByType: Record<DataSourceType, SourceRatePolicy> = {
   "prediction-market": {
     docsUrl: "https://docs.polymarket.com/developers/gamma-markets-api/overview",
     quietRefreshSeconds: 21600,
-    tournamentRefreshSeconds: 1800,
-    matchWindowRefreshSeconds: 600,
-    note: "Public market API, kept conservative to avoid unnecessary polling.",
+    tournamentRefreshSeconds: 900,
+    matchWindowRefreshSeconds: 120,
+    note: "Public market API, 2min during match window, 15min during tournament.",
   },
   odds: {
     docsUrl: "https://the-odds-api.com/liveapi/guides/v4/",
@@ -96,9 +96,9 @@ const defaultPolicyByType: Record<DataSourceType, SourceRatePolicy> = {
     quotaSafetyRatio: 0.8,
     quotaCost: 1,
     quietRefreshSeconds: 21600,
-    tournamentRefreshSeconds: 7200,
-    matchWindowRefreshSeconds: 3600,
-    note: "Starter plan has 500 credits/month. h2h odds for one region cost 1 credit.",
+    tournamentRefreshSeconds: 3600,
+    matchWindowRefreshSeconds: 1800,
+    note: "Starter plan has 500 credits/month. 30min match window, 60min tournament.",
   },
   highlights: {
     docsUrl: "source-specific",

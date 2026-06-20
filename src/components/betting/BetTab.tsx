@@ -5,6 +5,7 @@ import { Coins, Loader2, Plus, X, Check } from "lucide-react";
 import { request } from "@/lib/api/request";
 import { auth } from "@eazo/sdk";
 import { useEazo } from "@eazo/sdk/react";
+import { localizeTeamName } from "@/lib/i18n/content";
 
 type Locale = "zh" | "en" | string;
 
@@ -47,7 +48,15 @@ type Market = {
   kickoffBj: string;
   outcomes?: Array<{ label: string; probability: number }>;
   betCounts?: Array<{ outcomeIndex: number; count: number }>;
+  volumeUsd?: number;
 };
+
+function formatVolume(usd: number | undefined): string {
+  if (!usd || usd <= 0) return "";
+  if (usd >= 1_000_000) return `$${(usd / 1_000_000).toFixed(1)}M`;
+  if (usd >= 1_000) return `$${(usd / 1_000).toFixed(0)}K`;
+  return `$${usd.toFixed(0)}`;
+}
 
 type LeaderboardEntry = {
   userId: string;
@@ -256,8 +265,8 @@ export function BetTab({ locale }: { locale: Locale }) {
     if (prob <= 0) return;
     const odds = 1 / prob;
     const label = outcomeIndex === 0
-      ? `${market.homeFlag} ${market.homeTeam}`
-      : `${market.awayFlag} ${market.awayTeam}`;
+      ? `${market.homeFlag} ${localizeTeamName(market.homeTeam, locale)}`
+      : `${market.awayFlag} ${localizeTeamName(market.awayTeam, locale)}`;
 
     setSlipLegs((prev) => {
       // Check if this exact selection already exists
@@ -438,27 +447,32 @@ export function BetTab({ locale }: { locale: Locale }) {
 
       {/* Markets */}
       {subTab === "markets" && (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {markets.length === 0 && (
             <div className="text-center py-10 text-neutral-500 text-sm">{texts.noMarkets}</div>
           )}
           {markets.map((market) => {
             const homeSelected = isLegSelected(market.id, 0);
             const awaySelected = isLegSelected(market.id, 1);
+            const homeBetCount = market.betCounts?.find((b) => b.outcomeIndex === 0)?.count;
+            const awayBetCount = market.betCounts?.find((b) => b.outcomeIndex === 1)?.count;
             return (
-              <div key={market.id} className="rounded-xl bg-neutral-900 border border-neutral-800 p-4">
-                <div className="flex items-center justify-between text-xs text-neutral-500 mb-3">
+              <div key={market.id} className="rounded-xl bg-neutral-900 border border-neutral-800 p-3">
+                <div className="flex items-center justify-between text-xs text-neutral-500 mb-2">
                   <span>{market.kickoffBj}</span>
-                  <span>{market.status === "live" ? "🔴 LIVE" : market.status}</span>
+                  <div className="flex items-center gap-3">
+                    {market.volumeUsd ? <span className="text-neutral-600">{formatVolume(market.volumeUsd)}</span> : null}
+                    <span>{market.status === "live" ? "🔴 LIVE" : market.status}</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{market.homeFlag}</span>
-                    <span className="text-sm font-medium text-neutral-200">{market.homeTeam}</span>
+                    <span className="text-sm font-medium text-neutral-200">{localizeTeamName(market.homeTeam, locale)}</span>
                   </div>
                   <span className="text-xs text-neutral-500">vs</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-neutral-200">{market.awayTeam}</span>
+                    <span className="text-sm font-medium text-neutral-200">{localizeTeamName(market.awayTeam, locale)}</span>
                     <span className="text-lg">{market.awayFlag}</span>
                   </div>
                 </div>
@@ -466,29 +480,41 @@ export function BetTab({ locale }: { locale: Locale }) {
                   <button
                     onClick={() => toggleLeg(market, 0)}
                     disabled={market.status === "finished" || market.homeMarketProb <= 0}
-                    className={`flex flex-col items-center p-3 rounded-lg border transition-colors disabled:opacity-50 ${
+                    className={`flex flex-col items-center p-2.5 rounded-lg border transition-colors disabled:opacity-50 ${
                       homeSelected
                         ? "bg-amber-500/20 border-amber-500/50"
                         : "bg-neutral-800 hover:bg-amber-500/10 border-neutral-700 hover:border-amber-500/30"
                     }`}
                   >
-                    <span className="text-xs text-neutral-400">{market.homeTeam}</span>
-                    <span className="text-lg font-bold text-amber-300">{(market.homeMarketProb / 100).toFixed(2)}</span>
-                    <span className="text-[10px] text-neutral-500">{(1 / (market.homeMarketProb / 100)).toFixed(2)}x</span>
+                    <span className="text-[11px] text-neutral-400">{localizeTeamName(market.homeTeam, locale)}</span>
+                    <span className="text-xl font-bold text-amber-300">{market.homeMarketProb}%</span>
+                    <div className="w-full h-1 rounded-full bg-neutral-700 mt-1">
+                      <div className="h-1 rounded-full bg-amber-500" style={{ width: `${market.homeMarketProb}%` }} />
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-[10px] text-neutral-500">{(1 / (market.homeMarketProb / 100)).toFixed(2)}x</span>
+                      {homeBetCount ? <span className="text-[10px] text-neutral-600">({homeBetCount})</span> : null}
+                    </div>
                     {homeSelected && <Check size={14} className="text-amber-400 mt-1" />}
                   </button>
                   <button
                     onClick={() => toggleLeg(market, 1)}
                     disabled={market.status === "finished" || market.awayMarketProb <= 0}
-                    className={`flex flex-col items-center p-3 rounded-lg border transition-colors disabled:opacity-50 ${
+                    className={`flex flex-col items-center p-2.5 rounded-lg border transition-colors disabled:opacity-50 ${
                       awaySelected
                         ? "bg-amber-500/20 border-amber-500/50"
                         : "bg-neutral-800 hover:bg-amber-500/10 border-neutral-700 hover:border-amber-500/30"
                     }`}
                   >
-                    <span className="text-xs text-neutral-400">{market.awayTeam}</span>
-                    <span className="text-lg font-bold text-amber-300">{(market.awayMarketProb / 100).toFixed(2)}</span>
-                    <span className="text-[10px] text-neutral-500">{(1 / (market.awayMarketProb / 100)).toFixed(2)}x</span>
+                    <span className="text-[11px] text-neutral-400">{localizeTeamName(market.awayTeam, locale)}</span>
+                    <span className="text-xl font-bold text-amber-300">{market.awayMarketProb}%</span>
+                    <div className="w-full h-1 rounded-full bg-neutral-700 mt-1">
+                      <div className="h-1 rounded-full bg-amber-500" style={{ width: `${market.awayMarketProb}%` }} />
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-[10px] text-neutral-500">{(1 / (market.awayMarketProb / 100)).toFixed(2)}x</span>
+                      {awayBetCount ? <span className="text-[10px] text-neutral-600">({awayBetCount})</span> : null}
+                    </div>
                     {awaySelected && <Check size={14} className="text-amber-400 mt-1" />}
                   </button>
                 </div>
@@ -659,7 +685,7 @@ export function BetTab({ locale }: { locale: Locale }) {
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="text-xs text-neutral-500 mb-1">
-                        {leg.market.homeFlag} {leg.market.homeTeam} vs {leg.market.awayTeam} {leg.market.awayFlag}
+                        {leg.market.homeFlag} {localizeTeamName(leg.market.homeTeam, locale)} vs {localizeTeamName(leg.market.awayTeam, locale)} {leg.market.awayFlag}
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-amber-300">{leg.outcomeLabel}</span>

@@ -245,3 +245,38 @@ export async function readLatestRadarMarketSnapshots(): Promise<RadarMatch[]> {
     return [];
   }
 }
+
+export async function readMarketHistory(
+  externalMarketId: string,
+  limit = 50,
+): Promise<{ time: string; market: number; odds: number }[]> {
+  if (!isDatabaseConfigured || !externalMarketId) return [];
+  try {
+    const sql = getSql();
+    const rows = await sql<MarketSnapshot[]>`
+      select captured_at, home_probability, draw_probability, away_probability
+      from market_snapshots
+      where external_market_id = ${externalMarketId}
+      order by captured_at asc
+      limit ${limit}
+    `;
+    return rows.map((row) => {
+      const homeProb = parseFloat(String(row.homeProbability ?? "0"));
+      const drawProb = parseFloat(String(row.drawProbability ?? "0"));
+      const awayProb = parseFloat(String(row.awayProbability ?? "0"));
+      return {
+        time: row.capturedAt instanceof Date ? row.capturedAt.toISOString() : String(row.capturedAt),
+        market: Math.round(homeProb * 100),
+        odds: Math.round((1 - drawProb) * 100),
+      };
+    });
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        "[market-snapshots] history unavailable:",
+        error instanceof Error ? error.message : error,
+      );
+    }
+    return [];
+  }
+}

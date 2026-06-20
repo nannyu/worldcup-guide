@@ -85,6 +85,15 @@ export function teamName(name: string, locale: LocaleCode | string): string {
   return teamNameEnByZh[name] || name;
 }
 
+const teamNameZhByEn: Record<string, string> = Object.fromEntries(
+  Object.entries(teamNameEnByZh).map(([zh, en]) => [en, zh]),
+);
+
+export function localizeTeamName(name: string, locale: LocaleCode | string): string {
+  if (isZh(locale)) return teamNameZhByEn[name] || name;
+  return teamNameEnByZh[name] || name;
+}
+
 export function teamLabel(flag: string, name: string, locale: LocaleCode | string): string {
   return `${flag}${teamName(name, locale)}`;
 }

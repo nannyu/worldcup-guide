@@ -210,6 +210,10 @@ export function transformPolymarketEvents(
         updatedAt: market.closed === true ? "Polymarket · closed" : "Polymarket",
         volume: market.volume,
         volumeUsd,
+        bestBid: market.bestBid,
+        bestAsk: market.bestAsk,
+        lastTradePrice: market.lastTradePrice,
+        volume24hr: parsePolymarketVolume(event.volume24hr),
         outcomes: normalizedOutcomes,
         history: [],
       }];

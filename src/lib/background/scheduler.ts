@@ -83,13 +83,13 @@ function scheduledRefreshes(mode: ActivityMode): ScheduledRefresh[] {
     offSeason: envMs("WORKER_QUIET_NEWS_REFRESH_MS", 60 * 60_000),
   });
   const marketIntervalMs = intervalFor(mode, {
-    matchWindow: envMs("WORKER_MATCH_WINDOW_MARKET_REFRESH_MS", 10 * 60_000),
-    tournament: envMs("WORKER_TOURNAMENT_MARKET_REFRESH_MS", 30 * 60_000),
+    matchWindow: envMs("WORKER_MATCH_WINDOW_MARKET_REFRESH_MS", 2 * 60_000),
+    tournament: envMs("WORKER_TOURNAMENT_MARKET_REFRESH_MS", 15 * 60_000),
     offSeason: envMs("WORKER_QUIET_MARKET_REFRESH_MS", 6 * 60 * 60_000),
   });
   const oddsIntervalMs = intervalFor(mode, {
-    matchWindow: envMs("WORKER_MATCH_WINDOW_ODDS_REFRESH_MS", 60 * 60_000),
-    tournament: envMs("WORKER_TOURNAMENT_ODDS_REFRESH_MS", 2 * 60 * 60_000),
+    matchWindow: envMs("WORKER_MATCH_WINDOW_ODDS_REFRESH_MS", 30 * 60_000),
+    tournament: envMs("WORKER_TOURNAMENT_ODDS_REFRESH_MS", 60 * 60_000),
     offSeason: envMs("WORKER_QUIET_ODDS_REFRESH_MS", 6 * 60 * 60_000),
   });
 
