@@ -1,7 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { and, count as drizzleCount, eq, inArray } from "drizzle-orm";
 import { rateLimit } from "@/lib/api/rate-limit";
 import { readLatestRadarMarketSnapshots } from "@/lib/db/queries/market-snapshots";
-import { getBetCountPerOutcome } from "@/lib/db/queries/betting";
+import { getDb } from "@/lib/db/client";
+import { bets } from "@/lib/db/schema/betting";
 import { getScheduleDateMeta } from "@/lib/wc-data";
 import { getAggregatedMatches } from "@/lib/data-sources/aggregate";
 
@@ -29,26 +31,41 @@ export async function GET(request: NextRequest) {
     (m) => m.category === "moneyline" && m.status !== "finished",
   );
 
-  const enrichedMarkets = await Promise.all(
-    moneylineMatches.slice(0, 50).map(async (m) => {
-      const counts = await getBetCountPerOutcome(m.id);
-      return {
-        id: m.id,
-        title: m.title,
-        homeTeam: m.homeTeam,
-        awayTeam: m.awayTeam,
-        homeFlag: m.homeFlag,
-        awayFlag: m.awayFlag,
-        homeMarketProb: m.homeMarketProb,
-        awayMarketProb: m.awayMarketProb,
-        status: m.status,
-        kickoffBj: m.kickoffBj,
-        volumeUsd: m.volumeUsd,
-        outcomes: m.outcomes,
-        betCounts: counts,
-      };
-    }),
-  );
+  const selectedMarkets = moneylineMatches.slice(0, 50);
+  const marketIds = selectedMarkets.map((market) => market.id);
+  const countRows = marketIds.length
+    ? await getDb()
+      .select({
+        marketId: bets.marketId,
+        outcomeIndex: bets.outcomeIndex,
+        count: drizzleCount(),
+      })
+      .from(bets)
+      .where(and(inArray(bets.marketId, marketIds), eq(bets.status, "pending")))
+      .groupBy(bets.marketId, bets.outcomeIndex)
+    : [];
+  const countsByMarket = new Map<string, { outcomeIndex: number; count: number }[]>();
+  for (const row of countRows) {
+    const rows = countsByMarket.get(row.marketId) || [];
+    rows.push({ outcomeIndex: row.outcomeIndex, count: row.count });
+    countsByMarket.set(row.marketId, rows);
+  }
+
+  const enrichedMarkets = selectedMarkets.map((m) => ({
+    id: m.id,
+    title: m.title,
+    homeTeam: m.homeTeam,
+    awayTeam: m.awayTeam,
+    homeFlag: m.homeFlag,
+    awayFlag: m.awayFlag,
+    homeMarketProb: m.homeMarketProb,
+    awayMarketProb: m.awayMarketProb,
+    status: m.status,
+    kickoffBj: m.kickoffBj,
+    volumeUsd: m.volumeUsd,
+    outcomes: m.outcomes,
+    betCounts: countsByMarket.get(m.id) || [],
+  }));
 
   return NextResponse.json({
     ok: true,
