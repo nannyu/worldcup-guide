@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Coins, Loader2, RefreshCw, Trophy } from "lucide-react";
+import { Coins, Loader2, Plus, X, Check } from "lucide-react";
 import { request } from "@/lib/api/request";
 
 type Locale = "zh" | "en" | string;
@@ -29,6 +29,7 @@ type Bet = {
   status: string;
   payout: string;
   createdAt: string;
+  parlayId?: string | null;
 };
 
 type Market = {
@@ -55,12 +56,24 @@ type LeaderboardEntry = {
   winCount: number;
 };
 
-type BetSlipData = {
+type SlipLeg = {
   market: Market;
   outcomeIndex: number;
   outcomeLabel: string;
   probability: number;
   odds: number;
+};
+
+type ParlayEntry = {
+  id: string;
+  legCount: number;
+  totalAmount: number;
+  combinedOdds: string;
+  status: string;
+  payout: string;
+  settledAt: string | null;
+  createdAt: string;
+  legs: Bet[];
 };
 
 const t = {
@@ -95,6 +108,15 @@ const t = {
     insufficientChips: "筹码不足",
     marketFinished: "盘口已结算",
     noMarkets: "暂无可下注盘口",
+    selected: "已选",
+   场: "场",
+    viewSlip: "查看注单",
+    combinedOdds: "总赔率",
+    parlay_: "串联",
+    singles: "单注",
+    addMore: "可继续添加",
+    min2legs: "至少选2场",
+    clearAll: "清空",
   },
   en: {
     claimChips: "Claim Daily Chips",
@@ -127,15 +149,26 @@ const t = {
     insufficientChips: "Insufficient chips",
     marketFinished: "Market settled",
     noMarkets: "No markets available",
+    selected: "Selected",
+   场: "",
+    viewSlip: "View Slip",
+    combinedOdds: "Combined Odds",
+    parlay_: "Parlay",
+    singles: "Singles",
+    addMore: "Add more",
+    min2legs: "Min 2 selections",
+    clearAll: "Clear",
   },
 } as const;
 
 export function BetTab({ locale }: { locale: Locale }) {
   const [balance, setBalance] = useState<BalanceData | null>(null);
   const [bets, setBets] = useState<Bet[]>([]);
+  const [parlays, setParlays] = useState<ParlayEntry[]>([]);
   const [markets, setMarkets] = useState<Market[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [betSlip, setBetSlip] = useState<BetSlipData | null>(null);
+  const [slipLegs, setSlipLegs] = useState<SlipLeg[]>([]);
+  const [showSlip, setShowSlip] = useState(false);
   const [betAmount, setBetAmount] = useState(1);
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
@@ -147,11 +180,12 @@ export function BetTab({ locale }: { locale: Locale }) {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [balanceRes, betsRes, marketsRes, leaderboardRes] = await Promise.all([
+      const [balanceRes, betsRes, marketsRes, leaderboardRes, parlayRes] = await Promise.all([
         request("/api/betting/balance"),
         request("/api/betting/bets?status=pending&limit=20"),
         request("/api/betting/markets"),
         request("/api/betting/leaderboard?limit=20"),
+        request("/api/betting/parlay?limit=10"),
       ]);
 
       const balanceData = await balanceRes.json();
@@ -165,6 +199,9 @@ export function BetTab({ locale }: { locale: Locale }) {
 
       const leaderboardData = await leaderboardRes.json();
       if (leaderboardData.ok) setLeaderboard(leaderboardData.rankings);
+
+      const parlayData = await parlayRes.json();
+      if (parlayData.ok) setParlays(parlayData.parlays);
     } catch (err) {
       console.error("Failed to fetch betting data:", err);
     } finally {
@@ -198,7 +235,8 @@ export function BetTab({ locale }: { locale: Locale }) {
     }
   };
 
-  const openBetSlip = (market: Market, outcomeIndex: number) => {
+  // Toggle a leg in/out of the slip
+  const toggleLeg = (market: Market, outcomeIndex: number) => {
     if (market.status === "finished") return;
     const prob = outcomeIndex === 0 ? market.homeMarketProb / 100 : market.awayMarketProb / 100;
     if (prob <= 0) return;
@@ -206,12 +244,36 @@ export function BetTab({ locale }: { locale: Locale }) {
     const label = outcomeIndex === 0
       ? `${market.homeFlag} ${market.homeTeam}`
       : `${market.awayFlag} ${market.awayTeam}`;
-    setBetSlip({ market, outcomeIndex, outcomeLabel: label, probability: prob, odds });
-    setBetAmount(1);
+
+    setSlipLegs((prev) => {
+      // Check if this exact selection already exists
+      const existing = prev.findIndex(
+        (l) => l.market.id === market.id && l.outcomeIndex === outcomeIndex,
+      );
+      if (existing >= 0) {
+        // Remove it
+        return prev.filter((_, i) => i !== existing);
+      }
+      // Check if same market already selected (different outcome) → replace
+      const sameMarket = prev.findIndex((l) => l.market.id === market.id);
+      if (sameMarket >= 0) {
+        const updated = [...prev];
+        updated[sameMarket] = { market, outcomeIndex, outcomeLabel: label, probability: prob, odds };
+        return updated;
+      }
+      // Add new leg
+      return [...prev, { market, outcomeIndex, outcomeLabel: label, probability: prob, odds }];
+    });
   };
 
-  const placeBet = async () => {
-    if (!betSlip || !balance) return;
+  // Check if a specific outcome is selected
+  const isLegSelected = (marketId: string, outcomeIndex: number) => {
+    return slipLegs.some((l) => l.market.id === marketId && l.outcomeIndex === outcomeIndex);
+  };
+
+  const combinedOdds = slipLegs.reduce((acc, l) => acc * l.odds, 1);
+
+  const placeSingleBet = async (leg: SlipLeg) => {
     setPlacing(true);
     setMessage(null);
     try {
@@ -219,17 +281,18 @@ export function BetTab({ locale }: { locale: Locale }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          marketId: betSlip.market.id,
+          marketId: leg.market.id,
           category: "moneyline",
-          outcomeIndex: betSlip.outcomeIndex,
-          outcomeLabel: betSlip.outcomeLabel,
+          outcomeIndex: leg.outcomeIndex,
+          outcomeLabel: leg.outcomeLabel,
           amount: betAmount,
         }),
       });
       const data = await res.json();
       if (data.ok) {
         setMessage(texts.placeBetSuccess);
-        setBetSlip(null);
+        setSlipLegs([]);
+        setShowSlip(false);
         setBalance((prev) => prev ? { ...prev, balance: data.balance } : prev);
         fetchAll();
       } else {
@@ -243,6 +306,50 @@ export function BetTab({ locale }: { locale: Locale }) {
     }
   };
 
+  const placeParlayBet = async () => {
+    if (slipLegs.length < 2 || !balance) return;
+    setPlacing(true);
+    setMessage(null);
+    try {
+      const res = await request("/api/betting/parlay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          legs: slipLegs.map((l) => ({
+            marketId: l.market.id,
+            category: "moneyline",
+            outcomeIndex: l.outcomeIndex,
+            outcomeLabel: l.outcomeLabel,
+          })),
+          amount: betAmount,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setMessage(texts.placeBetSuccess);
+        setSlipLegs([]);
+        setShowSlip(false);
+        setBalance((prev) => prev ? { ...prev, balance: data.balance } : prev);
+        fetchAll();
+      } else {
+        setMessage(data.error || "Error");
+      }
+    } catch (err) {
+      console.error("Failed to place parlay:", err);
+    } finally {
+      setPlacing(false);
+      setTimeout(() => setMessage(null), 3000);
+    }
+  };
+
+  const handleConfirmBet = () => {
+    if (slipLegs.length === 1) {
+      placeSingleBet(slipLegs[0]);
+    } else {
+      placeParlayBet();
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20 text-neutral-400">
@@ -253,7 +360,7 @@ export function BetTab({ locale }: { locale: Locale }) {
   }
 
   return (
-    <div className="space-y-4 pb-6">
+    <div className="space-y-4 pb-24">
       {/* Balance Card */}
       <div className="rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 p-4">
         <div className="flex items-center justify-between mb-3">
@@ -319,77 +426,138 @@ export function BetTab({ locale }: { locale: Locale }) {
           {markets.length === 0 && (
             <div className="text-center py-10 text-neutral-500 text-sm">{texts.noMarkets}</div>
           )}
-          {markets.map((market) => (
-            <div key={market.id} className="rounded-xl bg-neutral-900 border border-neutral-800 p-4">
-              <div className="flex items-center justify-between text-xs text-neutral-500 mb-3">
-                <span>{market.kickoffBj}</span>
-                <span>{market.status === "live" ? "🔴 LIVE" : market.status}</span>
-              </div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{market.homeFlag}</span>
-                  <span className="text-sm font-medium text-neutral-200">{market.homeTeam}</span>
+          {markets.map((market) => {
+            const homeSelected = isLegSelected(market.id, 0);
+            const awaySelected = isLegSelected(market.id, 1);
+            return (
+              <div key={market.id} className="rounded-xl bg-neutral-900 border border-neutral-800 p-4">
+                <div className="flex items-center justify-between text-xs text-neutral-500 mb-3">
+                  <span>{market.kickoffBj}</span>
+                  <span>{market.status === "live" ? "🔴 LIVE" : market.status}</span>
                 </div>
-                <span className="text-xs text-neutral-500">vs</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-neutral-200">{market.awayTeam}</span>
-                  <span className="text-lg">{market.awayFlag}</span>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{market.homeFlag}</span>
+                    <span className="text-sm font-medium text-neutral-200">{market.homeTeam}</span>
+                  </div>
+                  <span className="text-xs text-neutral-500">vs</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-neutral-200">{market.awayTeam}</span>
+                    <span className="text-lg">{market.awayFlag}</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => toggleLeg(market, 0)}
+                    disabled={market.status === "finished" || market.homeMarketProb <= 0}
+                    className={`flex flex-col items-center p-3 rounded-lg border transition-colors disabled:opacity-50 ${
+                      homeSelected
+                        ? "bg-amber-500/20 border-amber-500/50"
+                        : "bg-neutral-800 hover:bg-amber-500/10 border-neutral-700 hover:border-amber-500/30"
+                    }`}
+                  >
+                    <span className="text-xs text-neutral-400">{market.homeTeam}</span>
+                    <span className="text-lg font-bold text-amber-300">{(market.homeMarketProb / 100).toFixed(2)}</span>
+                    <span className="text-[10px] text-neutral-500">{(1 / (market.homeMarketProb / 100)).toFixed(2)}x</span>
+                    {homeSelected && <Check size={14} className="text-amber-400 mt-1" />}
+                  </button>
+                  <button
+                    onClick={() => toggleLeg(market, 1)}
+                    disabled={market.status === "finished" || market.awayMarketProb <= 0}
+                    className={`flex flex-col items-center p-3 rounded-lg border transition-colors disabled:opacity-50 ${
+                      awaySelected
+                        ? "bg-amber-500/20 border-amber-500/50"
+                        : "bg-neutral-800 hover:bg-amber-500/10 border-neutral-700 hover:border-amber-500/30"
+                    }`}
+                  >
+                    <span className="text-xs text-neutral-400">{market.awayTeam}</span>
+                    <span className="text-lg font-bold text-amber-300">{(market.awayMarketProb / 100).toFixed(2)}</span>
+                    <span className="text-[10px] text-neutral-500">{(1 / (market.awayMarketProb / 100)).toFixed(2)}x</span>
+                    {awaySelected && <Check size={14} className="text-amber-400 mt-1" />}
+                  </button>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => openBetSlip(market, 0)}
-                  disabled={market.status === "finished" || market.homeMarketProb <= 0}
-                  className="flex flex-col items-center p-3 rounded-lg bg-neutral-800 hover:bg-amber-500/10 border border-neutral-700 hover:border-amber-500/30 transition-colors disabled:opacity-50"
-                >
-                  <span className="text-xs text-neutral-400">{market.homeTeam}</span>
-                  <span className="text-lg font-bold text-amber-300">{(market.homeMarketProb / 100).toFixed(2)}</span>
-                  <span className="text-[10px] text-neutral-500">{(1 / (market.homeMarketProb / 100)).toFixed(2)}x</span>
-                </button>
-                <button
-                  onClick={() => openBetSlip(market, 1)}
-                  disabled={market.status === "finished" || market.awayMarketProb <= 0}
-                  className="flex flex-col items-center p-3 rounded-lg bg-neutral-800 hover:bg-amber-500/10 border border-neutral-700 hover:border-amber-500/30 transition-colors disabled:opacity-50"
-                >
-                  <span className="text-xs text-neutral-400">{market.awayTeam}</span>
-                  <span className="text-lg font-bold text-amber-300">{(market.awayMarketProb / 100).toFixed(2)}</span>
-                  <span className="text-[10px] text-neutral-500">{(1 / (market.awayMarketProb / 100)).toFixed(2)}x</span>
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* My Bets */}
+      {/* My Bets — singles */}
       {subTab === "mybets" && (
-        <div className="space-y-2">
-          {bets.length === 0 && (
+        <div className="space-y-3">
+          {/* Parlay entries */}
+          {parlays.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-xs text-neutral-500 uppercase tracking-wider">{texts.parlay_}</div>
+              {parlays.map((parlay) => (
+                <div key={parlay.id} className="rounded-lg bg-neutral-900 border border-neutral-800 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-amber-400">
+                      {parlay.legCount}串1 · {parlay.totalAmount} {texts.chips}
+                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      parlay.status === "won" ? "bg-green-500/20 text-green-400" :
+                      parlay.status === "lost" ? "bg-red-500/20 text-red-400" :
+                      "bg-neutral-700 text-neutral-400"
+                    }`}>
+                      {parlay.status === "won" ? texts.won_ : parlay.status === "lost" ? texts.lost : texts.pending}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    {parlay.legs.map((leg) => (
+                      <div key={leg.id} className="flex items-center justify-between text-xs">
+                        <span className="text-neutral-400 truncate">{leg.outcomeLabel}</span>
+                        <span className={`${
+                          leg.status === "won" ? "text-green-400" :
+                          leg.status === "lost" ? "text-red-400" :
+                          "text-neutral-500"
+                        }`}>
+                          {leg.status === "won" ? "✓" : leg.status === "lost" ? "✗" : "·"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {parlay.status === "won" && (
+                    <div className="text-xs text-green-400 mt-1">+{parlay.payout}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Single bets */}
+          {bets.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-xs text-neutral-500 uppercase tracking-wider">{texts.singles}</div>
+              {bets.map((bet) => (
+                <div key={bet.id} className="rounded-lg bg-neutral-900 border border-neutral-800 p-3 flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-neutral-200">{bet.outcomeLabel}</div>
+                    <div className="text-xs text-neutral-500">{bet.category}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-amber-300">{bet.amount} chips</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        bet.status === "won" ? "bg-green-500/20 text-green-400" :
+                        bet.status === "lost" ? "bg-red-500/20 text-red-400" :
+                        "bg-neutral-700 text-neutral-400"
+                      }`}>
+                        {bet.status === "won" ? texts.won_ : bet.status === "lost" ? texts.lost : texts.pending}
+                      </span>
+                    </div>
+                    {bet.status === "won" && (
+                      <div className="text-xs text-green-400">+{bet.payout}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {bets.length === 0 && parlays.length === 0 && (
             <div className="text-center py-10 text-neutral-500 text-sm">{texts.noBets}</div>
           )}
-          {bets.map((bet) => (
-            <div key={bet.id} className="rounded-lg bg-neutral-900 border border-neutral-800 p-3 flex items-center justify-between">
-              <div>
-                <div className="text-sm text-neutral-200">{bet.outcomeLabel}</div>
-                <div className="text-xs text-neutral-500">{bet.category}</div>
-              </div>
-              <div className="text-right">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-amber-300">{bet.amount} chips</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    bet.status === "won" ? "bg-green-500/20 text-green-400" :
-                    bet.status === "lost" ? "bg-red-500/20 text-red-400" :
-                    "bg-neutral-700 text-neutral-400"
-                  }`}>
-                    {bet.status === "won" ? texts.won_ : bet.status === "lost" ? texts.lost : texts.pending}
-                  </span>
-                </div>
-                {bet.status === "won" && (
-                  <div className="text-xs text-green-400">+{bet.payout}</div>
-                )}
-              </div>
-            </div>
-          ))}
         </div>
       )}
 
@@ -424,32 +592,84 @@ export function BetTab({ locale }: { locale: Locale }) {
         </div>
       )}
 
-      {/* Bet Slip Modal */}
-      {betSlip && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60" onClick={() => setBetSlip(null)}>
+      {/* Floating Slip Bar */}
+      {slipLegs.length > 0 && subTab === "markets" && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-neutral-900 border-t border-neutral-700 px-4 py-3">
+          <div className="max-w-md mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="text-sm text-neutral-300">
+                <span className="font-bold text-amber-300">{slipLegs.length}</span> {texts.selected}
+              </div>
+              <div className="text-xs text-neutral-500">
+                {texts.combinedOdds}: <span className="text-amber-300">{combinedOdds.toFixed(2)}x</span>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowSlip(true)}
+              className="px-4 py-2 rounded-xl bg-amber-500 text-black text-sm font-bold"
+            >
+              {texts.viewSlip}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Parlay Slip Modal */}
+      {showSlip && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60" onClick={() => setShowSlip(false)}>
           <div
-            className="w-full max-w-md bg-neutral-900 border-t border-neutral-700 rounded-t-2xl p-5 space-y-4"
+            className="w-full max-w-md bg-neutral-900 border-t border-neutral-700 rounded-t-2xl p-5 space-y-4 max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-white">{texts.confirm}</h3>
-              <button onClick={() => setBetSlip(null)} className="text-neutral-400 hover:text-white">✕</button>
-            </div>
-
-            <div className="rounded-lg bg-neutral-800 p-3">
-              <div className="text-sm text-neutral-300 mb-1">
-                {betSlip.market.homeFlag} {betSlip.market.homeTeam} vs {betSlip.market.awayTeam} {betSlip.market.awayFlag}
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-neutral-400">{texts.placeBet}:</span>
-                <span className="text-sm font-medium text-amber-300">{betSlip.outcomeLabel}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-neutral-400">{texts.odds}:</span>
-                <span className="text-sm font-medium text-amber-300">{betSlip.odds.toFixed(2)}x</span>
+              <h3 className="text-lg font-bold text-white">
+                {slipLegs.length === 1 ? texts.placeBet : texts.parlay_}
+              </h3>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => { setSlipLegs([]); setShowSlip(false); }}
+                  className="text-xs text-neutral-500 hover:text-neutral-300"
+                >
+                  {texts.clearAll}
+                </button>
+                <button onClick={() => setShowSlip(false)} className="text-neutral-400 hover:text-white">✕</button>
               </div>
             </div>
 
+            {/* Legs list */}
+            <div className="space-y-2">
+              {slipLegs.map((leg, i) => (
+                <div key={`${leg.market.id}-${leg.outcomeIndex}`} className="rounded-lg bg-neutral-800 p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-neutral-500 mb-1">
+                        {leg.market.homeFlag} {leg.market.homeTeam} vs {leg.market.awayTeam} {leg.market.awayFlag}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-amber-300">{leg.outcomeLabel}</span>
+                        <span className="text-sm text-neutral-400">{leg.odds.toFixed(2)}x</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => toggleLeg(leg.market, leg.outcomeIndex)}
+                      className="ml-3 text-neutral-500 hover:text-red-400"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Combined odds display */}
+            {slipLegs.length >= 2 && (
+              <div className="flex items-center justify-between text-sm px-1">
+                <span className="text-neutral-400">{texts.combinedOdds}</span>
+                <span className="font-bold text-amber-300">{combinedOdds.toFixed(2)}x</span>
+              </div>
+            )}
+
+            {/* Amount input */}
             <div>
               <label className="text-xs text-neutral-400 mb-1 block">{texts.chips}</label>
               <div className="flex items-center gap-2">
@@ -476,17 +696,17 @@ export function BetTab({ locale }: { locale: Locale }) {
               </div>
               <div className="flex justify-between mt-2 text-xs text-neutral-500">
                 <span>{texts.chips}: {balance?.balance ?? 0}</span>
-                <span>{texts.potentialWin}: {Math.floor(betAmount * betSlip.odds)}</span>
+                <span>{texts.potentialWin}: {Math.floor(betAmount * combinedOdds)}</span>
               </div>
             </div>
 
             <button
-              onClick={placeBet}
-              disabled={placing || betAmount <= 0 || betAmount > (balance?.balance ?? 0)}
+              onClick={handleConfirmBet}
+              disabled={placing || betAmount <= 0 || betAmount > (balance?.balance ?? 0) || slipLegs.length === 0}
               className="w-full h-12 rounded-xl bg-amber-500 text-black font-bold text-lg disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {placing ? <Loader2 size={20} className="animate-spin" /> : <Coins size={20} />}
-              {texts.confirm} ({betAmount} chips)
+              {texts.confirm} ({betAmount} {texts.chips})
             </button>
           </div>
         </div>

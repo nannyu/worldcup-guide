@@ -82,10 +82,19 @@ export async function settleMatchBets(matchId: string): Promise<SettlementResult
   });
 
   const settled = await settleBets(matchId, results);
+
+  // Also settle any parlays that have legs in this match
+  try {
+    const { settleParlaysForMatch } = await import("./parlay-settlement");
+    await settleParlaysForMatch(matchId);
+  } catch {
+    // parlay settlement is best-effort; don't block single bet settlement
+  }
+
   return { settled };
 }
 
-function evaluateBetOutcome(bet: Bet, match: MatchRecord): BetOutcome {
+export function evaluateBetOutcome(bet: Bet, match: MatchRecord): BetOutcome {
   const homeScore = match.homeScore ?? 0;
   const awayScore = match.awayScore ?? 0;
 

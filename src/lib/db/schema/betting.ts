@@ -11,6 +11,7 @@ import {
   numeric,
 } from "drizzle-orm/pg-core";
 import { users } from "./users";
+import { parlays } from "./parlay";
 
 export const chipMints = pgTable(
   "chip_mints",
@@ -48,6 +49,7 @@ export const bets = pgTable(
     status: varchar("status", { length: 16 }).notNull().default("pending"),
     payout: numeric("payout", { precision: 12, scale: 4 }).notNull().default("0"),
     settledAt: timestamp("settled_at"),
+    parlayId: varchar("parlay_id", { length: 128 }).references(() => parlays.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => ({
@@ -56,6 +58,7 @@ export const bets = pgTable(
     matchIdStatusIdx: index("bets_match_status_idx").on(table.matchId, table.status),
     marketIdx: index("bets_market_idx").on(table.marketId),
     createdIdx: index("bets_created_idx").on(table.createdAt),
+    parlayIdx: index("bets_parlay_idx").on(table.parlayId),
   }),
 );
 
