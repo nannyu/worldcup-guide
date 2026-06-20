@@ -6,18 +6,7 @@ import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { browserScheduleDateQuery, type MorningBrief, type NewsArticle } from "@/lib/wc-data";
 import { articleBody, articleComment, articleKeyPoints, articleSummary, articleTitle, tr } from "@/lib/i18n/content";
-
-function formatArticleTime(input: string, locale = "zh-CN"): string {
-  const date = new Date(input);
-  if (Number.isNaN(date.getTime())) return tr(locale, "时间未知", "Unknown time");
-  return new Intl.DateTimeFormat(locale.startsWith("zh") ? "zh-CN" : "en-US", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
+import { formatArticleTime, isChineseLocale, isEnglishArticle, looksEnglish } from "@/lib/i18n/news-utils";
 
 function hasLocalBody(article: NewsArticle | undefined): boolean {
   return Boolean(article?.body?.length || article?.bodyZh?.length || article?.bodyEn?.length || article?.sourceText);
@@ -28,23 +17,6 @@ function previewParagraphs(paragraphs: string[], expanded: boolean): string[] {
   const joined = paragraphs.join("\n\n");
   if (joined.length <= 420) return paragraphs.slice(0, 2);
   return [`${joined.slice(0, 417).trim()}...`];
-}
-
-function isChineseLocale(locale: string): boolean {
-  return locale.toLowerCase().startsWith("zh");
-}
-
-function looksEnglish(text: string | undefined): boolean {
-  const value = String(text || "");
-  const latin = value.match(/[A-Za-z]/g)?.length || 0;
-  const han = value.match(/[\u4e00-\u9fff]/g)?.length || 0;
-  return latin > han * 2 && latin >= 8;
-}
-
-function isEnglishArticle(article: NewsArticle): boolean {
-  return article.language?.toLowerCase().startsWith("en")
-    || looksEnglish(article.title)
-    || looksEnglish(article.sourceText || article.summary);
 }
 
 function needsChineseTranslation(article: NewsArticle, locale: string): boolean {

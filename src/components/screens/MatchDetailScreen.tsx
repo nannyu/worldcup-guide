@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { findBuiltInPlayerProfile } from "@/lib/team-profiles";
+import type { PlayerProfile } from "@/lib/wc-data";
 import {
   allMatches,
   browserScheduleDateQuery,
@@ -268,12 +268,42 @@ function normalizePlayerLookup(input: string | undefined): string {
     .replace(/[^\p{L}\p{N}]+/gu, "");
 }
 
+// Module-level profile cache populated by useTeamProfiles hook
+let profileCache: Map<string, { roster?: PlayerProfile[] }> | null = null;
+
+function useTeamProfiles() {
+  const [loaded, setLoaded] = useState(Boolean(profileCache));
+  useEffect(() => {
+    if (profileCache) return;
+    let cancelled = false;
+    fetch("/api/data/team-profiles", { cache: "force-cache" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (cancelled || !data) return;
+        const profiles = (data as { profiles: Array<{ code: string; roster?: PlayerProfile[] }> }).profiles || [];
+        profileCache = new Map(profiles.map((p) => [p.code, p]));
+        setLoaded(true);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+  return loaded;
+}
+
 function enrichedPlayer(lineup: MatchLineup, player: MatchLineupPlayer): MatchLineupPlayer {
-  const profile = findBuiltInPlayerProfile(lineup.teamName, player);
+  const profile = profileCache?.get(lineup.teamName);
+  const playerProfile = profile?.roster?.find((p) => {
+    if (player.number !== undefined && p.shirtNumber === player.number) return true;
+    const normalizedNames = [
+      normalizePlayerLookup(p.name),
+    ];
+    return normalizedNames.includes(normalizePlayerLookup(player.fullName))
+      || normalizedNames.includes(normalizePlayerLookup(player.name));
+  });
   return {
     ...player,
-    nameZh: profile ? profile.nameZh : player.nameZh,
-    fullName: profile ? profile.name : player.fullName,
+    nameZh: playerProfile ? playerProfile.nameZh : player.nameZh,
+    fullName: playerProfile ? playerProfile.name : player.fullName,
   };
 }
 
@@ -807,6 +837,7 @@ function ProbabilityPanel({ match, locale }: { match: Match; locale: string }) {
 }
 
 export function MatchDetailScreen() {
+  useTeamProfiles();
   const { i18n } = useTranslation();
   const locale = i18n.resolvedLanguage || i18n.language;
   const params = useParams();

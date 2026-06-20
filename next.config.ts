@@ -1,12 +1,20 @@
 import type { NextConfig } from "next";
+import bundleAnalyzer from "@next/bundle-analyzer";
+
+const withBundleAnalyzer = bundleAnalyzer({ enabled: process.env.ANALYZE === "true" });
 
 const nextConfig: NextConfig = {
   ...(process.env.NEXT_OUTPUT_STANDALONE === "true"
     ? { output: "standalone" as const }
     : {}),
+  compress: true,
   devIndicators: false,
   images: {
-    unoptimized: true,
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 60 * 60 * 24,
+  },
+  experimental: {
+    optimizePackageImports: ["lucide-react", "framer-motion"],
   },
   // Pull the local `@eazo/sdk` (hard-copied into node_modules by
   // `bun run sdk:sync`) into Next's watch + transpile graph. Without
@@ -41,4 +49,4 @@ const nextConfig: NextConfig = {
   ],
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

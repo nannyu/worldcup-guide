@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
+import { fetchTeamsWithProfiles } from "@/lib/team-profiles-client";
 import { type PlayerProfile, type PlayerRoastItem, type Team, type TeamRoastItem } from "@/lib/wc-data";
 import { groupLabel, isZh, teamName, tr } from "@/lib/i18n/content";
 
@@ -612,59 +612,46 @@ export function TeamCardsScreen() {
 
   useEffect(() => {
     let cancelled = false;
-    async function loadTeams() {
-      const response = await fetch("/api/data/teams");
-      if (!response.ok) return;
-      const data = (await response.json()) as {
-        teams?: Team[];
-        source?: "remote" | "fallback" | "cache";
-        diagnostics?: Array<{ name: string; ok: boolean }>;
-      };
+    async function loadAll() {
+      const [teamsRes, playerRoastsRes, teamRoastsRes] = await Promise.all([
+        fetch("/api/data/teams"),
+        fetch("/api/data/player-roasts", { cache: "no-store" }),
+        fetch("/api/data/team-roasts", { cache: "no-store" }),
+      ]);
+
       if (cancelled) return;
-      const officialTeams = teamsWithBuiltInProfilesFromOfficialSchedule();
-      const receivedTeams = data.teams || [];
-      setItems(receivedTeams.length ? enrichTeamsWithOfficialGroups(receivedTeams, officialTeams) : officialTeams);
-      const firstOk = data.diagnostics?.find((item) => item.ok);
-      setSourceLabel(
-        data.source === "remote" && firstOk
-          ? `${firstOk.name} · 远端数据`
-          : data.source === "cache"
-            ? "PostgreSQL · 持久化快照"
-            : "FIFA 官方赛程分组 + 官方名单 · 本地速成档案",
-      );
+
+      if (teamsRes.ok) {
+        const data = (await teamsRes.json()) as {
+          teams?: Team[];
+          source?: "remote" | "fallback" | "cache";
+          diagnostics?: Array<{ name: string; ok: boolean }>;
+        };
+        const officialTeams = await fetchTeamsWithProfiles();
+        const receivedTeams = data.teams || [];
+        setItems(receivedTeams.length ? enrichTeamsWithOfficialGroups(receivedTeams, officialTeams) : officialTeams);
+        const firstOk = data.diagnostics?.find((item) => item.ok);
+        setSourceLabel(
+          data.source === "remote" && firstOk
+            ? `${firstOk.name} · 远端数据`
+            : data.source === "cache"
+              ? "PostgreSQL · 持久化快照"
+              : "FIFA 官方赛程分组 + 官方名单 · 本地速成档案",
+        );
+      }
+
+      if (playerRoastsRes.ok) {
+        const data = (await playerRoastsRes.json()) as { items?: PlayerRoastItem[] };
+        setPlayerRoasts(data.items || []);
+      }
+
+      if (teamRoastsRes.ok) {
+        const data = (await teamRoastsRes.json()) as { items?: TeamRoastItem[] };
+        setTeamRoasts(data.items || []);
+      }
     }
 
-    void loadTeams();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadPlayerRoasts() {
-      const response = await fetch("/api/data/player-roasts", { cache: "no-store" });
-      if (!response.ok) return;
-      const data = (await response.json()) as { items?: PlayerRoastItem[] };
-      if (!cancelled) setPlayerRoasts(data.items || []);
-    }
-
-    void loadPlayerRoasts();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadTeamRoasts() {
-      const response = await fetch("/api/data/team-roasts", { cache: "no-store" });
-      if (!response.ok) return;
-      const data = (await response.json()) as { items?: TeamRoastItem[] };
-      if (!cancelled) setTeamRoasts(data.items || []);
-    }
-
-    void loadTeamRoasts();
+    void loadAll();
     return () => {
       cancelled = true;
     };

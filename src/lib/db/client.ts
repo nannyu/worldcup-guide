@@ -3,7 +3,9 @@ import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import dns from "node:dns";
 import postgres, { type Sql } from "postgres";
 
-config({ path: ".env" });
+if (process.env.NODE_ENV !== "production") {
+  config({ path: ".env" });
+}
 
 dns.setDefaultResultOrder("ipv4first");
 
@@ -35,7 +37,13 @@ function postgresOptions(): postgres.Options<Record<string, postgres.PostgresTyp
       ? configuredPoolMax
       : defaultPoolMax,
     prepare: process.env.DATABASE_PREPARE === "true",
-    ssl: process.env.DATABASE_SSL === "disable" ? false : process.env.DATABASE_SSL === "require" ? "require" : undefined,
+    ssl: process.env.DATABASE_SSL === "disable"
+      ? false
+      : process.env.NODE_ENV === "production"
+        ? "require"
+        : process.env.DATABASE_SSL === "require"
+          ? "require"
+          : undefined,
   };
 }
 

@@ -1,4 +1,5 @@
 import {
+  enqueueCacheCleanup,
   enqueueMatchesRefresh,
   enqueueMorningRefresh,
   enqueueNewsRefresh,
@@ -9,6 +10,7 @@ import {
   enqueueTeamsRefresh,
 } from "@/lib/background/tasks";
 import { getWorldCupActivity, type ActivityMode } from "@/lib/data-sources/rate-policy";
+import { getLastJobTimestamp } from "@/lib/db/queries/background-jobs";
 import {
   allScheduleDayGroups,
   beijingScheduleUtcDayBounds,
@@ -30,6 +32,7 @@ export type SchedulerRunResult = {
 };
 
 const lastEnqueuedAt = new Map<string, number>();
+let warmedUpFromDb = false;
 
 function envMs(name: string, fallbackMs: number): number {
   const value = Number(process.env[name]);
@@ -132,6 +135,11 @@ function scheduledRefreshes(mode: ActivityMode): ScheduledRefresh[] {
       intervalMs: envMs("WORKER_PLAYER_ROASTS_REFRESH_MS", 6 * 60 * 60_000),
       enqueue: enqueuePlayerRoastsRefresh,
     },
+    {
+      id: "cache-cleanup",
+      intervalMs: envMs("WORKER_CACHE_CLEANUP_REFRESH_MS", 24 * 60 * 60_000),
+      enqueue: enqueueCacheCleanup,
+    },
   ];
 }
 
@@ -145,7 +153,20 @@ export async function enqueueDueRefreshJobs(now = new Date()): Promise<Scheduler
     errors: [],
   };
 
-  for (const job of scheduledRefreshes(activity.mode)) {
+  const jobs = scheduledRefreshes(activity.mode);
+
+  // On first call after process start, warm up lastEnqueuedAt from DB to prevent thundering herd
+  if (!warmedUpFromDb) {
+    warmedUpFromDb = true;
+    await Promise.all(
+      jobs.map(async (job) => {
+        const ts = await getLastJobTimestamp(job.id);
+        if (ts > 0) lastEnqueuedAt.set(job.id, ts);
+      }),
+    );
+  }
+
+  for (const job of jobs) {
     const last = lastEnqueuedAt.get(job.id) || 0;
     if (nowMs - last < job.intervalMs) {
       result.skipped.push(job.id);

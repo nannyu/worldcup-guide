@@ -13,6 +13,7 @@ import {
   type NewsArticle,
 } from "@/lib/wc-data";
 import { articleBody, articleKeyPoints, articleSummary, articleTitle, articleTranslationState, teamName, tr } from "@/lib/i18n/content";
+import { isChineseLocale, looksEnglish } from "@/lib/i18n/news-utils";
 
 // Event tag labels
 const tagLabels: Record<string, { label: string; color: string }> = {
@@ -367,17 +368,6 @@ function formatQuoteTime(input: string, locale = "zh-CN"): string {
   }).format(date);
 }
 
-function isChineseLocale(locale: string): boolean {
-  return locale.toLowerCase().startsWith("zh");
-}
-
-function looksEnglish(text: string | undefined): boolean {
-  const value = String(text || "");
-  const latin = value.match(/[A-Za-z]/g)?.length || 0;
-  const han = value.match(/[\u4e00-\u9fff]/g)?.length || 0;
-  return latin > han * 2 && latin >= 8;
-}
-
 function isEnglishArticle(article: NewsArticle): boolean {
   return article.language?.toLowerCase().startsWith("en")
     || looksEnglish(article.title)
@@ -643,11 +633,13 @@ export function MorningBriefScreen() {
   useEffect(() => {
     let cancelled = false;
     async function loadBrief() {
+      if (typeof document !== "undefined" && document.hidden) return;
       const res = await fetch(`/api/data/morning?${browserScheduleDateQuery(morningDateKey)}`, { cache: "no-store" });
       if (!res.ok) return;
       const data = (await res.json()) as { brief?: MorningBrief };
       if (cancelled || !data.brief) return;
       setBrief(data.brief);
+      setBrowserNow(new Date());
     }
 
     void loadBrief();
@@ -658,13 +650,6 @@ export function MorningBriefScreen() {
       cancelled = true;
       window.clearInterval(refreshId);
     };
-  }, []);
-
-  useEffect(() => {
-    const clockId = window.setInterval(() => {
-      setBrowserNow(new Date());
-    }, morningRefreshIntervalMs);
-    return () => window.clearInterval(clockId);
   }, []);
 
   function copyQuote() {

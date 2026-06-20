@@ -94,6 +94,8 @@ export const matches = pgTable(
     kickoffIdx: index("matches_kickoff_idx").on(table.kickoffAt),
     easternDateIdx: index("matches_eastern_date_idx").on(table.easternDate),
     statusIdx: index("matches_status_idx").on(table.status),
+    homeTeamIdx: index("matches_home_team_idx").on(table.homeTeamId),
+    awayTeamIdx: index("matches_away_team_idx").on(table.awayTeamId),
   }),
 );
 

@@ -27,8 +27,50 @@ interface CacheEntry {
   status: number;
 }
 
-const cache = new Map<string, CacheEntry>();
-const localUsage = new Map<string, number[]>();
+class LruMap<K, V> {
+  private map = new Map<K, V>();
+  private maxSize: number;
+
+  constructor(maxSize: number) {
+    this.maxSize = maxSize;
+  }
+
+  get(key: K): V | undefined {
+    const value = this.map.get(key);
+    if (value !== undefined) {
+      this.map.delete(key);
+      this.map.set(key, value);
+    }
+    return value;
+  }
+
+  has(key: K): boolean {
+    return this.map.has(key);
+  }
+
+  set(key: K, value: V): void {
+    if (this.map.has(key)) this.map.delete(key);
+    this.map.set(key, value);
+    while (this.map.size > this.maxSize) {
+      const oldest = this.map.keys().next().value;
+      if (oldest !== undefined) this.map.delete(oldest);
+    }
+  }
+
+  delete(key: K): void {
+    this.map.delete(key);
+  }
+
+  get size(): number {
+    return this.map.size;
+  }
+}
+
+const cache = new LruMap<string, CacheEntry>(5000);
+const localUsage = new LruMap<string, number[]>(1000);
+
+// Per-source async lock to serialize assert+fetch+record, preventing rate-limit race conditions
+const fetchLocks = new Map<string, Promise<unknown>>();
 
 function joinUrl(baseUrl: string, endpointPath: string): string {
   if (!baseUrl) return endpointPath;
@@ -94,6 +136,21 @@ function countLocalUsage(sourceId: string, since: Date): number {
   return values.length;
 }
 
+async function fetchWithRetry(
+  url: URL,
+  init: RequestInit,
+  maxRetries = 1,
+): Promise<Response> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await fetch(url, init);
+    if (response.status !== 429 || attempt === maxRetries) return response;
+    const retryAfter = response.headers.get("Retry-After");
+    const delayMs = retryAfter ? Math.min(parseInt(retryAfter, 10) * 1000, 15000) : 5000;
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+  throw new Error("unreachable");
+}
+
 async function countUsage(sourceId: string, since: Date): Promise<number> {
   const databaseCount = await countSourceUsageSince(sourceId, since);
   return Math.max(databaseCount, countLocalUsage(sourceId, since));
@@ -144,6 +201,68 @@ async function recordSuccessfulFetch(
     statusCode,
     fetchedAt,
   });
+}
+
+async function fetchAndRecordJson<T>(
+  source: DataSourceConfig,
+  url: URL,
+  headers: Headers,
+  requestParams: Record<string, string | number | undefined>,
+  cacheKey: string,
+  ttlSeconds: number,
+  signal: AbortSignal,
+): Promise<{ data: T; diagnostic: SourceDiagnostic }> {
+  const now = Date.now();
+  await assertSourceCanFetch(source, new Date());
+  const response = await fetchWithRetry(url, { headers, signal, next: { revalidate: ttlSeconds } });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const data = (await response.json()) as T;
+  cache.set(cacheKey, { value: data, status: response.status, expiresAt: now + ttlSeconds * 1000 });
+  await upsertRawFetchCache({
+    cacheKey, sourceId: source.id, sourceType: source.type, adapter: source.adapter,
+    requestUrl: redactRequestUrl(url, source), requestParams, payload: data,
+    statusCode: response.status, ttlSeconds,
+  });
+  await recordSuccessfulFetch(source, cacheKey, response.status, new Date());
+  return {
+    data,
+    diagnostic: {
+      id: source.id, name: source.name, adapter: source.adapter, type: source.type,
+      ok: true, fromCache: false, status: response.status, message: "fetched",
+      updatedAt: new Date().toISOString(),
+    },
+  };
+}
+
+async function fetchAndRecordText(
+  source: DataSourceConfig,
+  url: URL,
+  headers: Headers,
+  requestParams: Record<string, string | number | undefined>,
+  cacheKey: string,
+  ttlSeconds: number,
+  signal: AbortSignal,
+): Promise<{ data: string; diagnostic: SourceDiagnostic }> {
+  const now = Date.now();
+  await assertSourceCanFetch(source, new Date());
+  const response = await fetchWithRetry(url, { headers, signal, next: { revalidate: ttlSeconds } });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const data = await response.text();
+  cache.set(cacheKey, { value: data, status: response.status, expiresAt: now + ttlSeconds * 1000 });
+  await upsertRawFetchCache({
+    cacheKey, sourceId: source.id, sourceType: source.type, adapter: source.adapter,
+    requestUrl: redactRequestUrl(url, source), requestParams, payload: data,
+    statusCode: response.status, ttlSeconds,
+  });
+  await recordSuccessfulFetch(source, cacheKey, response.status, new Date());
+  return {
+    data,
+    diagnostic: {
+      id: source.id, name: source.name, adapter: source.adapter, type: source.type,
+      ok: true, fromCache: false, status: response.status, message: "fetched",
+      updatedAt: new Date().toISOString(),
+    },
+  };
 }
 
 export async function fetchJsonFromSource<T>(
@@ -209,49 +328,19 @@ export async function fetchJsonFromSource<T>(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), source.timeoutMs || 6000);
   try {
-    await assertSourceCanFetch(source, new Date());
-    const response = await fetch(url, {
-      headers,
-      signal: controller.signal,
-      next: { revalidate: ttlSeconds },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const data = (await response.json()) as T;
-    cache.set(cacheKey, {
-      value: data,
-      status: response.status,
-      expiresAt: now + ttlSeconds * 1000,
-    });
-    await upsertRawFetchCache({
-      cacheKey,
-      sourceId: source.id,
-      sourceType: source.type,
-      adapter: source.adapter,
-      requestUrl: redactRequestUrl(url, source),
-      requestParams,
-      payload: data,
-      statusCode: response.status,
-      ttlSeconds,
-    });
-    await recordSuccessfulFetch(source, cacheKey, response.status, new Date());
-    return {
-      data,
-      diagnostic: {
-        id: source.id,
-        name: source.name,
-        adapter: source.adapter,
-        type: source.type,
-        ok: true,
-        fromCache: false,
-        status: response.status,
-        message: "fetched",
-        updatedAt: new Date().toISOString(),
-      },
-    };
+    // Serialize assert+fetch+record per source to prevent rate-limit race conditions
+    const lockKey = source.id;
+    const prev = fetchLocks.get(lockKey) || Promise.resolve();
+    const next = prev.then(
+      () => fetchAndRecordJson<T>(source, url, headers, requestParams, cacheKey, ttlSeconds, controller.signal),
+    ).catch(
+      () => fetchAndRecordJson<T>(source, url, headers, requestParams, cacheKey, ttlSeconds, controller.signal),
+    );
+    fetchLocks.set(lockKey, next);
+    const result = await next;
+    // Clean up this lock entry if it's still pointing to our resolved promise
+    if (fetchLocks.get(lockKey) === next) fetchLocks.delete(lockKey);
+    return result;
   } catch (error) {
     return Promise.reject({
       id: source.id,
@@ -331,49 +420,17 @@ export async function fetchTextFromSource(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), source.timeoutMs || 6000);
   try {
-    await assertSourceCanFetch(source, new Date());
-    const response = await fetch(url, {
-      headers,
-      signal: controller.signal,
-      next: { revalidate: ttlSeconds },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const data = await response.text();
-    cache.set(cacheKey, {
-      value: data,
-      status: response.status,
-      expiresAt: now + ttlSeconds * 1000,
-    });
-    await upsertRawFetchCache({
-      cacheKey,
-      sourceId: source.id,
-      sourceType: source.type,
-      adapter: source.adapter,
-      requestUrl: redactRequestUrl(url, source),
-      requestParams,
-      payload: data,
-      statusCode: response.status,
-      ttlSeconds,
-    });
-    await recordSuccessfulFetch(source, cacheKey, response.status, new Date());
-    return {
-      data,
-      diagnostic: {
-        id: source.id,
-        name: source.name,
-        adapter: source.adapter,
-        type: source.type,
-        ok: true,
-        fromCache: false,
-        status: response.status,
-        message: "fetched",
-        updatedAt: new Date().toISOString(),
-      },
-    };
+    const lockKey = `${source.id}:text`;
+    const prev = fetchLocks.get(lockKey) || Promise.resolve();
+    const next = prev.then(
+      () => fetchAndRecordText(source, url, headers, requestParams, cacheKey, ttlSeconds, controller.signal),
+    ).catch(
+      () => fetchAndRecordText(source, url, headers, requestParams, cacheKey, ttlSeconds, controller.signal),
+    );
+    fetchLocks.set(lockKey, next);
+    const result = await next;
+    if (fetchLocks.get(lockKey) === next) fetchLocks.delete(lockKey);
+    return result;
   } catch (error) {
     return Promise.reject({
       id: source.id,

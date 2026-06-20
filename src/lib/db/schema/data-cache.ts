@@ -40,6 +40,7 @@ export const dataSnapshots = pgTable(
   (table) => ({
     featureIdx: index("data_snapshots_feature_idx").on(table.feature),
     expiresAtIdx: index("data_snapshots_expires_at_idx").on(table.expiresAt),
+    featureComputedIdx: index("data_snapshots_feature_computed_idx").on(table.feature, table.computedAt),
   }),
 );
 

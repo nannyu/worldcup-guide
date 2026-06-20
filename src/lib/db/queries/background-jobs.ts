@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { getDb, getSql, isDatabaseConfigured } from "@/lib/db/client";
 import { backgroundJobs, type BackgroundJob } from "@/lib/db/schema/data-cache";
 
@@ -13,7 +13,9 @@ export type BackgroundJobType =
   | "news.translate"
   | "team-roasts.refresh"
   | "player-roasts.refresh"
-  | "refresh.full";
+  | "refresh.full"
+  | "cache-cleanup"
+  | "betting.settle";
 
 export type BackgroundJobStatus = "queued" | "running" | "succeeded" | "failed";
 
@@ -190,4 +192,19 @@ export async function listBackgroundJobs(limit = 20): Promise<BackgroundJob[]> {
     .from(backgroundJobs)
     .orderBy(asc(backgroundJobs.status), asc(backgroundJobs.runAfter))
     .limit(limit);
+}
+
+export async function getLastJobTimestamp(jobId: string): Promise<number> {
+  if (!isDatabaseConfigured) return 0;
+  try {
+    const rows = await getDb()
+      .select({ updatedAt: backgroundJobs.updatedAt })
+      .from(backgroundJobs)
+      .where(eq(backgroundJobs.id, jobId))
+      .orderBy(desc(backgroundJobs.updatedAt))
+      .limit(1);
+    return rows[0]?.updatedAt?.getTime() || 0;
+  } catch {
+    return 0;
+  }
 }

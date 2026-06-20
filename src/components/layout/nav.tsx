@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 
 const tabs = [
@@ -90,16 +89,12 @@ export function BottomNav() {
                 className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 relative min-h-[56px]"
               >
                 {active && (
-                  <motion.div
-                    layoutId="tab-indicator"
-                    className="absolute inset-0 bg-[#D36E52]/10"
-                    initial={false}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  <div
+                    className="absolute inset-0 bg-[#D36E52]/10 transition-all duration-200 ease-out"
                   />
                 )}
-                <motion.div
-                  whileTap={{ scale: 0.85 }}
-                  className={`relative flex flex-col items-center gap-0.5 ${
+                <div
+                  className={`relative flex flex-col items-center gap-0.5 active:scale-[0.85] transition-transform duration-100 ${
                     active ? "text-[#D36E52]" : "text-[#9E948C]"
                   }`}
                 >
@@ -110,7 +105,7 @@ export function BottomNav() {
                   >
                     {t(tab.labelKey)}
                   </span>
-                </motion.div>
+                </div>
               </Link>
             );
           })}

@@ -124,20 +124,34 @@ async function readRuntimeCache(): Promise<RuntimeCacheFile> {
 
 async function writeRuntimeCache(cache: RuntimeCacheFile): Promise<void> {
   await mkdir(path.dirname(runtimeCachePath), { recursive: true });
-  await writeFile(runtimeCachePath, `${JSON.stringify(cache, null, 2)}\n`, "utf8");
+  let serialized = JSON.stringify(cache, null, 2);
+  // Size guard: if file exceeds 1MB, prune more aggressively
+  if (Buffer.byteLength(serialized, "utf8") > 1_000_000) {
+    const pruned: RuntimeCacheFile = {
+      rawFetches: Object.fromEntries(Object.entries(cache.rawFetches).slice(-200)),
+      snapshots: Object.fromEntries(Object.entries(cache.snapshots).slice(-100)),
+      usageEvents: cache.usageEvents.slice(-200),
+    };
+    serialized = JSON.stringify(pruned, null, 2);
+  }
+  await writeFile(runtimeCachePath, `${serialized}\n`, "utf8");
 }
 
 function pruneRuntimeCache(cache: RuntimeCacheFile, now = new Date()): RuntimeCacheFile {
   const rawFetches = Object.fromEntries(
-    Object.entries(cache.rawFetches).filter(([, value]) => new Date(value.expiresAt) > now),
+    Object.entries(cache.rawFetches)
+      .filter(([, value]) => new Date(value.expiresAt) > now)
+      .slice(-1000),
   );
   const snapshots = Object.fromEntries(
-    Object.entries(cache.snapshots).filter(([, value]) => new Date(value.expiresAt) > now),
+    Object.entries(cache.snapshots)
+      .filter(([, value]) => new Date(value.expiresAt) > now)
+      .slice(-500),
   );
   const usageFloor = new Date(now.getTime() - 32 * 24 * 60 * 60 * 1000).getTime();
   const usageEvents = cache.usageEvents
     .filter((event) => new Date(event.fetchedAt).getTime() >= usageFloor)
-    .slice(-5000);
+    .slice(-1000);
   return { rawFetches, snapshots, usageEvents };
 }
 

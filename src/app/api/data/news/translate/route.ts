@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/api/rate-limit";
 import { enqueueArticleTranslation } from "@/lib/background/tasks";
 import { readArticleTranslation } from "@/lib/translation/article-translation";
 import type { NewsArticle } from "@/lib/wc-data";
@@ -43,6 +44,8 @@ function sanitizeArticle(article: NewsArticle): NewsArticle {
 }
 
 export async function POST(request: NextRequest) {
+  const blocked = rateLimit(request);
+  if (blocked) return blocked;
   const body = (await request.json().catch(() => null)) as { article?: NewsArticle; articles?: NewsArticle[] } | null;
   const articles = body?.articles?.length ? body.articles : body?.article ? [body.article] : [];
   const validArticles = articles

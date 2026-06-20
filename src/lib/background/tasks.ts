@@ -316,6 +316,19 @@ export function enqueuePlayerRoastsRefresh() {
   return enqueueBackgroundJob({ id: "data:player-roasts", type: "player-roasts.refresh", priority: 60 });
 }
 
+export function enqueueCacheCleanup() {
+  return enqueueBackgroundJob({ id: "data:cache-cleanup", type: "cache-cleanup", priority: 80 });
+}
+
+export function enqueueSettlement(matchId: string) {
+  return enqueueBackgroundJob({
+    id: `betting:settle:${matchId}`,
+    type: "betting.settle",
+    payload: { matchId },
+    priority: 20,
+  });
+}
+
 export async function getBackgroundTaskStates() {
   return listBackgroundJobs(30);
 }
@@ -377,6 +390,18 @@ async function executeBackgroundJobPayload(type: BackgroundJobType, payload: unk
   if (type === "refresh.full") {
     const mode = payloadString(payload, "mode") === "initialize" ? "initialize" : "scheduled";
     return runDataRefresh(mode);
+  }
+
+  if (type === "cache-cleanup") {
+    const { pruneStaleCacheData } = await import("@/lib/db/queries/cache-cleanup");
+    return pruneStaleCacheData();
+  }
+
+  if (type === "betting.settle") {
+    const matchId = payloadString(payload, "matchId");
+    if (!matchId) throw new Error("betting.settle requires matchId in payload");
+    const { settleMatchBets } = await import("@/lib/betting/settlement");
+    return settleMatchBets(matchId);
   }
 
   throw new Error(`Unsupported background job type: ${type}`);

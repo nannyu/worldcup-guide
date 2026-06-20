@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/api/rate-limit";
 import { enqueueMorningRefresh } from "@/lib/background/tasks";
 import { getAggregatedMorningBrief } from "@/lib/data-sources/aggregate";
 import { applyCachedMorningBriefTranslations } from "@/lib/translation/article-translation";
@@ -10,6 +11,8 @@ function parseDateKey(value: string | null): ScheduleDateKey {
 }
 
 export async function GET(request: NextRequest) {
+  const blocked = rateLimit(request);
+  if (blocked) return blocked;
   const dateKey = parseDateKey(request.nextUrl.searchParams.get("dateKey"));
   const dateRange = normalizeScheduleUtcDayBounds({
     date: request.nextUrl.searchParams.get("date"),
@@ -28,7 +31,7 @@ export async function GET(request: NextRequest) {
     ? await enqueueMorningRefresh(dateKey, { sourceDate, dateRange })
     : undefined;
   return NextResponse.json(
-    { ok: true, dateKey, date: sourceDate, dateRange, cacheMode, stale: isStale, backgroundTask, ...result, brief },
+    { ok: true, dateKey, date: sourceDate, dateRange, cacheMode, stale: isStale, backgroundTask, source: result.source, brief },
     {
       headers: {
         "Cache-Control": "s-maxage=60, stale-while-revalidate=600",

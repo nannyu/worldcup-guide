@@ -101,52 +101,83 @@ export function recordOddsMarketSnapshots(oddsMatches: OddsMatch[], provider: st
 export async function readPreKickoffOddsMarketSnapshots(matches: Match[]): Promise<OddsMatch[]> {
   if (!isDatabaseConfigured || !matches.length) return [];
   const sql = getSql();
-  const results: OddsMatch[] = [];
 
-  for (const match of matches) {
-    const targetAt = preKickoffTarget(match);
-    const kickoffMs = Date.parse(match.kickoffAt || "");
-    if (!targetAt || !Number.isFinite(kickoffMs)) continue;
+  // Compute global time window across all matches
+  const matchMeta = matches
+    .map((match) => {
+      const kickoffMs = Date.parse(match.kickoffAt || "");
+      const targetAt = preKickoffTarget(match);
+      return { match, kickoffMs, targetAt };
+    })
+    .filter((item) => item.targetAt && Number.isFinite(item.kickoffMs));
 
-    try {
-      const rows = await sql<MarketSnapshot[]>`
-        select *
-        from market_snapshots
-        where raw->>'kind' = 'odds'
-          and captured_at <= ${new Date(kickoffMs)}
-          and captured_at >= ${new Date(kickoffMs - 24 * 60 * 60 * 1000)}
-          and (
-            match_id = ${match.id}
-            or raw->'match'->>'matchId' = ${match.id}
-            or (
-              raw->'match'->>'homeTeam' = ${match.homeTeam}
-              and raw->'match'->>'awayTeam' = ${match.awayTeam}
-              and raw->'match'->>'kickoffBj' = ${match.kickoffBj}
-            )
-          )
-        order by captured_at desc, id desc
-        limit 200
-      `;
-      const closest = rows
+  if (!matchMeta.length) return [];
+
+  const globalStart = Math.min(...matchMeta.map((m) => m.kickoffMs - 24 * 60 * 60 * 1000));
+  const globalEnd = Math.max(...matchMeta.map((m) => m.kickoffMs));
+
+  try {
+    const rows = await sql<MarketSnapshot[]>`
+      select *
+      from market_snapshots
+      where raw->>'kind' = 'odds'
+        and captured_at <= ${new Date(globalEnd)}
+        and captured_at >= ${new Date(globalStart)}
+      order by captured_at desc, id desc
+      limit 2000
+    `;
+
+    // Index rows by match for O(1) lookup
+    const rowsByMatchId = new Map<string, MarketSnapshot[]>();
+    const rowsByTeamKickoff = new Map<string, MarketSnapshot[]>();
+    for (const row of rows) {
+      const raw = row.raw as { match?: { matchId?: string; homeTeam?: string; awayTeam?: string; kickoffBj?: string } } | undefined;
+      if (!raw?.match) continue;
+      const m = raw.match;
+      if (m.matchId) {
+        const arr = rowsByMatchId.get(m.matchId) || [];
+        arr.push(row);
+        rowsByMatchId.set(m.matchId, arr);
+      }
+      if (m.homeTeam && m.awayTeam && m.kickoffBj) {
+        const key = `${m.homeTeam}|${m.awayTeam}|${m.kickoffBj}`;
+        const arr = rowsByTeamKickoff.get(key) || [];
+        arr.push(row);
+        rowsByTeamKickoff.set(key, arr);
+      }
+    }
+
+    const results: OddsMatch[] = [];
+    for (const { match, targetAt } of matchMeta) {
+      // Find matching rows using three strategies
+      const candidates = [
+        ...(rowsByMatchId.get(match.id) || []),
+        ...(rowsByTeamKickoff.get(`${match.homeTeam}|${match.awayTeam}|${match.kickoffBj}`) || []),
+      ];
+      // Deduplicate by row id
+      const unique = Array.from(new Map(candidates.map((r) => [r.id, r])).values());
+
+      const closest = unique
         .map((row) => ({ row, match: rawMatch<OddsMatch>(row, "odds") }))
         .filter((item): item is { row: MarketSnapshot; match: OddsMatch } => Boolean(item.match))
         .sort((left, right) => {
-          const leftDistance = Math.abs(dateMs(left.row.capturedAt) - targetAt.getTime());
-          const rightDistance = Math.abs(dateMs(right.row.capturedAt) - targetAt.getTime());
+          const leftDistance = Math.abs(dateMs(left.row.capturedAt) - targetAt!.getTime());
+          const rightDistance = Math.abs(dateMs(right.row.capturedAt) - targetAt!.getTime());
           return leftDistance - rightDistance || dateMs(right.row.capturedAt) - dateMs(left.row.capturedAt);
         })[0];
-      if (closest) results.push(withPreKickoffMetadata(closest.match, closest.row, targetAt));
-    } catch (error) {
-      if (process.env.NODE_ENV !== "production") {
-        console.warn(
-          "[market-snapshots] pre-kickoff odds unavailable:",
-          error instanceof Error ? error.message : error,
-        );
-      }
+      if (closest) results.push(withPreKickoffMetadata(closest.match, closest.row, targetAt!));
     }
-  }
 
-  return results;
+    return results;
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        "[market-snapshots] pre-kickoff odds unavailable:",
+        error instanceof Error ? error.message : error,
+      );
+    }
+    return [];
+  }
 }
 
 export function recordRadarMarketSnapshots(radarMatches: RadarMatch[], provider: string): Promise<number> {
@@ -199,6 +230,7 @@ export async function readLatestRadarMarketSnapshots(): Promise<RadarMatch[]> {
       from market_snapshots
       where raw->>'kind' = 'radar'
       order by external_market_id, captured_at desc, id desc
+      limit 500
     `;
     return rows
       .map((row) => rawMatch<RadarMatch>(row, "radar"))

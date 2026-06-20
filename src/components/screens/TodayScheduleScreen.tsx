@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
@@ -21,6 +21,7 @@ import {
   type ScheduleDayGroup,
 } from "@/lib/wc-data";
 import { dateLabel, groupLabel, isZh, teamLabel, teamName, tr } from "@/lib/i18n/content";
+import { historicalScheduleDates, scheduleDateQueryForBeijingDate } from "@/lib/i18n/schedule-utils";
 
 type PageTab = "schedule" | "standings";
 type ScheduleSubTab = "current" | "history";
@@ -34,16 +35,6 @@ const dayMs = 24 * hourMs;
 
 function beijingToday(now = new Date()): string {
   return getScheduleDateMeta(now).today.date;
-}
-
-function scheduleDateQueryForBeijingDate(date: string, dateKey: typeof liveDateKeys[number] = "today"): string {
-  const bounds = beijingScheduleUtcDayBounds(date);
-  return new URLSearchParams({
-    dateKey,
-    date,
-    startUtc: bounds?.startUtc || "",
-    endUtc: bounds?.endUtc || "",
-  }).toString();
 }
 
 function kickoffTime(match: Match): string {
@@ -188,13 +179,6 @@ function splitScheduleGroups(groups: ScheduleDayGroup[], now = new Date()) {
     currentGroups,
     historyGroups: historyGroups.reverse(),
   };
-}
-
-function historicalScheduleDates(now = new Date()): string[] {
-  const today = beijingToday(now);
-  return allScheduleDayGroups
-    .filter((day) => day.date < today)
-    .map((day) => day.date);
 }
 
 function finalCountdownLabel(now: Date, locale: string): string {
@@ -459,10 +443,11 @@ function StandingGroup({ group, locale }: { group: GroupStanding; locale: string
   );
 }
 
-export function TodayScheduleScreen() {
-  const [activeTab, setActiveTab] = useState<PageTab>("schedule");
+export function TodayScheduleScreen({ initialMatches = [] }: { initialMatches?: Match[] }) {
+  const [activeTab, rawSetActiveTab] = useState<PageTab>("schedule");
+  const [isPending, startTransition] = useTransition();
   const [scheduleTab, setScheduleTab] = useState<ScheduleSubTab>("current");
-  const [liveMatches, setLiveMatches] = useState<Match[]>([]);
+  const [liveMatches, setLiveMatches] = useState<Match[]>(initialMatches);
   const [sourceLabel, setSourceLabel] = useState("FIFA 官方赛程 · 本地/数据库数据源");
   const { i18n } = useTranslation();
   const locale = i18n.resolvedLanguage || i18n.language;
@@ -476,6 +461,10 @@ export function TodayScheduleScreen() {
   const standings = useMemo(() => getGroupStandings(displayMatches), [displayMatches]);
   const totalMatches = displayGroups.reduce((sum, day) => sum + day.matches.length, 0);
 
+  function setActiveTab(tab: PageTab) {
+    startTransition(() => { rawSetActiveTab(tab); });
+  }
+
   useEffect(() => {
     let cancelled = false;
     async function loadLiveMatches() {
@@ -486,28 +475,37 @@ export function TodayScheduleScreen() {
         scheduleDates.today.date,
         scheduleDates.tomorrow.date,
       ]);
-      const historyQueries = historicalScheduleDates(now)
-        .filter((date) => !recentDates.has(date))
-        .map((date) => scheduleDateQueryForBeijingDate(date));
-      const responses = await Promise.all(
-        [
-          ...liveDateKeys.map((dateKey) => scheduleDateQueryForBeijingDate(scheduleDates[dateKey].date, dateKey)),
-          ...historyQueries,
-        ].map(async (query) => {
-          const response = await fetch(`/api/data/matches?${query}`);
-          if (!response.ok) return { matches: [] as Match[], source: undefined as "remote" | "fallback" | "cache" | undefined, diagnostics: [] as Array<{ name: string; ok: boolean }> };
-          return (await response.json()) as {
-            matches?: Match[];
-            source?: "remote" | "fallback" | "cache";
-            diagnostics?: Array<{ name: string; ok: boolean }>;
-          };
-        }),
-      );
-      if (cancelled) return;
-      setLiveMatches(responses.flatMap((result) => result.matches || []));
-      const liveSource = responses.find((result) => result.source === "remote" || result.source === "cache");
-      const firstOk = liveSource?.diagnostics?.find((item) => item.ok);
-      if (liveSource?.source === "remote" && firstOk) setSourceLabel(`${firstOk.name} · 远端数据`);
+      const queries = [
+        ...liveDateKeys.map((dateKey) => ({
+          dateKey,
+          date: scheduleDates[dateKey].date,
+          startUtc: beijingScheduleUtcDayBounds(scheduleDates[dateKey].date)?.startUtc || "",
+          endUtc: beijingScheduleUtcDayBounds(scheduleDates[dateKey].date)?.endUtc || "",
+        })),
+        ...historicalScheduleDates(now)
+          .filter((date) => !recentDates.has(date))
+          .map((date) => ({
+            dateKey: "today" as const,
+            date,
+            startUtc: beijingScheduleUtcDayBounds(date)?.startUtc || "",
+            endUtc: beijingScheduleUtcDayBounds(date)?.endUtc || "",
+          })),
+      ];
+
+      const response = await fetch("/api/data/matches/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ queries }),
+      });
+      if (!response.ok || cancelled) return;
+      const data = (await response.json()) as {
+        ok: boolean;
+        results?: Array<{ matches?: Match[]; source?: "remote" | "fallback" | "cache" }>;
+      };
+      if (!data.ok || !data.results) return;
+      setLiveMatches(data.results.flatMap((result) => result.matches || []));
+      const liveSource = data.results.find((r) => r.source === "remote" || r.source === "cache");
+      if (liveSource?.source === "remote") setSourceLabel("远端数据");
       else if (liveSource?.source === "cache") setSourceLabel("PostgreSQL · 持久化快照");
       else setSourceLabel("FIFA 官方赛程 · 本地/数据库数据源");
     }
@@ -535,7 +533,7 @@ export function TodayScheduleScreen() {
       <PageTabs active={activeTab} onChange={setActiveTab} locale={locale} />
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           {activeTab === "schedule" ? (
             <motion.div
               key="schedule"

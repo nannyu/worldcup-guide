@@ -2,7 +2,7 @@
 
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { BarChart3, Brackets, CalendarDays, ChevronRight, Clock3, Info, LineChart, ListFilter, Table2, Trophy } from "lucide-react";
+import { BarChart3, Brackets, CalendarDays, ChevronRight, Clock3, Coins, Info, LineChart, ListFilter, Table2, Trophy } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
@@ -21,13 +21,15 @@ import {
   type RadarMatch,
 } from "@/lib/wc-data";
 import { groupLabel, roundLabel, teamName, tr } from "@/lib/i18n/content";
+import { historicalScheduleDates, scheduleDateQueryForBeijingDate } from "@/lib/i18n/schedule-utils";
+import { BetTab } from "@/components/betting/BetTab";
 
 type LocalizedText = {
   zh: string;
   en: string;
 };
 
-type TabKey = "games" | "props" | "groups" | "bracket";
+type TabKey = "games" | "props" | "groups" | "bracket" | "bet";
 type GameStatusTab = "open" | "finished";
 type MarketCategoryKey = NonNullable<RadarMatch["category"]>;
 type MarketFilterKey = "all" | MarketCategoryKey;
@@ -98,26 +100,10 @@ type LineMarketGroup = {
 const beijingTimeZone = "Asia/Shanghai";
 const dateKeys = ["yesterday", "today", "tomorrow"] as const;
 
-function scheduleDateQueryForBeijingDate(date: string, dateKey: typeof dateKeys[number] = "today"): string {
-  const bounds = beijingScheduleUtcDayBounds(date);
-  return new URLSearchParams({
-    dateKey,
-    date,
-    startUtc: bounds?.startUtc || "",
-    endUtc: bounds?.endUtc || "",
-  }).toString();
-}
-
-function historicalScheduleDates(now = new Date()): string[] {
-  const today = getScheduleDateMeta(now).today.date;
-  return allScheduleDayGroups
-    .filter((day) => day.date < today)
-    .map((day) => day.date);
-}
-
 const tabDefinitions: Array<{ key: TabKey; label: LocalizedText; Icon: LucideIcon }> = [
   { key: "games", label: { zh: "比赛", en: "Games" }, Icon: CalendarDays },
   { key: "props", label: { zh: "玩法", en: "Props" }, Icon: Trophy },
+  { key: "bet", label: { zh: "下注", en: "Bet" }, Icon: Coins },
   { key: "bracket", label: { zh: "对阵图", en: "Bracket" }, Icon: Brackets },
   { key: "groups", label: { zh: "小组", en: "Groups" }, Icon: Table2 },
 ];
@@ -786,25 +772,30 @@ export function RadarEyeScreen() {
           scheduleDates.today.date,
           scheduleDates.tomorrow.date,
         ]);
-        const matchQueries = [
-          ...dateKeys.map((dateKey) => scheduleDateQueryForBeijingDate(scheduleDates[dateKey].date, dateKey)),
+        const queries = [
+          ...dateKeys.map((dateKey) => ({
+            dateKey,
+            date: scheduleDates[dateKey].date,
+            startUtc: beijingScheduleUtcDayBounds(scheduleDates[dateKey].date)?.startUtc || "",
+            endUtc: beijingScheduleUtcDayBounds(scheduleDates[dateKey].date)?.endUtc || "",
+          })),
           ...historicalScheduleDates(now)
             .filter((date) => !recentDates.has(date))
-            .map((date) => scheduleDateQueryForBeijingDate(date)),
+            .map((date) => ({
+              dateKey: "today" as const,
+              date,
+              startUtc: beijingScheduleUtcDayBounds(date)?.startUtc || "",
+              endUtc: beijingScheduleUtcDayBounds(date)?.endUtc || "",
+            })),
         ];
-        const [radarResponse, matchResponses] = await Promise.all([
+
+        const [radarResponse, batchResponse] = await Promise.all([
           fetch("/api/data/radar"),
-          Promise.all(
-            matchQueries.map(async (query) => {
-              const response = await fetch(`/api/data/matches?${query}`);
-              if (!response.ok) return { matches: [] as Match[], source: undefined as DataSourceMode | undefined, diagnostics: [] };
-              return (await response.json()) as {
-                matches?: Match[];
-                source?: DataSourceMode;
-                diagnostics?: Array<{ name: string; ok: boolean }>;
-              };
-            }),
-          ),
+          fetch("/api/data/matches/batch", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ queries }),
+          }),
         ]);
 
         if (cancelled) return;
@@ -820,10 +811,18 @@ export function RadarEyeScreen() {
           setRadarSourceLabel(sourceLabel(data.source, data.diagnostics, "预测市场数据待接入"));
         }
 
-        const matches = matchResponses.flatMap((item) => item.matches || []);
-        setLiveMatches(matches);
-        const firstUsefulSource = matchResponses.find((item) => item.source === "remote" || item.source === "cache");
-        setMatchSourceLabel(sourceLabel(firstUsefulSource?.source, firstUsefulSource?.diagnostics, "FIFA 官方赛程 · 本地/数据库数据源"));
+        if (batchResponse.ok) {
+          const data = (await batchResponse.json()) as {
+            ok: boolean;
+            results?: Array<{ matches?: Match[]; source?: DataSourceMode }>;
+          };
+          if (data.ok && data.results) {
+            const matches = data.results.flatMap((item) => item.matches || []);
+            setLiveMatches(matches);
+            const firstSource = data.results.find((r) => r.source === "remote" || r.source === "cache");
+            setMatchSourceLabel(sourceLabel(firstSource?.source, undefined, "FIFA 官方赛程 · 本地/数据库数据源"));
+          }
+        }
       } catch {
         if (!cancelled) {
           setRadarSourceLabel("预测市场数据待接入");
@@ -893,6 +892,7 @@ export function RadarEyeScreen() {
         <div className="mx-auto max-w-6xl">
           {activeTab === "games" && <GamesTab locale={locale} days={displayMatchDays} sourceLabel={matchSourceLabel} marketSourceLabel={radarSourceLabel} />}
           {activeTab === "props" && <PropsTab locale={locale} markets={propMarkets} sourceLabel={radarSourceLabel} />}
+          {activeTab === "bet" && <BetTab locale={locale} />}
           {activeTab === "groups" && <GroupsTab locale={locale} standings={standings} />}
           {activeTab === "bracket" && <BracketTab locale={locale} rounds={bracketRounds} matchSequence={matchSequence} />}
         </div>

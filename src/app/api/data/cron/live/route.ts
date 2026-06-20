@@ -1,6 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { authorizeCron } from "@/lib/api/cron-auth";
 import { getAggregatedMatches } from "@/lib/data-sources/aggregate";
 import { allMatches, scheduleDateMeta, type Match, type ScheduleDateKey } from "@/lib/wc-data";
+import { enqueueSettlement } from "@/lib/background/tasks";
+import { getUnsettledBetCountForMatch } from "@/lib/db/queries/betting";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -10,17 +13,6 @@ const matchRefreshSeconds = 60;
 const quietRefreshSeconds = 3600;
 const matchWindowBeforeMs = 10 * 60 * 1000;
 const matchWindowAfterMs = 3 * 60 * 60 * 1000;
-
-function authorize(request: NextRequest): NextResponse | undefined {
-  const expected = process.env.CRON_SECRET;
-  if (!expected && process.env.NODE_ENV === "production") {
-    return NextResponse.json({ error: "CRON_SECRET is required" }, { status: 500 });
-  }
-  if (expected && request.headers.get("authorization") !== `Bearer ${expected}`) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
-  return undefined;
-}
 
 function parseDateKeys(request: NextRequest): ScheduleDateKey[] {
   const requested = request.nextUrl.searchParams
@@ -77,7 +69,7 @@ function summarizeMatches(matches: Match[]) {
 }
 
 export async function GET(request: NextRequest) {
-  const unauthorized = authorize(request);
+  const unauthorized = authorizeCron(request);
   if (unauthorized) return unauthorized;
 
   const dateKeys = parseDateKeys(request);
@@ -96,6 +88,16 @@ export async function GET(request: NextRequest) {
     const result = shouldRefresh
       ? await getAggregatedMatches(dateKey, { cacheMode: "refresh", liveScoresOnly: true })
       : cached;
+
+    for (const match of result.matches) {
+      if (match.status === "finished") {
+        const pendingCount = await getUnsettledBetCountForMatch(match.id);
+        if (pendingCount > 0) {
+          await enqueueSettlement(match.id);
+        }
+      }
+    }
+
     results.push({
       dateKey,
       activeMatchCount,

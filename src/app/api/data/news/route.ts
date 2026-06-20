@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/api/rate-limit";
 import { enqueueNewsRefresh } from "@/lib/background/tasks";
 import { getAggregatedNews, MAX_AGGREGATED_NEWS_LIMIT, MORNING_BRIEF_NEWS_LIMIT } from "@/lib/data-sources/aggregate";
 import { applyCachedArticleTranslation } from "@/lib/translation/article-translation";
@@ -25,6 +26,8 @@ function normalizeDate(value: string | null): string | undefined {
 }
 
 export async function GET(request: NextRequest) {
+  const blocked = rateLimit(request);
+  if (blocked) return blocked;
   const query = normalizeQuery(request.nextUrl.searchParams.get("q"));
   const limit = normalizeLimit(request.nextUrl.searchParams.get("limit"));
   const publishedAfter = normalizeDate(request.nextUrl.searchParams.get("from"));
@@ -39,7 +42,7 @@ export async function GET(request: NextRequest) {
     ? await enqueueNewsRefresh({ query, limit, publishedAfter, publishedBefore })
     : undefined;
   return NextResponse.json(
-    { ok: true, query, cacheMode, stale: isStale, backgroundTask, ...result, articles },
+    { ok: true, query, cacheMode, stale: isStale, backgroundTask, source: result.source, articles },
     {
       headers: {
         "Cache-Control": "s-maxage=60, stale-while-revalidate=600",

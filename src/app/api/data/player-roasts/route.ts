@@ -1,8 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/api/rate-limit";
 import { getPlayerRoastSnapshot } from "@/lib/ai/player-roasts";
 import { teamsWithBuiltInProfilesFromOfficialSchedule } from "@/lib/team-profiles";
 
 export async function GET(request: NextRequest) {
+  const blocked = rateLimit(request);
+  if (blocked) return blocked;
   const refreshRequested = request.nextUrl.searchParams.get("refresh") === "1";
   const teams = teamsWithBuiltInProfilesFromOfficialSchedule();
   const snapshot = await getPlayerRoastSnapshot(teams, {

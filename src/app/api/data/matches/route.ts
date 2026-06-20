@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/api/rate-limit";
 import { enqueueMatchesRefresh } from "@/lib/background/tasks";
 import { getAggregatedMatches } from "@/lib/data-sources/aggregate";
 import { normalizeScheduleDate, normalizeScheduleUtcDayBounds, type ScheduleDateKey } from "@/lib/wc-data";
@@ -9,6 +10,8 @@ function parseDateKey(value: string | null): ScheduleDateKey {
 }
 
 export async function GET(request: NextRequest) {
+  const blocked = rateLimit(request);
+  if (blocked) return blocked;
   const dateKey = parseDateKey(request.nextUrl.searchParams.get("dateKey"));
   const dateRange = normalizeScheduleUtcDayBounds({
     date: request.nextUrl.searchParams.get("date"),
@@ -24,7 +27,7 @@ export async function GET(request: NextRequest) {
     ? await enqueueMatchesRefresh(dateKey, { sourceDate, dateRange })
     : undefined;
   return NextResponse.json(
-    { ok: true, dateKey, date: sourceDate, dateRange, cacheMode, backgroundTask, ...result },
+    { ok: true, dateKey, date: sourceDate, dateRange, cacheMode, backgroundTask, source: result.source, matches: result.matches },
     {
       headers: {
         "Cache-Control": "s-maxage=30, stale-while-revalidate=300",

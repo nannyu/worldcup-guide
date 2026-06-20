@@ -35,6 +35,30 @@ export interface AiTaskQueueSummary<T> {
   message: string;
 }
 
+// Global AI concurrency limiter — prevents all task queues combined from
+// exceeding this limit, avoiding API provider rate-limit blowouts during initialization.
+const MAX_GLOBAL_AI_CONCURRENCY = Math.max(1, Number(process.env.AI_GLOBAL_MAX_CONCURRENCY) || 8);
+let globalAiSlots = 0;
+const globalAiWaiters: Array<() => void> = [];
+
+async function acquireAiSlot(): Promise<void> {
+  if (globalAiSlots < MAX_GLOBAL_AI_CONCURRENCY) {
+    globalAiSlots++;
+    return;
+  }
+  return new Promise<void>((resolve) => {
+    globalAiWaiters.push(resolve);
+  });
+}
+
+function releaseAiSlot(): void {
+  globalAiSlots = Math.max(0, globalAiSlots - 1);
+  if (globalAiWaiters.length > 0) {
+    globalAiSlots++;
+    globalAiWaiters.shift()!();
+  }
+}
+
 function orderedProviders(
   providers: AiProviderConfig[],
   primaryProviderId: string | undefined,
@@ -62,8 +86,10 @@ async function runSingleTask<T>(
 ): Promise<AiTaskQueueResult<T>> {
   const errors: string[] = [];
   for (const provider of providers) {
+    await acquireAiSlot();
     try {
       const value = await task.run(provider);
+      releaseAiSlot();
       return {
         id: task.id,
         label: task.label,
@@ -73,6 +99,7 @@ async function runSingleTask<T>(
         errors,
       };
     } catch (error) {
+      releaseAiSlot();
       errors.push(`${provider.name}: ${error instanceof Error ? error.message : "unknown error"}`);
     }
   }
