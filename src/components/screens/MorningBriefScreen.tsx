@@ -14,6 +14,7 @@ import {
 } from "@/lib/wc-data";
 import { articleBody, articleKeyPoints, articleSummary, articleTitle, articleTranslationState, teamName, tr } from "@/lib/i18n/content";
 import { isChineseLocale, looksEnglish } from "@/lib/i18n/news-utils";
+import Comments from "@/components/Comments";
 
 // Event tag labels
 const tagLabels: Record<string, { label: string; color: string }> = {
@@ -441,6 +442,12 @@ function NewsCard({ item, locale }: { item: NewsArticle; locale: string }) {
           </ul>
         )}
       </Link>
+      <Comments
+        articleId={item.id}
+        aiComment={item.commentEn || item.aiComment}
+        aiCommentZh={item.commentZh}
+        locale={locale}
+      />
       <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-dashed border-[#241A14]/20 pt-2 text-[10px] text-[#9E948C]">
         <span className="font-bold text-[#241A14]">{item.source}</span>
         {typeof item.aiScore === "number" && <span>· {tr(locale, "AI 评分", "AI score")} {item.aiScore}</span>}
@@ -487,6 +494,31 @@ function articleHeatScore(article: NewsArticle, index: number): number {
   return sourceCount * 1000 + aiScore * 10 + articleSourceWeight(article) + bodyWeight + recency - index / 1000;
 }
 
+function categoryBonus(category?: string): number {
+  switch (category) {
+    case "match-result": return 60;
+    case "tournament-news": return 40;
+    case "injury": return 30;
+    case "tactical": return 20;
+    case "transfer": return 15;
+    case "off-pitch": return 10;
+    default: return 0;
+  }
+}
+
+function editorialRankScore(
+  article: NewsArticle,
+  index: number,
+  categoryCounts: Map<string, number>,
+): number {
+  const published = new Date(article.publishedAt).getTime();
+  const recency = Number.isFinite(published) ? Math.max(0, 240 - (Date.now() - published) / 3_600_000) : 0;
+  const es = article.editorialScore ?? article.aiScore ?? 0;
+  const cat = article.category || "other";
+  const catCount = categoryCounts.get(cat) || 0;
+  return es * 100 + recency + categoryBonus(cat) - catCount * 50;
+}
+
 function normalizeNewsTitleKey(title: string): string {
   return title
     .normalize("NFKD")
@@ -513,16 +545,35 @@ function dedupeNewsByDisplayedTitle(news: NewsArticle[], locale: string): NewsAr
 }
 
 function sortTopNews(news: NewsArticle[]): NewsArticle[] {
-  return news
+  const candidates = news
     .map((article, index) => ({ article, index }))
     .sort((left, right) => {
-      const leftScore = left.article.aiScore ?? -1;
-      const rightScore = right.article.aiScore ?? -1;
-      return rightScore - leftScore
-        || articleHeatScore(right.article, right.index) - articleHeatScore(left.article, left.index)
-        || left.index - right.index;
-    })
-    .slice(0, 5)
+      const leftEs = left.article.editorialScore ?? left.article.aiScore ?? -1;
+      const rightEs = right.article.editorialScore ?? right.article.aiScore ?? -1;
+      return rightEs - leftEs || left.index - right.index;
+    });
+  type Candidate = { article: NewsArticle; index: number; adjustedScore: number };
+  const selected: Candidate[] = [];
+  const categoryCounts = new Map<string, number>();
+  for (const candidate of candidates) {
+    const cat = candidate.article.category || "other";
+    const catCount = categoryCounts.get(cat) || 0;
+    const adjustedScore = editorialRankScore(candidate.article, candidate.index, categoryCounts);
+    if (selected.length < 5) {
+      selected.push({ ...candidate, adjustedScore });
+      categoryCounts.set(cat, catCount + 1);
+    } else {
+      const worstIdx = selected.reduce((wi, c, i) => c.adjustedScore < selected[wi].adjustedScore ? i : wi, 0);
+      if (adjustedScore > selected[worstIdx].adjustedScore) {
+        const removedCat = selected[worstIdx].article.category || "other";
+        categoryCounts.set(removedCat, (categoryCounts.get(removedCat) || 1) - 1);
+        selected[worstIdx] = { ...candidate, adjustedScore };
+        categoryCounts.set(cat, catCount + 1);
+      }
+    }
+  }
+  return selected
+    .sort((left, right) => right.adjustedScore - left.adjustedScore || left.index - right.index)
     .map((item) => item.article);
 }
 

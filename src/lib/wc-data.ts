@@ -456,6 +456,8 @@ export interface NewsArticle {
   aiKeyPoints?: string[];
   aiScore?: number;
   aiComment?: string;
+  editorialScore?: number;
+  category?: string;
   titleZh?: string;
   titleEn?: string;
   summaryZh?: string;

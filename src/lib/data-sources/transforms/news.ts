@@ -301,6 +301,8 @@ export function applyAiCuration(
         aiKeyPoints: item.keyPoints,
         aiScore: item.score,
         aiComment: item.comment || undefined,
+        editorialScore: item.editorialScore,
+        category: item.category,
         titleZh: item.titleZh,
         titleEn: item.titleEn,
         summaryZh: item.summaryZh,

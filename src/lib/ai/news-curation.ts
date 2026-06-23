@@ -14,6 +14,8 @@ export interface AiNewsCuration {
     summary: string;
     keyPoints: string[];
     score?: number;
+    editorialScore?: number;
+    category?: string;
     comment?: string;
     titleZh?: string;
     titleEn?: string;
@@ -67,6 +69,12 @@ function normalizeCuration(value: unknown, providerName: string): AiNewsCuration
           score: typeof item.score === "number" && Number.isFinite(item.score)
             ? Math.max(0, Math.min(100, Math.round(item.score)))
             : undefined,
+          editorialScore: typeof item.editorialScore === "number" && Number.isFinite(item.editorialScore)
+            ? Math.max(0, Math.min(100, Math.round(item.editorialScore)))
+            : undefined,
+          category: ["match-result", "tournament-news", "transfer", "injury", "tactical", "off-pitch", "other"].includes(item.category || "")
+            ? item.category
+            : undefined,
           comment: typeof item.comment === "string" ? item.comment.slice(0, 90) : undefined,
           titleZh: typeof item.titleZh === "string" ? item.titleZh.slice(0, 140) : undefined,
           titleEn: typeof item.titleEn === "string" ? item.titleEn.slice(0, 180) : undefined,
@@ -106,10 +114,12 @@ function buildPrompt(articles: NewsArticle[]): string {
   }));
   return [
     "你是世界杯新闻编辑。只基于输入事实工作，不补充未提供的信息。",
-    "任务：识别仍然重复或描述同一事件的条目，选择一个主条目；给每条主条目按新闻价值打 0-100 分；同时生成中英文标题、摘要、要点和点评；再生成整期中文标题和总摘要。",
+    "任务：识别仍然重复或描述同一事件的条目，选择一个主条目；给每条主条目按新闻价值打 0-100 分（score）；再给每条主条目打编辑评分 0-100（editorialScore，综合重要性、独特性、时效性）；为每条分配事件分类（category）；同时生成中英文标题、摘要、要点和点评；再生成整期中文标题和总摘要。",
+    "category 必须是以下之一：match-result（比赛结果）、tournament-news（赛事新闻）、transfer（转会）、injury（伤病）、tactical（战术）、off-pitch（场外）、other（其他）。",
+    "score 侧重新闻热度（交叉报道数、来源权威性）；editorialScore 侧重新闻重要性和独家性（重大比赛结果 > 赛事动态 > 伤病 > 战术 > 转会 > 场外）。",
     "commentZh/commentEn 是一句点评：辛辣幽默、略毒舌，但只能基于输入事实，不得添加新事实或推断。",
     "返回严格 JSON，不要 Markdown：",
-    '{"title":"","summary":"","items":[{"articleId":"","relatedArticleIds":[],"summary":"","keyPoints":[],"score":0,"comment":"","titleZh":"","titleEn":"","summaryZh":"","summaryEn":"","keyPointsZh":[],"keyPointsEn":[],"commentZh":"","commentEn":""}]}',
+    '{"title":"","summary":"","items":[{"articleId":"","relatedArticleIds":[],"summary":"","keyPoints":[],"score":0,"editorialScore":0,"category":"match-result","comment":"","titleZh":"","titleEn":"","summaryZh":"","summaryEn":"","keyPointsZh":[],"keyPointsEn":[],"commentZh":"","commentEn":""}]}',
     "必须保留并准确使用以上字段名。summary/keyPoints/comment 保持中文兼容旧字段；titleZh/titleEn 等字段必须分别使用对应语言。",
     "relatedArticleIds 只能使用输入中的 id；不确定时不要合并。summary 不超过 90 字，keyPoints 每项不超过 35 字。不要生成正文翻译，正文翻译由免费翻译接口处理。",
     JSON.stringify(records),

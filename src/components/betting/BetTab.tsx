@@ -222,7 +222,10 @@ export function BetTab({ locale }: { locale: Locale }) {
   }, []);
 
   useEffect(() => {
-    fetchAll();
+    const timer = window.setTimeout(() => {
+      void fetchAll();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [fetchAll]);
 
   const requireLogin = useCallback(async (): Promise<boolean> => {

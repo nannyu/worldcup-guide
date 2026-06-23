@@ -181,6 +181,28 @@
   }
 }
 
+/* Hide Eazo's web handoff promo bars while keeping SDK auth/runtime active. */
+html.eazo-host-web {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  --eazo-handoff-top: 0px !important;
+  --eazo-handoff-bottom: 0px !important;
+}
+
+.eazo-handoff-root {
+  display: none !important;
+}
+
+html.eazo-host-web .eazo-app-area,
+html.eazo-host-web .eazo-app-area-scroller {
+  display: contents !important;
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  overflow: visible !important;
+  overscroll-behavior: auto !important;
+}
+
 /* =============================================
    NEWSPAPER TEXTURE
    ============================================= */

@@ -7,3 +7,4 @@ export * from "./market-snapshots";
 export * from "./news-articles";
 export * from "./betting";
 export * from "./parlay";
+export * from "./comments";

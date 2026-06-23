@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useEazo } from "@eazo/sdk/react";
 import { auth } from "@eazo/sdk";
@@ -11,27 +11,33 @@ import { request } from "@/lib/api/request";
 
 type UserProfile = {
   id: string;
-  email: string | null;
-  name: string | null;
-  avatarUrl: string | null;
+  email?: string | null;
+  name?: string | null;
+  avatarUrl?: string | null;
 };
 
 export default function SettingsPage() {
   const { t } = useTranslation();
   const user = useEazo((s) => s.auth.user);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [name, setName] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <p className="text-muted-foreground">{t("common.signIn")}</p>
+      </div>
+    );
+  }
+
+  return <SettingsForm key={user.id} user={user} />;
+}
+
+function SettingsForm({ user }: { user: UserProfile }) {
+  const { t } = useTranslation();
+  const [name, setName] = useState(user.name ?? "");
+  const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-    setProfile(user);
-    setName(user.name ?? "");
-    setAvatarUrl(user.avatarUrl ?? "");
-  }, [user]);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
@@ -48,7 +54,6 @@ export default function SettingsPage() {
       const data = await res.json() as { ok: boolean; user?: UserProfile; error?: string };
 
       if (data.ok && data.user) {
-        setProfile(data.user);
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
       } else {
@@ -60,14 +65,6 @@ export default function SettingsPage() {
       setSaving(false);
     }
   }, [name, avatarUrl, t]);
-
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <p className="text-muted-foreground">{t("common.signIn")}</p>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
