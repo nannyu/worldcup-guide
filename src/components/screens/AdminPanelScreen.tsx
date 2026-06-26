@@ -140,6 +140,7 @@ const aiProviderTypes: AiProviderType[] = [
   "openai",
   "gemini",
   "deepseek",
+  "nvidia",
   "xiaomi-mimo",
   "kimi-coding",
   "bigmodel",
@@ -1026,7 +1027,7 @@ export function AdminPanelScreen() {
         <section className="space-y-4 border-2 border-[#241A14] bg-[#FAF7F0] p-4" style={{ boxShadow: "4px 4px 0 0 #241A14" }}>
           <SectionHeader
             title="AI 大模型接入"
-            desc="支持 OpenAI、Gemini、DeepSeek、小米 MiMo、Kimi Coding、BigModel/智谱，以及 OpenAI-compatible 自定义 Provider。Provider API Key 同样只从 .env 环境变量读取，不写入配置 JSON。"
+            desc="支持 OpenAI、Gemini、DeepSeek、NVIDIA NIM、小米 MiMo、Kimi Coding、BigModel/智谱，以及 OpenAI-compatible 自定义 Provider。Provider API Key 同样只从 .env 环境变量读取，不写入配置 JSON。"
             action={
               <button type="button" onClick={() => setConfig({ ...config, aiProviders: [...config.aiProviders, createAiProvider()] })} className="shrink-0 border border-[#241A14] bg-[#241A14] px-3 py-1 text-xs font-bold text-white hover:bg-[#D36E52]">
                 添加 Provider

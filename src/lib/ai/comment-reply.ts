@@ -1,5 +1,6 @@
 import type { AiProviderConfig } from "@/lib/admin/config";
 import { callAnthropicMessagesJson } from "@/lib/ai/anthropic-messages";
+import { openAiCompatibleProviderOptions } from "@/lib/ai/openai-compatible";
 import type { NewsArticle } from "@/lib/wc-data";
 
 interface OpenAiResponse {
@@ -37,9 +38,7 @@ async function callOpenAiCompatible(
   provider: AiProviderConfig,
   prompt: string,
 ): Promise<string> {
-  const providerOptions = provider.provider === "deepseek"
-    ? { thinking: { type: "disabled" } }
-    : {};
+  const providerOptions = openAiCompatibleProviderOptions(provider);
   const response = await fetch(joinUrl(provider.baseUrl, "/chat/completions"), {
     method: "POST",
     headers: {

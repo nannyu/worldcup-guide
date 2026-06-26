@@ -37,6 +37,7 @@ export type AiProviderType =
   | "openai"
   | "gemini"
   | "deepseek"
+  | "nvidia"
   | "xiaomi-mimo"
   | "kimi-coding"
   | "bigmodel"
@@ -87,7 +88,7 @@ const configPath = path.join(process.cwd(), "data", "admin-config.json");
 
 export const defaultAdminConfig: AdminConfig = {
   updatedAt: new Date(0).toISOString(),
-  primaryAiProviderId: "xiaomi-mimo",
+  primaryAiProviderId: "nvidia",
   dataSources: [
     {
       id: "openfootball-worldcup-json",
@@ -632,6 +633,17 @@ export const defaultAdminConfig: AdminConfig = {
   ],
   aiProviders: [
     {
+      id: "nvidia",
+      name: "NVIDIA NIM",
+      provider: "nvidia",
+      baseUrl: "https://integrate.api.nvidia.com/v1",
+      apiKey: "",
+      apiKeyEnvName: "NVIDIA_API_KEY",
+      defaultModel: "deepseek-ai/deepseek-v4-pro",
+      enabled: true,
+      notes: "NVIDIA NIM OpenAI-compatible endpoint，默认使用 deepseek-ai/deepseek-v4-pro，并关闭 thinking。",
+    },
+    {
       id: "openai",
       name: "OpenAI",
       provider: "openai",
@@ -659,7 +671,7 @@ export const defaultAdminConfig: AdminConfig = {
       apiKey: "",
       defaultModel: "deepseek-v4-flash",
       enabled: true,
-      notes: "小米 MiMo 不可用时的备用新闻整理 Provider。V4 Flash 使用非思考模式降低后台延迟。",
+      notes: "NVIDIA NIM 不可用时的备用新闻整理 Provider。V4 Flash 使用非思考模式降低后台延迟。",
     },
     {
       id: "xiaomi-mimo",
@@ -669,7 +681,7 @@ export const defaultAdminConfig: AdminConfig = {
       apiKey: "",
       defaultModel: "mimo-v2.5-pro",
       enabled: true,
-      notes: "小米 MiMo Token Plan 最新旗舰 Pro 模型，作为新闻整理主 Provider。",
+      notes: "小米 MiMo Token Plan 最新旗舰 Pro 模型，可作为新闻整理备用 Provider。",
     },
     {
       id: "kimi-coding",
@@ -768,6 +780,7 @@ function defaultDataSourceApiKeyEnvName(id: string, placement: ApiKeyPlacement):
 }
 
 function defaultAiProviderApiKeyEnvName(id: string): string {
+  if (id === "nvidia") return "NVIDIA_API_KEY";
   return envNameFromId("AI_PROVIDER", id);
 }
 

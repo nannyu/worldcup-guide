@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readAdminConfig, type AiProviderConfig } from "@/lib/admin/config";
 import { callAnthropicMessagesJson } from "@/lib/ai/anthropic-messages";
+import { openAiCompatibleProviderOptions } from "@/lib/ai/openai-compatible";
 import { runAiTaskQueue, type AiTask } from "@/lib/ai/task-orchestrator";
 import { getAggregatedMatches, getAggregatedNews, MORNING_BRIEF_NEWS_LIMIT } from "@/lib/data-sources/aggregate";
 import { readSnapshotCache, upsertSnapshotCache } from "@/lib/db/queries/data-cache";
@@ -376,9 +377,7 @@ async function callOpenAiCompatible(
   prompt: string,
   context: TeamContext,
 ): Promise<TeamRoastItem> {
-  const providerOptions = provider.provider === "deepseek"
-    ? { thinking: { type: "disabled" } }
-    : {};
+  const providerOptions = openAiCompatibleProviderOptions(provider);
   const response = await fetch(joinUrl(provider.baseUrl, "/chat/completions"), {
     method: "POST",
     headers: {

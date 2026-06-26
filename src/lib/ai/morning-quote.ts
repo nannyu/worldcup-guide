@@ -1,5 +1,6 @@
 import type { AiProviderConfig } from "@/lib/admin/config";
 import { callAnthropicMessagesJson } from "@/lib/ai/anthropic-messages";
+import { openAiCompatibleProviderOptions } from "@/lib/ai/openai-compatible";
 import type { Match, MorningQuote, NewsArticle } from "@/lib/wc-data";
 
 const MORNING_QUOTE_AI_TIMEOUT_MS = Number(process.env.MORNING_QUOTE_AI_TIMEOUT_MS) || 45_000;
@@ -108,9 +109,7 @@ function buildPrompt(input: {
 }
 
 async function callOpenAiCompatible(provider: AiProviderConfig, prompt: string): Promise<string> {
-  const providerOptions = provider.provider === "deepseek"
-    ? { thinking: { type: "disabled" } }
-    : {};
+  const providerOptions = openAiCompatibleProviderOptions(provider);
   const response = await fetch(joinUrl(provider.baseUrl, "/chat/completions"), {
     method: "POST",
     headers: {

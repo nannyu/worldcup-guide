@@ -78,7 +78,7 @@ bun run data:init
 
 新闻不会在第一个成功源处停止：所有启用新闻源会并行抓取，后台按 URL 和标题相似度去重，再由已配置的 AI Provider 做事件合并、中文摘要和要点整理。未配置模型 Key 时只执行规则去重，不生成模拟摘要。
 
-AI Provider 支持 OpenAI、Gemini、DeepSeek、Xiaomi MiMo、Kimi Coding、BigModel/智谱和自定义 OpenAI-compatible Provider。当前默认主模型配置为 Xiaomi MiMo `mimo-v2.5-pro`，DeepSeek `deepseek-v4-flash` 可作为备用。Kimi Coding Plan 使用 Anthropic Messages 协议，默认 endpoint 为 `https://api.kimi.com/coding/v1/messages`，模型为 `kimi-for-coding`，服务端请求保持 `user-agent: claude-cli/2.1.170 (external, cli)`。
+AI Provider 支持 OpenAI、Gemini、DeepSeek、NVIDIA NIM、Xiaomi MiMo、Kimi Coding、BigModel/智谱和自定义 OpenAI-compatible Provider。当前默认主模型配置为 NVIDIA NIM `deepseek-ai/deepseek-v4-pro`，API Key 读取 `NVIDIA_API_KEY`；DeepSeek 和 Xiaomi MiMo 可作为备用。Kimi Coding Plan 使用 Anthropic Messages 协议，默认 endpoint 为 `https://api.kimi.com/coding/v1/messages`，模型为 `kimi-for-coding`，服务端请求保持 `user-agent: claude-cli/2.1.170 (external, cli)`。
 
 数据抓取、缓存、刷新和 API 说明见 [docs/data-sources.md](docs/data-sources.md)。
 
@@ -116,9 +116,10 @@ DATABASE_PREPARE=false
 CRON_SECRET=...
 ADMIN_PASSWORD=...
 ADMIN_SESSION_SECRET=...
+NVIDIA_API_KEY=...
 ```
 
-按需设置数据源和 AI Provider 的 API Key 环境变量。
+按需设置其他数据源和备用 AI Provider 的 API Key 环境变量。
 
 ### Docker Compose 部署
 
@@ -157,7 +158,7 @@ docker compose --env-file .env.docker --profile worker up -d web worker
 访问 [http://localhost:3000/admin](http://localhost:3000/admin) 配置：
 
 - 赛事数据源：赛程、比分、预测市场、赔率、集锦、新闻、球队内容。
-- AI 大模型：OpenAI、Gemini、DeepSeek、Xiaomi MiMo、Kimi Coding、BigModel/智谱、自定义 Provider，并可指定主 Provider。
+- AI 大模型：OpenAI、Gemini、DeepSeek、NVIDIA NIM、Xiaomi MiMo、Kimi Coding、BigModel/智谱、自定义 Provider，并可指定主 Provider。
 
 本地开发环境如果未设置 `ADMIN_PASSWORD`，默认密码为 `admin123`。管理员保存的配置写入 `data/admin-config.json`，该文件只保存数据源、Provider 和 API Key 环境变量名。
 
