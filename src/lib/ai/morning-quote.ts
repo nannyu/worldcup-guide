@@ -1,6 +1,6 @@
 import type { AiProviderConfig } from "@/lib/admin/config";
 import { callAnthropicMessagesJson } from "@/lib/ai/anthropic-messages";
-import { openAiCompatibleProviderOptions } from "@/lib/ai/openai-compatible";
+import { openAiCompatibleProviderOptions, waitForOpenAiCompatibleProviderSlot } from "@/lib/ai/openai-compatible";
 import type { Match, MorningQuote, NewsArticle } from "@/lib/wc-data";
 
 const MORNING_QUOTE_AI_TIMEOUT_MS = Number(process.env.MORNING_QUOTE_AI_TIMEOUT_MS) || 45_000;
@@ -110,6 +110,7 @@ function buildPrompt(input: {
 
 async function callOpenAiCompatible(provider: AiProviderConfig, prompt: string): Promise<string> {
   const providerOptions = openAiCompatibleProviderOptions(provider);
+  await waitForOpenAiCompatibleProviderSlot(provider);
   const response = await fetch(joinUrl(provider.baseUrl, "/chat/completions"), {
     method: "POST",
     headers: {

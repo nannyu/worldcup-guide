@@ -1,6 +1,6 @@
 import type { AiProviderConfig } from "@/lib/admin/config";
 import { callAnthropicMessagesJson } from "@/lib/ai/anthropic-messages";
-import { openAiCompatibleProviderOptions } from "@/lib/ai/openai-compatible";
+import { openAiCompatibleProviderOptions, waitForOpenAiCompatibleProviderSlot } from "@/lib/ai/openai-compatible";
 import type { NewsArticle } from "@/lib/wc-data";
 
 const NEWS_AI_ANALYSIS_LIMIT = 20;
@@ -132,6 +132,7 @@ async function callOpenAiCompatible(
   prompt: string,
 ): Promise<AiNewsCuration> {
   const providerOptions = openAiCompatibleProviderOptions(provider);
+  await waitForOpenAiCompatibleProviderSlot(provider);
   const response = await fetch(joinUrl(provider.baseUrl, "/chat/completions"), {
     method: "POST",
     headers: {

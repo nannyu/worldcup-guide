@@ -1,6 +1,6 @@
 import { readAdminConfig, type AiProviderConfig } from "@/lib/admin/config";
 import { callAnthropicMessagesJson } from "@/lib/ai/anthropic-messages";
-import { openAiCompatibleProviderOptions } from "@/lib/ai/openai-compatible";
+import { openAiCompatibleProviderOptions, waitForOpenAiCompatibleProviderSlot } from "@/lib/ai/openai-compatible";
 import { runAiTaskQueue, type AiTask } from "@/lib/ai/task-orchestrator";
 import { getAggregatedMatches, getAggregatedNews, MORNING_BRIEF_NEWS_LIMIT } from "@/lib/data-sources/aggregate";
 import { readSnapshotCache, upsertSnapshotCache } from "@/lib/db/queries/data-cache";
@@ -320,6 +320,7 @@ function normalizeAiItem(value: unknown, context: PlayerContext, providerName: s
 
 async function callOpenAiCompatible(provider: AiProviderConfig, prompt: string, context: PlayerContext): Promise<PlayerRoastItem> {
   const providerOptions = openAiCompatibleProviderOptions(provider);
+  await waitForOpenAiCompatibleProviderSlot(provider);
   const response = await fetch(joinUrl(provider.baseUrl, "/chat/completions"), {
     method: "POST",
     headers: {

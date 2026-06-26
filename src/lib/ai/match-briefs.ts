@@ -1,6 +1,6 @@
 import type { AiProviderConfig } from "@/lib/admin/config";
 import { callAnthropicMessagesJson } from "@/lib/ai/anthropic-messages";
-import { openAiCompatibleProviderOptions } from "@/lib/ai/openai-compatible";
+import { openAiCompatibleProviderOptions, waitForOpenAiCompatibleProviderSlot } from "@/lib/ai/openai-compatible";
 import { runAiTaskQueue, type AiTask } from "@/lib/ai/task-orchestrator";
 import type { Match } from "@/lib/wc-data";
 
@@ -110,6 +110,7 @@ function buildPrompt(match: Match): string {
 
 async function callOpenAiCompatible(provider: AiProviderConfig, prompt: string): Promise<MatchBrief> {
   const providerOptions = openAiCompatibleProviderOptions(provider);
+  await waitForOpenAiCompatibleProviderSlot(provider);
   const response = await fetch(joinUrl(provider.baseUrl, "/chat/completions"), {
     method: "POST",
     headers: {
