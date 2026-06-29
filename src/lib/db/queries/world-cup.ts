@@ -2,11 +2,15 @@ import { and, asc, eq, gte, lt } from "drizzle-orm";
 import { getDb, isDatabaseConfigured } from "../client";
 import { matches } from "../schema/world-cup";
 import {
+  allMatches,
   fifaRecordToMatch,
+  isTournamentPlaceholderTeam,
   mergeMatchWithOfficialSource,
   type FifaScheduleRecord,
   type Match,
 } from "@/lib/wc-data";
+
+const officialMatchesById = new Map(allMatches.map((match) => [match.id, match]));
 
 export async function getStoredOfficialMatches<T>(bounds: { startUtc: string; endUtc: string }): Promise<T[]> {
   if (!isDatabaseConfigured) return [];
@@ -86,9 +90,24 @@ export async function getStoredCanonicalMatches(bounds: { startUtc: string; endU
 }
 
 function hasPersistentMatchData(match: Match): boolean {
+  const official = officialMatchesById.get(match.id);
+  const hasResolvedOfficialPlaceholder =
+    Boolean(official) && (
+      (
+        (isTournamentPlaceholderTeam(official?.homeTeam) || isTournamentPlaceholderTeam(official?.homeCode))
+        && Boolean(match.homeTeam)
+        && !isTournamentPlaceholderTeam(match.homeTeam)
+      )
+      || (
+        (isTournamentPlaceholderTeam(official?.awayTeam) || isTournamentPlaceholderTeam(official?.awayCode))
+        && Boolean(match.awayTeam)
+        && !isTournamentPlaceholderTeam(match.awayTeam)
+      )
+    );
   return match.status !== "upcoming"
     || match.homeScore !== null
     || match.awayScore !== null
+    || hasResolvedOfficialPlaceholder
     || Boolean(match.events?.length)
     || Boolean(match.lineups?.length)
     || Boolean(match.statistics?.length)

@@ -238,6 +238,22 @@ function roundLabel(stage: string): string {
   return labels[stage] || stage;
 }
 
+export function isTournamentPlaceholderTeam(input: string | undefined): boolean {
+  const value = String(input || "")
+    .trim()
+    .normalize("NFKD")
+    .replace(/\s+/g, " ");
+  if (!value) return false;
+  const upper = value.toUpperCase();
+  return upper === "TBD"
+    || upper === "待定"
+    || upper === "TO BE DETERMINED"
+    || /^[1-3]\s*[A-L]{1,5}$/.test(upper)
+    || /^[WL]\s*\d{1,3}$/.test(upper)
+    || /^(WINNER|LOSER)(\s+OF)?\s+MATCH\s+\d{1,3}$/.test(upper)
+    || /^(WINNER|RUNNER[- ]?UP|SECOND|THIRD|BEST THIRD)\b.*\bGROUP\b/.test(upper);
+}
+
 function matchSideDisplay(side: FifaScheduleRecord["home"]) {
   if (side.code && teamDisplay[side.code]) return teamDisplay[side.code];
   return { name: side.name, flag: "🏳️" };
@@ -858,16 +874,29 @@ export function getMatchSequenceNumber(match: Match, lookup: Map<string, number>
 export function mergeMatchWithOfficialSource(base: Match, live?: Match): Match {
   if (!live) return base;
 
+  const useLiveHome =
+    (isTournamentPlaceholderTeam(base.homeTeam) || isTournamentPlaceholderTeam(base.homeCode))
+    && Boolean(live.homeTeam)
+    && !isTournamentPlaceholderTeam(live.homeTeam);
+  const useLiveAway =
+    (isTournamentPlaceholderTeam(base.awayTeam) || isTournamentPlaceholderTeam(base.awayCode))
+    && Boolean(live.awayTeam)
+    && !isTournamentPlaceholderTeam(live.awayTeam);
+
   return {
     ...base,
     ...live,
     id: base.id,
-    homeTeam: base.homeTeam,
-    awayTeam: base.awayTeam,
-    homeCode: base.homeCode || live.homeCode,
-    awayCode: base.awayCode || live.awayCode,
-    homeFlag: base.homeFlag || live.homeFlag,
-    awayFlag: base.awayFlag || live.awayFlag,
+    homeTeam: useLiveHome ? live.homeTeam : base.homeTeam || live.homeTeam,
+    awayTeam: useLiveAway ? live.awayTeam : base.awayTeam || live.awayTeam,
+    homeCode: useLiveHome && live.homeCode && !isTournamentPlaceholderTeam(live.homeCode)
+      ? live.homeCode
+      : base.homeCode || live.homeCode,
+    awayCode: useLiveAway && live.awayCode && !isTournamentPlaceholderTeam(live.awayCode)
+      ? live.awayCode
+      : base.awayCode || live.awayCode,
+    homeFlag: useLiveHome ? live.homeFlag || base.homeFlag : base.homeFlag || live.homeFlag,
+    awayFlag: useLiveAway ? live.awayFlag || base.awayFlag : base.awayFlag || live.awayFlag,
     kickoffAt: base.kickoffAt || live.kickoffAt,
     kickoffBj: base.kickoffBj || live.kickoffBj,
     group: base.group,

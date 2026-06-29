@@ -19,6 +19,7 @@ import type {
 import {
   allMatches,
   ENGLAND_FLAG,
+  isTournamentPlaceholderTeam,
   matchTeamPairKey,
   mergeMatchWithOfficialSource,
   SCOTLAND_FLAG,
@@ -166,6 +167,8 @@ const officialMatchesByTeamPair = allMatches.reduce<Map<string, Match[]>>((looku
   return lookup;
 }, new Map());
 
+const PLACEHOLDER_MATCH_MAX_KICKOFF_DISTANCE_MS = 6 * 60 * 60 * 1000;
+
 export function matchKickoffDistance(left: Pick<Match, "kickoffAt">, right: Pick<Match, "kickoffAt">): number {
   const leftTime = Date.parse(left.kickoffAt || "");
   const rightTime = Date.parse(right.kickoffAt || "");
@@ -173,12 +176,47 @@ export function matchKickoffDistance(left: Pick<Match, "kickoffAt">, right: Pick
   return Math.abs(leftTime - rightTime);
 }
 
-export function officialMatchForRemoteMatch(match: Match): Match | undefined {
-  const candidates = officialMatchesByTeamPair.get(matchTeamPairKey(match)) || [];
+function matchHasPlaceholderSide(match: Pick<Match, "homeTeam" | "awayTeam" | "homeCode" | "awayCode">): boolean {
+  return isTournamentPlaceholderTeam(match.homeTeam)
+    || isTournamentPlaceholderTeam(match.awayTeam)
+    || isTournamentPlaceholderTeam(match.homeCode)
+    || isTournamentPlaceholderTeam(match.awayCode);
+}
+
+function matchHasResolvedSide(match: Pick<Match, "homeTeam" | "awayTeam">): boolean {
+  return [match.homeTeam, match.awayTeam].some((team) => Boolean(team) && !isTournamentPlaceholderTeam(team));
+}
+
+function roundMatchScore(official: Match, remote: Match): number {
+  const officialRound = String(official.round || "").trim();
+  const remoteRound = String(remote.round || "").trim();
+  if (!officialRound || !remoteRound) return 0;
+  return officialRound === remoteRound ? 1 : 0;
+}
+
+function officialPlaceholderMatchForRemoteMatch(match: Match): Match | undefined {
+  if (!matchHasResolvedSide(match)) return undefined;
+  const candidates = allMatches.filter((official) =>
+    matchHasPlaceholderSide(official)
+    && matchKickoffDistance(official, match) <= PLACEHOLDER_MATCH_MAX_KICKOFF_DISTANCE_MS
+  );
   if (candidates.length === 0) return undefined;
   return candidates
     .slice()
-    .sort((left, right) => matchKickoffDistance(left, match) - matchKickoffDistance(right, match))[0];
+    .sort((left, right) =>
+      roundMatchScore(right, match) - roundMatchScore(left, match)
+      || matchKickoffDistance(left, match) - matchKickoffDistance(right, match)
+    )[0];
+}
+
+export function officialMatchForRemoteMatch(match: Match): Match | undefined {
+  const candidates = officialMatchesByTeamPair.get(matchTeamPairKey(match)) || [];
+  if (candidates.length > 0) {
+    return candidates
+      .slice()
+      .sort((left, right) => matchKickoffDistance(left, match) - matchKickoffDistance(right, match))[0];
+  }
+  return officialPlaceholderMatchForRemoteMatch(match);
 }
 
 export function canonicalizeMatchesWithOfficialSchedule(matches: Match[]): Match[] {
