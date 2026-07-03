@@ -1,13 +1,12 @@
 "use client";
 
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { BarChart3, Brackets, CalendarDays, ChevronRight, Clock3, Coins, Info, LineChart, ListFilter, Table2, Trophy } from "lucide-react";
+import { BarChart3, Brackets, CalendarDays, Check, ChevronRight, Clock3, Coins, Info, LineChart, Loader2, Table2, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   allMatches,
-  allScheduleDayGroups,
   beijingScheduleUtcDayBounds,
   createMatchSequenceLookup,
   getGroupStandings,
@@ -20,16 +19,19 @@ import {
   type Match,
   type RadarMatch,
 } from "@/lib/wc-data";
-import { groupLabel, roundLabel, teamName, tr } from "@/lib/i18n/content";
-import { historicalScheduleDates, scheduleDateQueryForBeijingDate } from "@/lib/i18n/schedule-utils";
-import { BetTab } from "@/components/betting/BetTab";
+import { groupLabel, localizeTeamName, roundLabel, teamName, tr } from "@/lib/i18n/content";
+import { historicalScheduleDates, upcomingScheduleDates } from "@/lib/i18n/schedule-utils";
+import { request } from "@/lib/api/request";
+import { auth } from "@eazo/sdk";
+import { useEazo } from "@eazo/sdk/react";
+import { MyBetsTab } from "@/components/betting/MyBetsTab";
 
 type LocalizedText = {
   zh: string;
   en: string;
 };
 
-type TabKey = "games" | "props" | "groups" | "bracket" | "bet";
+type TabKey = "lines" | "groups" | "bracket" | "mybets";
 type GameStatusTab = "open" | "finished";
 type MarketCategoryKey = NonNullable<RadarMatch["category"]>;
 type MarketFilterKey = "all" | MarketCategoryKey;
@@ -72,19 +74,6 @@ type DisplayMatchDay = {
   matches: GameMatch[];
 };
 
-type PropMarket = {
-  id: string;
-  title: LocalizedText;
-  volume: string;
-  icon: string;
-  choices: Array<{
-    label: LocalizedText;
-    probability: number;
-    yes: string;
-    no: string;
-  }>;
-};
-
 type BracketRound = {
   title: LocalizedText;
   matches: Match[];
@@ -97,15 +86,32 @@ type LineMarketGroup = {
   markets: RadarMatch[];
 };
 
+type SlipMarket = {
+  id: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeFlag: string;
+  awayFlag: string;
+  homeMarketProb: number;
+  awayMarketProb: number;
+};
+
+type SlipLeg = {
+  market: SlipMarket;
+  outcomeIndex: number;
+  outcomeLabel: string;
+  probability: number;
+  odds: number;
+};
+
 const beijingTimeZone = "Asia/Shanghai";
 const dateKeys = ["yesterday", "today", "tomorrow"] as const;
 
 const tabDefinitions: Array<{ key: TabKey; label: LocalizedText; Icon: LucideIcon }> = [
-  { key: "games", label: { zh: "比赛", en: "Games" }, Icon: CalendarDays },
-  { key: "props", label: { zh: "玩法", en: "Props" }, Icon: Trophy },
-  { key: "bet", label: { zh: "下注", en: "Bet" }, Icon: Coins },
-  { key: "bracket", label: { zh: "对阵图", en: "Bracket" }, Icon: Brackets },
+  { key: "lines", label: { zh: "盘口", en: "Lines" }, Icon: CalendarDays },
+  { key: "bracket", label: { zh: "对阵", en: "Bracket" }, Icon: Brackets },
   { key: "groups", label: { zh: "小组", en: "Groups" }, Icon: Table2 },
+  { key: "mybets", label: { zh: "我的", en: "My Bets" }, Icon: Coins },
 ];
 
 const marketFilterDefinitions: Array<{ key: MarketFilterKey; label: LocalizedText }> = [
@@ -678,30 +684,6 @@ function bracketRoundsFromMatches(matches: Match[]): BracketRound[] {
     });
 }
 
-function liveMarketFromRadar(match: RadarMatch): PropMarket {
-  const title = match.title || `${match.homeTeam} vs ${match.awayTeam}`;
-  return {
-    id: match.id,
-    title: { zh: title, en: title },
-    volume: match.volume || (typeof match.volumeUsd === "number" ? `$${Math.round(match.volumeUsd).toLocaleString()}` : "Polymarket"),
-    icon: "PM",
-    choices: [
-      {
-        label: { zh: match.homeTeam, en: match.homeTeam },
-        probability: match.homeMarketProb,
-        yes: `${match.homeMarketProb}%`,
-        no: `${Math.max(0, 100 - match.homeMarketProb)}%`,
-      },
-      {
-        label: { zh: match.awayTeam, en: match.awayTeam },
-        probability: match.awayMarketProb,
-        yes: `${match.awayMarketProb}%`,
-        no: `${Math.max(0, 100 - match.awayMarketProb)}%`,
-      },
-    ],
-  };
-}
-
 function volumeValue(match: RadarMatch): number {
   if (typeof match.volumeUsd === "number" && Number.isFinite(match.volumeUsd)) return match.volumeUsd;
   const raw = String(match.volume || "").trim().toLowerCase().replace(/[$,\s]/g, "");
@@ -731,16 +713,155 @@ function sourceLabel(source: DataSourceMode | undefined, diagnostics: Array<{ na
   return emptyLabel;
 }
 
+/* ------------------------------------------------------------------ */
+/*  RadarEyeScreen — main component                                   */
+/* ------------------------------------------------------------------ */
+
 export function RadarEyeScreen() {
   const { i18n } = useTranslation();
   const locale = i18n.resolvedLanguage || i18n.language;
-  const [activeTab, setActiveTab] = useState<TabKey>("games");
+  const user = useEazo((s) => s.auth.user);
+  const [activeTab, setActiveTab] = useState<TabKey>("lines");
   const [radarItems, setRadarItems] = useState<RadarMatch[]>([]);
   const [liveMatches, setLiveMatches] = useState<Match[]>([]);
   const [radarSourceLabel, setRadarSourceLabel] = useState("预测市场数据待接入");
   const [matchSourceLabel, setMatchSourceLabel] = useState("FIFA 官方赛程 · 本地/数据库数据源");
   const browserDateLabel = useBrowserDateLabel(locale);
 
+  /* ---- Bet slip state ---- */
+  const [slipLegs, setSlipLegs] = useState<SlipLeg[]>([]);
+  const [showSlip, setShowSlip] = useState(false);
+  const [betAmount, setBetAmount] = useState(1);
+  const [slipBalance, setSlipBalance] = useState<number | null>(null);
+  const [placing, setPlacing] = useState(false);
+  const [slipMessage, setSlipMessage] = useState<string | null>(null);
+
+  const combinedOdds = slipLegs.reduce((acc, l) => acc * l.odds, 1);
+
+  const toggleLeg = useCallback((market: SlipMarket, outcomeIndex: number, label: string) => {
+    const prob = market.homeMarketProb / 100;
+    if (prob <= 0) return;
+    const odds = 1 / prob;
+
+    setSlipLegs((prev) => {
+      const existing = prev.findIndex(
+        (l) => l.market.id === market.id && l.outcomeIndex === outcomeIndex,
+      );
+      if (existing >= 0) {
+        return prev.filter((_, i) => i !== existing);
+      }
+      const sameMarket = prev.findIndex((l) => l.market.id === market.id);
+      if (sameMarket >= 0) {
+        const updated = [...prev];
+        updated[sameMarket] = { market, outcomeIndex, outcomeLabel: label, probability: prob, odds };
+        return updated;
+      }
+      return [...prev, { market, outcomeIndex, outcomeLabel: label, probability: prob, odds }];
+    });
+  }, []);
+
+  const isLegSelected = useCallback((marketId: string, outcomeIndex: number) => {
+    return slipLegs.some((l) => l.market.id === marketId && l.outcomeIndex === outcomeIndex);
+  }, [slipLegs]);
+
+  const requireLogin = useCallback(async (): Promise<boolean> => {
+    if (user) return true;
+    try {
+      await auth.login();
+    } catch {
+      // login cancelled or failed
+    }
+    return false;
+  }, [user]);
+
+  const fetchSlipBalance = useCallback(async () => {
+    try {
+      const res = await request("/api/betting/balance");
+      const data = await res.json();
+      if (data.ok) setSlipBalance(data.balance);
+    } catch {
+      /* noop */
+    }
+  }, []);
+
+  const placeSingleBet = async (leg: SlipLeg) => {
+    if (!(await requireLogin())) return;
+    setPlacing(true);
+    setSlipMessage(null);
+    try {
+      const res = await request("/api/betting/bets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          marketId: leg.market.id,
+          category: "moneyline",
+          outcomeIndex: leg.outcomeIndex,
+          outcomeLabel: leg.outcomeLabel,
+          amount: betAmount,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setSlipMessage(tr(locale, "下注成功", "Bet placed!"));
+        setSlipLegs([]);
+        setShowSlip(false);
+        setSlipBalance(data.balance);
+      } else {
+        setSlipMessage(data.error || "Error");
+      }
+    } catch (err) {
+      console.error("Failed to place bet:", err);
+    } finally {
+      setPlacing(false);
+      setTimeout(() => setSlipMessage(null), 3000);
+    }
+  };
+
+  const placeParlayBet = async () => {
+    if (!(await requireLogin())) return;
+    if (slipLegs.length < 2) return;
+    setPlacing(true);
+    setSlipMessage(null);
+    try {
+      const res = await request("/api/betting/parlay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          legs: slipLegs.map((l) => ({
+            marketId: l.market.id,
+            category: "moneyline",
+            outcomeIndex: l.outcomeIndex,
+            outcomeLabel: l.outcomeLabel,
+          })),
+          amount: betAmount,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setSlipMessage(tr(locale, "下注成功", "Bet placed!"));
+        setSlipLegs([]);
+        setShowSlip(false);
+        setSlipBalance(data.balance);
+      } else {
+        setSlipMessage(data.error || "Error");
+      }
+    } catch (err) {
+      console.error("Failed to place parlay:", err);
+    } finally {
+      setPlacing(false);
+      setTimeout(() => setSlipMessage(null), 3000);
+    }
+  };
+
+  const handleConfirmBet = () => {
+    if (slipLegs.length === 1) {
+      placeSingleBet(slipLegs[0]);
+    } else {
+      placeParlayBet();
+    }
+  };
+
+  /* ---- Data ---- */
   const sortedRadarItems = useMemo(
     () =>
       radarItems.slice().sort((left, right) =>
@@ -755,7 +876,6 @@ export function RadarEyeScreen() {
     () => groupGameMatches(mergedMatches, sortedRadarItems, locale),
     [mergedMatches, sortedRadarItems, locale],
   );
-  const propMarkets = useMemo(() => sortedRadarItems.filter((item) => item.category === "prop").slice(0, 12).map(liveMarketFromRadar), [sortedRadarItems]);
   const standings = useMemo(() => getGroupStandings(mergedMatches), [mergedMatches]);
   const bracketRounds = useMemo(() => bracketRoundsFromMatches(mergedMatches), [mergedMatches]);
   const matchSequence = useMemo(() => createMatchSequenceLookup(mergedMatches), [mergedMatches]);
@@ -779,6 +899,14 @@ export function RadarEyeScreen() {
             startUtc: beijingScheduleUtcDayBounds(scheduleDates[dateKey].date)?.startUtc || "",
             endUtc: beijingScheduleUtcDayBounds(scheduleDates[dateKey].date)?.endUtc || "",
           })),
+          ...upcomingScheduleDates(now)
+            .filter((date) => !recentDates.has(date))
+            .map((date) => ({
+              dateKey: "today" as const,
+              date,
+              startUtc: beijingScheduleUtcDayBounds(date)?.startUtc || "",
+              endUtc: beijingScheduleUtcDayBounds(date)?.endUtc || "",
+            })),
           ...historicalScheduleDates(now)
             .filter((date) => !recentDates.has(date))
             .map((date) => ({
@@ -895,18 +1023,191 @@ export function RadarEyeScreen() {
 
       <main className="flex-1 px-4 py-4 md:px-6 md:py-6">
         <div className="mx-auto max-w-6xl">
-          {activeTab === "games" && <GamesTab locale={locale} days={displayMatchDays} sourceLabel={matchSourceLabel} marketSourceLabel={radarSourceLabel} />}
-          {activeTab === "props" && <PropsTab locale={locale} markets={propMarkets} sourceLabel={radarSourceLabel} />}
-          {activeTab === "bet" && <BetTab locale={locale} />}
+          {activeTab === "lines" && (
+            <GamesTab
+              locale={locale}
+              days={displayMatchDays}
+              sourceLabel={matchSourceLabel}
+              marketSourceLabel={radarSourceLabel}
+              onToggleLeg={toggleLeg}
+              isLegSelected={isLegSelected}
+            />
+          )}
           {activeTab === "groups" && <GroupsTab locale={locale} standings={standings} />}
           {activeTab === "bracket" && <BracketTab locale={locale} rounds={bracketRounds} matchSequence={matchSequence} />}
+          {activeTab === "mybets" && <MyBetsTab locale={locale} />}
         </div>
       </main>
+
+      {/* ---- Floating bet slip bar ---- */}
+      {slipLegs.length > 0 && (
+        <div className="fixed bottom-16 left-0 right-0 z-30 px-4 md:bottom-0">
+          <div className="mx-auto max-w-6xl border-2 border-[#241A14] bg-[#FAF7F0] p-3 shadow-[3px_3px_0_0_#241A14]">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-black text-[#241A14]">
+                  <span className="text-[#D36E52]">{slipLegs.length}</span>{" "}
+                  {tr(locale, "已选", "selected")}
+                </span>
+                <span className="text-xs text-[#5C524C]">
+                  {tr(locale, "总赔率", "Combined")}: <span className="font-black text-[#D36E52]">{combinedOdds.toFixed(2)}x</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSlipLegs([])}
+                  className="border border-[#241A14] bg-[#EDE9E0] px-2 py-1.5 text-[10px] font-black text-[#5C524C]"
+                >
+                  {tr(locale, "清空", "Clear")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowSlip(true); fetchSlipBalance(); }}
+                  className="border-2 border-[#241A14] bg-[#D36E52] px-4 py-1.5 text-sm font-black text-white"
+                >
+                  {tr(locale, "查看注单", "View Slip")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---- Bet slip modal ---- */}
+      {showSlip && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={() => setShowSlip(false)}>
+          <div
+            className="max-h-[80vh] w-full max-w-md space-y-4 overflow-y-auto border-t-2 border-[#241A14] bg-[#FAF7F0] p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
+                {slipLegs.length === 1 ? tr(locale, "下注", "Place Bet") : tr(locale, "串联下注", "Parlay")}
+              </h3>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setSlipLegs([]); setShowSlip(false); }}
+                  className="text-xs font-black text-[#9E948C]"
+                >
+                  {tr(locale, "清空", "Clear")}
+                </button>
+                <button type="button" onClick={() => setShowSlip(false)} className="text-[#5C524C]">
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Legs list */}
+            <div className="space-y-2">
+              {slipLegs.map((leg) => (
+                <div key={`${leg.market.id}-${leg.outcomeIndex}`} className="border border-[#241A14] bg-[#F5F1E8] p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 text-[10px] text-[#9E948C]">
+                        {leg.market.homeFlag} {localizeTeamName(leg.market.homeTeam, locale)} vs {localizeTeamName(leg.market.awayTeam, locale)} {leg.market.awayFlag}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-black text-[#D36E52]">{leg.outcomeLabel}</span>
+                        <span className="text-sm text-[#5C524C]">{leg.odds.toFixed(2)}x</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleLeg(leg.market, leg.outcomeIndex, leg.outcomeLabel)}
+                      className="ml-3 text-[#9E948C] hover:text-[#D36E52]"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Combined odds */}
+            {slipLegs.length >= 2 && (
+              <div className="flex items-center justify-between px-1 text-sm">
+                <span className="text-[#5C524C]">{tr(locale, "总赔率", "Combined Odds")}</span>
+                <span className="font-black text-[#D36E52]">{combinedOdds.toFixed(2)}x</span>
+              </div>
+            )}
+
+            {/* Amount input */}
+            <div>
+              <label className="mb-1 block text-xs font-black text-[#9E948C]">{tr(locale, "筹码", "Chips")}</label>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setBetAmount(Math.max(1, betAmount - 1))}
+                  className="flex size-10 items-center justify-center border border-[#241A14] bg-[#EDE9E0] text-[#241A14]"
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  value={betAmount}
+                  onChange={(e) => setBetAmount(Math.max(1, Math.min(slipBalance ?? 999, Number(e.target.value))))}
+                  min={1}
+                  max={slipBalance ?? 999}
+                  className="h-10 flex-1 border border-[#241A14] bg-[#FAF7F0] text-center text-lg font-black text-[#241A14] focus:border-[#D36E52] focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setBetAmount(Math.min(slipBalance ?? 999, betAmount + 1))}
+                  className="flex size-10 items-center justify-center border border-[#241A14] bg-[#EDE9E0] text-[#241A14]"
+                >
+                  +
+                </button>
+              </div>
+              <div className="mt-2 flex justify-between text-xs text-[#9E948C]">
+                <span>{tr(locale, "余额", "Balance")}: {slipBalance ?? "—"}</span>
+                <span>{tr(locale, "预计赢取", "Potential win")}: {Math.floor(betAmount * combinedOdds)}</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleConfirmBet}
+              disabled={placing || betAmount <= 0 || (slipBalance !== null && betAmount > slipBalance) || slipLegs.length === 0}
+              className="flex h-12 w-full items-center justify-center gap-2 border-2 border-[#241A14] bg-[#D36E52] text-lg font-black text-white disabled:opacity-50"
+            >
+              {placing ? <Loader2 size={20} className="animate-spin" /> : <Coins size={20} />}
+              {tr(locale, "确认下注", "Confirm Bet")} ({betAmount} {tr(locale, "筹码", "chips")})
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ---- Slip message toast ---- */}
+      {slipMessage && (
+        <div className="fixed left-1/2 top-4 z-[60] -translate-x-1/2 border-2 border-[#241A14] bg-[#FAF7F0] px-4 py-2 text-sm font-black text-[#241A14] shadow-[3px_3px_0_0_#241A14]">
+          {slipMessage}
+        </div>
+      )}
     </div>
   );
 }
 
-function GamesTab({ locale, days, sourceLabel, marketSourceLabel }: { locale: string; days: DisplayMatchDay[]; sourceLabel: string; marketSourceLabel: string }) {
+/* ------------------------------------------------------------------ */
+/*  GamesTab                                                           */
+/* ------------------------------------------------------------------ */
+
+function GamesTab({
+  locale,
+  days,
+  sourceLabel,
+  marketSourceLabel,
+  onToggleLeg,
+  isLegSelected,
+}: {
+  locale: string;
+  days: DisplayMatchDay[];
+  sourceLabel: string;
+  marketSourceLabel: string;
+  onToggleLeg: (market: SlipMarket, outcomeIndex: number, label: string) => void;
+  isLegSelected: (marketId: string, outcomeIndex: number) => boolean;
+}) {
   const [statusTab, setStatusTab] = useState<GameStatusTab>("open");
   const openDays = useMemo(() => filterMatchDaysByStatus(days, "open"), [days]);
   const finishedDays = useMemo(() => filterMatchDaysByStatus(days, "finished"), [days]);
@@ -920,7 +1221,7 @@ function GamesTab({ locale, days, sourceLabel, marketSourceLabel }: { locale: st
     <div className="space-y-4">
       <SectionLead
         locale={locale}
-        label={{ zh: "比赛", en: "Games" }}
+        label={{ zh: "盘口", en: "Lines" }}
         title={{ zh: "世界杯比赛盘口", en: "World Cup game lines" }}
         copy={{
           zh: `按日期展示比赛，列表只放胜负、让分、总进球三个核心盘口；展开后查看本场 Polymarket 已返回的全部市场。赛程：${sourceLabel}；市场：${marketSourceLabel}。`,
@@ -972,7 +1273,15 @@ function GamesTab({ locale, days, sourceLabel, marketSourceLabel }: { locale: st
 
             <div className="divide-y divide-[#241A14]/25">
               {day.matches.map((match, index) => (
-                <CompactGameCard key={match.id} match={match} locale={locale} index={index} timeZone={beijingTimeZone} />
+                <CompactGameCard
+                  key={match.id}
+                  match={match}
+                  locale={locale}
+                  index={index}
+                  timeZone={beijingTimeZone}
+                  onToggleLeg={onToggleLeg}
+                  isLegSelected={isLegSelected}
+                />
               ))}
             </div>
           </section>
@@ -982,21 +1291,60 @@ function GamesTab({ locale, days, sourceLabel, marketSourceLabel }: { locale: st
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  CompactGameCard — simplified collapsed, betting-integrated         */
+/* ------------------------------------------------------------------ */
+
 function CompactGameCard({
   match,
   locale,
   index,
   timeZone,
+  onToggleLeg,
+  isLegSelected,
 }: {
   match: GameMatch;
   locale: string;
   index: number;
   timeZone: string;
+  onToggleLeg: (market: SlipMarket, outcomeIndex: number, label: string) => void;
+  isLegSelected: (marketId: string, outcomeIndex: number) => boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const kickoff = formatKickoff(match, timeZone, locale);
   const volumeLabel = formatVolumeLabel(match.volume, match.volumeUsd, locale);
   const marketCount = match.radarMarkets.length;
+  const finished = isGameFinished(match);
+
+  /* Extract moneyline radar markets for home/draw/away buttons */
+  const mlMarkets = match.radarMarkets.filter((m) => m.category === "moneyline");
+  const homeCN = canonicalTeamName(match.home);
+  const awayCN = canonicalTeamName(match.away);
+  const homeML = mlMarkets.find((m) => moneylineMarketLabel(m).includes(homeCN));
+  const drawML = mlMarkets.find((m) => moneylineMarketLabel(m).includes("draw") || canonicalName(m.title).includes("draw"));
+  const awayML = mlMarkets.find((m) => moneylineMarketLabel(m).includes(awayCN));
+
+  const moneylineButtons = [
+    { code: match.homeCode, market: homeML, prob: homeML ? outcomeProbability(homeML, 0) : 0, tone: "primary" as const },
+    { code: "DRAW", market: drawML, prob: drawML ? outcomeProbability(drawML, 0) : 0, tone: "neutral" as const },
+    { code: match.awayCode, market: awayML, prob: awayML ? outcomeProbability(awayML, 0) : 0, tone: "success" as const },
+  ].filter((b) => b.market);
+
+  const handleBetClick = (btn: typeof moneylineButtons[number]) => {
+    if (!btn.market || finished) return;
+    const slipMarket: SlipMarket = {
+      id: btn.market.id,
+      homeTeam: match.home,
+      awayTeam: match.away,
+      homeFlag: match.homeFlag,
+      awayFlag: match.awayFlag,
+      homeMarketProb: btn.prob,
+      awayMarketProb: 100 - btn.prob,
+    };
+    onToggleLeg(slipMarket, 0, `${btn.code} ${probabilityPrice(btn.prob)}`);
+  };
+
+  const hasTrend = (match.radarMatch?.history || []).filter((point) => Number.isFinite(point.market) && Number.isFinite(point.odds)).length >= 2;
 
   return (
     <motion.article
@@ -1005,83 +1353,120 @@ function CompactGameCard({
       transition={{ duration: 0.25, delay: index * 0.03 }}
       className="bg-[#FAF7F0]"
     >
-      <div className="grid gap-3 p-3 xl:grid-cols-[minmax(0,1.05fr)_minmax(24rem,1.25fr)] xl:items-stretch">
-        <div className="min-w-0 space-y-3">
-          <div className="flex flex-wrap items-center gap-2 text-[10px] font-black text-[#9E948C]">
-            <span className="inline-flex min-h-7 items-center gap-1.5 border border-[#241A14] bg-[#F5F1E8] px-2 text-xs text-[#241A14]">
-              <Clock3 className="size-3.5 text-[#D36E52]" strokeWidth={2.5} />
-              {kickoff.time}
-            </span>
-            <span className="uppercase tracking-[0.12em]">{kickoff.zone}</span>
-            <span>{groupLabel(match.sourceMatch.group, locale)} · {roundLabel(match.sourceMatch.round, locale)}</span>
+      <div className="space-y-2 p-3">
+        {/* Row 1: Time badge + group/round */}
+        <div className="flex flex-wrap items-center gap-2 text-[10px] font-black text-[#9E948C]">
+          <span className="inline-flex items-center gap-1 border border-[#241A14] bg-[#F5F1E8] px-2 py-1 text-xs text-[#241A14]">
+            <Clock3 className="size-3.5 text-[#D36E52]" strokeWidth={2.5} />
+            {kickoff.time}
+          </span>
+          <span>{groupLabel(match.sourceMatch.group, locale)} · {roundLabel(match.sourceMatch.round, locale)}</span>
+        </div>
+
+        {/* Row 2: Teams with flags, score in center */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <span className="grid size-7 shrink-0 place-items-center border border-[#241A14] bg-[#F5F1E8] text-base">{match.homeFlag}</span>
+            <span className="min-w-0 truncate text-sm font-black text-[#241A14]">{teamName(match.home, locale)}</span>
+          </div>
+          <div className="shrink-0 border border-[#241A14] bg-[#EDE9E0] px-3 py-1 text-center text-sm font-black text-[#241A14]">
+            {match.homeScore ?? 0} – {match.awayScore ?? 0}
+          </div>
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+            <span className="min-w-0 truncate text-right text-sm font-black text-[#241A14]">{teamName(match.away, locale)}</span>
+            <span className="grid size-7 shrink-0 place-items-center border border-[#241A14] bg-[#F5F1E8] text-base">{match.awayFlag}</span>
+          </div>
+        </div>
+
+        {/* Row 3: Moneyline betting buttons + expand toggle */}
+        <div className="flex items-stretch gap-1.5">
+          {moneylineButtons.length > 0 ? (
+            moneylineButtons.map((btn) => {
+              const selected = btn.market ? isLegSelected(btn.market.id, 0) : false;
+              const toneClass =
+                btn.tone === "success"
+                  ? "bg-[#9CB48A]/15 hover:bg-[#9CB48A]/30"
+                  : btn.tone === "neutral"
+                    ? "bg-[#EDE9E0] hover:bg-[#E4A853]/20"
+                    : "bg-[#D36E52]/10 hover:bg-[#D36E52]/20";
+              return (
+                <button
+                  key={btn.code}
+                  type="button"
+                  disabled={finished || btn.prob <= 0}
+                  onClick={() => handleBetClick(btn)}
+                  className={`flex min-h-9 flex-1 items-center justify-center gap-1.5 border px-2 text-xs font-black transition-colors disabled:opacity-50 ${
+                    selected
+                      ? "border-[#D36E52] bg-[#D36E52]/20 text-[#D36E52]"
+                      : `border-[#241A14] text-[#241A14] ${toneClass}`
+                  }`}
+                >
+                  <span className="text-[10px]">{btn.code}</span>
+                  <span>{probabilityPrice(btn.prob)}</span>
+                  {selected && <Check className="size-3" />}
+                </button>
+              );
+            })
+          ) : (
+            <div className="flex min-h-9 flex-1 items-center justify-center border border-dashed border-[#241A14]/40 bg-[#EDE9E0]/60 text-[10px] font-black text-[#9E948C]">
+              {tr(locale, "盘口待接入", "Lines pending")}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className={`flex min-h-9 items-center gap-1 border px-2 text-[10px] font-black transition-colors ${
+              expanded
+                ? "border-[#241A14] bg-[#D36E52] text-white"
+                : "border-[#241A14] bg-[#EDE9E0] text-[#241A14] hover:bg-[#D36E52] hover:text-white"
+            }`}
+            aria-expanded={expanded}
+          >
+            <ChevronRight className={`size-3.5 transition-transform ${expanded ? "rotate-90" : ""}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Expanded state */}
+      {expanded && (
+        <div className="border-t border-[#241A14]/20">
+          {/* Spread and Total market rows */}
+          <div className="grid gap-2 p-3 sm:grid-cols-2">
+            {match.markets.slice(1).map((market) => (
+              <CompactMarketColumn key={market.title.en} locale={locale} market={market} />
+            ))}
           </div>
 
-          <div className="space-y-1.5">
-            <TeamScoreLine
-              flag={match.homeFlag}
-              name={teamName(match.home, locale)}
-              code={match.homeCode}
-              score={`${match.homeScore ?? 0}-${match.awayScore ?? 0}`}
-            />
-            <TeamScoreLine
-              flag={match.awayFlag}
-              name={teamName(match.away, locale)}
-              code={match.awayCode}
-              score={`${match.awayScore ?? 0}-${match.homeScore ?? 0}`}
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold text-[#9E948C]">
+          {/* Market count + volume + venue */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-[#241A14]/15 px-3 py-2 text-[10px] font-bold text-[#9E948C]">
             <span className="truncate">{match.sourceMatch.venue || tr(locale, "场馆待接入", "Venue pending")}</span>
-            <span>{marketCount ? `${marketCount} ${tr(locale, "个市场", "markets")}` : tr(locale, "本场盘口待接入", "Markets pending")}</span>
+            <span>{marketCount ? `${marketCount} ${tr(locale, "个市场", "markets")}` : tr(locale, "盘口待接入", "Markets pending")}</span>
             <span>{volumeLabel}</span>
           </div>
-        </div>
 
-        <div className="grid gap-2 sm:grid-cols-3 xl:self-center">
-          {match.markets.map((market) => (
-            <CompactMarketColumn key={market.title.en} locale={locale} market={market} />
-          ))}
-        </div>
-      </div>
+          {/* Probability trend chart */}
+          {hasTrend && (
+            <div className="space-y-2 border-t border-[#241A14]/15 p-3">
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-[#9E948C]">
+                <LineChart className="size-3.5 text-[#D36E52]" strokeWidth={2.4} />
+                {tr(locale, "概率走势", "Probability trend")}
+              </div>
+              <ProbabilityTrendChart match={match} locale={locale} />
+            </div>
+          )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#241A14]/20 px-3 py-2">
-        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-[#9E948C]">
-          <ListFilter className="size-3.5 text-[#D36E52]" strokeWidth={2.4} />
-          {tr(locale, "Polymarket 市场", "Polymarket markets")}
+          {/* Full Polymarket markets drawer */}
+          <GameMarketDrawer match={match} locale={locale} kickoffLabel={kickoff.full} />
         </div>
-        <button
-          type="button"
-          onClick={() => setExpanded((value) => !value)}
-          className={`inline-flex min-h-8 items-center gap-1.5 border border-[#241A14] px-2.5 text-[11px] font-black transition-colors ${
-            expanded ? "bg-[#D36E52] text-white" : "bg-[#EDE9E0] text-[#241A14] hover:bg-[#D36E52] hover:text-white"
-          }`}
-          aria-expanded={expanded}
-        >
-          {expanded ? tr(locale, "收起市场", "Hide markets") : tr(locale, "查看市场", "View markets")}
-          <ChevronRight className={`size-3.5 transition-transform ${expanded ? "rotate-90" : ""}`} />
-        </button>
-      </div>
-
-      {expanded && (
-        <GameMarketDrawer match={match} locale={locale} kickoffLabel={kickoff.full} />
       )}
     </motion.article>
   );
 }
 
-function TeamScoreLine({ flag, name, code, score }: { flag: string; name: string; code: string; score: string }) {
-  return (
-    <div className="grid grid-cols-[1.5rem_minmax(0,1fr)] items-center gap-1.5 text-left text-[#241A14] sm:grid-cols-[2rem_minmax(0,1fr)] sm:gap-2">
-      <span className="grid size-6 place-items-center border border-[#241A14] bg-[#F5F1E8] text-xs sm:size-8 sm:text-base">{flag}</span>
-      <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-        <span className="text-xs font-black leading-tight md:text-base">{name}</span>
-        <span className="shrink-0 text-[10px] font-black text-[#9E948C] sm:text-sm">{score}</span>
-        <span className="shrink-0 text-[10px] font-black uppercase tracking-[0.12em] text-[#9E948C] sm:tracking-[0.16em]">{code}</span>
-      </span>
-    </div>
-  );
-}
+/* ------------------------------------------------------------------ */
+/*  CompactMarketColumn / CompactPriceButton                           */
+/* ------------------------------------------------------------------ */
 
 function CompactMarketColumn({ locale, market }: { locale: string; market: MatchMarket }) {
   const title = localize(locale, market.title);
@@ -1138,6 +1523,10 @@ function CompactPriceButton({ outcome, locale, fill = false }: { outcome: Outcom
     </button>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/*  LineMarketCard                                                     */
+/* ------------------------------------------------------------------ */
 
 function defaultLineMarketIndex(markets: RadarMatch[]) {
   if (markets.length <= 1) return 0;
@@ -1226,6 +1615,10 @@ function LineMarketCard({ group, locale }: { group: LineMarketGroup; locale: str
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  GameMarketDrawer                                                   */
+/* ------------------------------------------------------------------ */
+
 function GameMarketDrawer({ match, locale, kickoffLabel }: { match: GameMatch; locale: string; kickoffLabel: string }) {
   const [activeFilter, setActiveFilter] = useState<MarketFilterKey>("all");
   const filters = useMemo(() => marketFiltersFor(match.radarMarkets), [match.radarMarkets]);
@@ -1294,6 +1687,10 @@ function GameMarketDrawer({ match, locale, kickoffLabel }: { match: GameMatch; l
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  MarketFilterBar                                                    */
+/* ------------------------------------------------------------------ */
+
 function MarketFilterBar({
   filters,
   active,
@@ -1327,6 +1724,10 @@ function MarketFilterBar({
     </div>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/*  PolymarketMarketCard                                               */
+/* ------------------------------------------------------------------ */
 
 function PolymarketMarketCard({ market, locale }: { market: RadarMatch; locale: string }) {
   const outcomes = marketOutcomes(market);
@@ -1364,6 +1765,10 @@ function PolymarketMarketCard({ market, locale }: { market: RadarMatch; locale: 
     </article>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/*  ContextRow / GameContextPanel                                      */
+/* ------------------------------------------------------------------ */
 
 function ContextRow({ label, value }: { label: string; value: string }) {
   return (
@@ -1405,6 +1810,10 @@ function GameContextPanel({ match, locale, kickoffLabel }: { match: GameMatch; l
     </aside>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/*  ProbabilityTrendChart                                              */
+/* ------------------------------------------------------------------ */
 
 function ProbabilityTrendChart({ match, locale }: { match: GameMatch; locale: string }) {
   const points = (match.radarMatch?.history || []).filter((point) =>
@@ -1461,75 +1870,9 @@ function ProbabilityTrendChart({ match, locale }: { match: GameMatch; locale: st
   );
 }
 
-function PropsTab({ locale, markets, sourceLabel }: { locale: string; markets: PropMarket[]; sourceLabel: string }) {
-  return (
-    <div className="space-y-4">
-      <SectionLead
-        locale={locale}
-        label={{ zh: "玩法", en: "Props" }}
-        title={{ zh: "热门冠军与事件玩法", en: "Popular winner and event markets" }}
-        copy={{
-          zh: `当前：${sourceLabel}。只展示预测市场源返回的玩法，不提供本地演示盘口。`,
-          en: `Current: ${sourceLabel}. Only markets returned by prediction-market sources are shown; no local demo props are used.`,
-        }}
-      />
-
-      {markets.length === 0 ? (
-        <EmptyState
-          locale={locale}
-          title={{ zh: "暂无玩法数据", en: "No prop markets" }}
-          copy={{ zh: "预测市场数据源返回记录后会自动显示。", en: "Markets will appear once the prediction-market source returns records." }}
-        />
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {markets.map((market, index) => (
-            <motion.article
-              key={market.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25, delay: index * 0.025 }}
-              className="border border-[#241A14] bg-[#FAF7F0] p-3 shadow-[3px_3px_0_0_#241A14]"
-            >
-              <div className="flex gap-3">
-                <div className="grid size-12 shrink-0 place-items-center border border-[#241A14] bg-[#EDE9E0] text-sm font-black text-[#D36E52]">
-                  {market.icon}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h2 className="line-clamp-2 text-sm font-black leading-snug text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
-                    {localize(locale, market.title)}
-                  </h2>
-                  <p className="mt-1 text-[10px] font-bold text-[#9E948C]">{market.volume} {tr(locale, "交易量", "Volume")}</p>
-                </div>
-              </div>
-
-              <div className="mt-3 space-y-2">
-                {market.choices.map((choice) => (
-                  <div key={choice.label.en} className="space-y-1.5 border-t border-dashed border-[#241A14]/30 pt-2 first:border-t-0 first:pt-0">
-                    <div className="flex items-center justify-between gap-3 text-xs font-black text-[#241A14]">
-                      <span className="truncate">{localize(locale, choice.label)}</span>
-                      <span>{choice.probability}%</span>
-                    </div>
-                    <div className="h-2 border border-[#241A14] bg-[#EDE9E0]">
-                      <div className="h-full bg-[#D36E52]" style={{ width: `${Math.max(2, Math.min(100, choice.probability))}%` }} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <button type="button" className="border border-[#241A14] bg-[#D36E52]/12 px-2 py-1.5 text-[11px] font-black text-[#241A14]">
-                        {tr(locale, "是", "Yes")} · {choice.yes}
-                      </button>
-                      <button type="button" className="border border-[#241A14] bg-[#9CB48A]/20 px-2 py-1.5 text-[11px] font-black text-[#241A14]">
-                        {tr(locale, "否", "No")} · {choice.no}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.article>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+/* ------------------------------------------------------------------ */
+/*  GroupsTab                                                          */
+/* ------------------------------------------------------------------ */
 
 function GroupsTab({ locale, standings }: { locale: string; standings: GroupStanding[] }) {
   return (
@@ -1595,6 +1938,10 @@ function GroupsTab({ locale, standings }: { locale: string; standings: GroupStan
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  BracketTab / BracketMatch                                          */
+/* ------------------------------------------------------------------ */
+
 function BracketTab({ locale, rounds, matchSequence }: { locale: string; rounds: BracketRound[]; matchSequence: Map<string, number> }) {
   return (
     <div className="space-y-4">
@@ -1647,6 +1994,10 @@ function BracketMatch({ match, locale, compact, matchNo }: { match: Match; local
     </div>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/*  EmptyState / SectionLead                                           */
+/* ------------------------------------------------------------------ */
 
 function EmptyState({ locale, title, copy }: { locale: string; title: LocalizedText; copy: LocalizedText }) {
   return (

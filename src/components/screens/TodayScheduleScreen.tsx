@@ -8,24 +8,25 @@ import {
   allMatches,
   allScheduleDayGroups,
   beijingScheduleUtcDayBounds,
+  compareMatchesByKickoff,
   createMatchSequenceLookup,
-  getGroupStandings,
   getMatchSequenceNumber,
   getScheduleDateMeta,
   matchIdentityKey,
   matchTeamPairKey,
   mergeMatchWithOfficialSource,
   relativeBeijingDayLabel,
-  type GroupStanding,
   type Match,
   type ScheduleDayGroup,
 } from "@/lib/wc-data";
-import { dateLabel, groupLabel, isZh, teamLabel, teamName, tr } from "@/lib/i18n/content";
-import { historicalScheduleDates, scheduleDateQueryForBeijingDate } from "@/lib/i18n/schedule-utils";
+import { dateLabel, isZh, roundLabel, teamLabel, tr } from "@/lib/i18n/content";
+import { historicalScheduleDates, upcomingScheduleDates } from "@/lib/i18n/schedule-utils";
 
-type PageTab = "schedule" | "standings";
+type PageTab = "schedule" | "knockout";
 type ScheduleSubTab = "current" | "history";
+type KnockoutRound = { round: string; matches: Match[] };
 const liveDateKeys = ["yesterday", "today", "tomorrow"] as const;
+const knockoutRoundOrder = ["三十二强", "十六强", "四分之一决赛", "半决赛", "三四名决赛", "决赛"];
 const finalKickoffAt = new Date(
   allMatches.find((match) => match.round === "决赛")?.kickoffAt || "2026-07-20T03:00:00+08:00",
 );
@@ -220,7 +221,7 @@ function CountdownBadge({ locale }: { locale: string }) {
 function PageTabs({ active, onChange, locale }: { active: PageTab; onChange: (tab: PageTab) => void; locale: string }) {
   const tabs: Array<{ key: PageTab; label: string }> = [
     { key: "schedule", label: tr(locale, "赛程", "Schedule") },
-    { key: "standings", label: tr(locale, "积分榜", "Standings") },
+    { key: "knockout", label: tr(locale, "淘汰赛", "Knockout") },
   ];
 
   return (
@@ -397,55 +398,168 @@ function EmptyScheduleState({ tab, locale }: { tab: ScheduleSubTab; locale: stri
   );
 }
 
-const zoneStyle: Record<string, string> = {
-  qualify: "bg-[#9CB48A] text-white",
-  pending: "bg-[#E4A853] text-[#241A14]",
-  outside: "bg-[#EDE9E0] text-[#9E948C]",
-};
+function knockoutRoundRank(round: string): number {
+  const index = knockoutRoundOrder.indexOf(round);
+  return index >= 0 ? index : knockoutRoundOrder.length;
+}
 
-const zoneText: Record<string, string> = {
-  qualify: "出线区",
-  pending: "待定区",
-  outside: "观察区",
-};
+function knockoutRoundsFromMatches(matches: Match[]): KnockoutRound[] {
+  const groups = new Map<string, Match[]>();
+  for (const match of matches) {
+    if (match.group.includes("组")) continue;
+    groups.set(match.round, [...(groups.get(match.round) || []), match]);
+  }
 
-function StandingGroup({ group, locale }: { group: GroupStanding; locale: string }) {
+  return Array.from(groups.entries())
+    .sort(([left], [right]) => knockoutRoundRank(left) - knockoutRoundRank(right) || left.localeCompare(right, "zh-CN"))
+    .map(([round, roundMatches]) => ({
+      round,
+      matches: roundMatches.slice().sort(compareMatchesByKickoff),
+    }));
+}
+
+function winnerSide(match: Match): "home" | "away" | undefined {
+  if (match.status !== "finished" || match.homeScore === null || match.awayScore === null) return undefined;
+  if (match.homeScore === match.awayScore) return undefined;
+  return match.homeScore > match.awayScore ? "home" : "away";
+}
+
+function KnockoutSideLine({ match, side, locale }: { match: Match; side: "home" | "away"; locale: string }) {
+  const isHome = side === "home";
+  const team = isHome ? match.homeTeam : match.awayTeam;
+  const flag = isHome ? match.homeFlag : match.awayFlag;
+  const score = isHome ? match.homeScore : match.awayScore;
+  const hasScore = match.homeScore !== null && match.awayScore !== null;
+  const isWinner = winnerSide(match) === side;
+
   return (
-    <section className="border border-[#241A14] bg-[#FAF7F0]" style={{ boxShadow: "3px 3px 0 0 #241A14" }}>
-      <div className="flex items-center justify-between border-b-2 border-[#241A14] px-3 py-2">
-        <h2 className="text-sm font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
-          {groupLabel(`${group.group} 组`, locale)}
-        </h2>
-        <span className="text-[10px] font-bold text-[#9E948C]">{tr(locale, "前二直通 · 第三待定", "Top two qualify · third pending")}</span>
+    <div className={`grid grid-cols-[1fr_2rem] items-center gap-2 px-2 py-1.5 text-xs ${
+      isWinner ? "bg-[#9CB48A]/30 text-[#241A14]" : "text-[#5C524C]"
+    }`}>
+      <span className={`min-w-0 truncate font-black ${isWinner ? "text-[#241A14]" : ""}`} style={{ fontFamily: "var(--font-heading)" }}>
+        {teamLabel(flag, team, locale)}
+      </span>
+      <span className={`text-right font-mono font-black ${hasScore ? "text-[#D36E52]" : "text-[#9E948C]"}`}>
+        {hasScore ? score : "—"}
+      </span>
+    </div>
+  );
+}
+
+function KnockoutMatchCard({ match, locale, matchNo }: { match: Match; locale: string; matchNo?: number }) {
+  return (
+    <Link
+      href={`/match/${match.id}`}
+      className="block border border-[#241A14] bg-[#FAF7F0] transition-colors hover:bg-white"
+      style={{ boxShadow: "2px 2px 0 0 #241A14" }}
+    >
+      <div className="flex items-center justify-between gap-2 border-b border-[#241A14]/25 px-2 py-1.5">
+        <span className="min-w-0 truncate font-mono text-[10px] font-black text-[#D36E52]">
+          {matchNo ? `${tr(locale, "第", "Match ")}${matchNo}${tr(locale, "场", "")} · ` : ""}{match.kickoffBj}
+        </span>
+        <span className={`shrink-0 border border-[#241A14] px-1.5 py-0.5 text-[9px] font-black ${
+          match.status === "live" ? "bg-[#D36E52] text-white" : match.status === "finished" ? "bg-[#241A14] text-white" : "bg-[#EDE9E0] text-[#5C524C]"
+        }`}>
+          {statusText(match, locale)}
+        </span>
       </div>
-      <div className="grid grid-cols-[1fr_26px_52px_52px_40px] border-b border-[#241A14]/30 px-2 py-1 text-center text-[10px] font-bold text-[#9E948C]">
-        <span className="text-left">{tr(locale, "球队", "Team")}</span>
-        <span>{tr(locale, "场", "P")}</span>
-        <span>{tr(locale, "胜/平/负", "W/D/L")}</span>
-        <span>{tr(locale, "进/失", "F/A")}</span>
-        <span>{tr(locale, "分", "Pts")}</span>
+      <div className="divide-y divide-dashed divide-[#241A14]/20">
+        <KnockoutSideLine match={match} side="home" locale={locale} />
+        <KnockoutSideLine match={match} side="away" locale={locale} />
       </div>
-      {group.rows.map((row) => (
-        <div key={row.team} className="grid grid-cols-[1fr_26px_52px_52px_40px] items-center border-b border-dashed border-[#241A14]/20 px-2 py-2 text-center text-xs last:border-b-0">
-          <div className="min-w-0 text-left">
-            <div className="truncate font-bold text-[#241A14]">{row.flag}{teamName(row.team, locale)}</div>
-            <span className={`mt-0.5 inline-block border border-[#241A14] px-1 py-0.5 text-[9px] font-bold ${zoneStyle[row.zone]}`}>
-              {tr(locale, zoneText[row.zone], row.zone === "qualify" ? "Qualify" : row.zone === "pending" ? "Pending" : "Watch")}
-            </span>
-          </div>
-          <span className="font-mono text-[#5C524C]">{row.played}</span>
-          <span className="font-mono text-[#5C524C]">{row.won}/{row.drawn}/{row.lost}</span>
-          <span className="font-mono text-[#5C524C]">{row.goalsFor}/{row.goalsAgainst}</span>
-          <span className="font-mono font-black text-[#241A14]">{row.points}</span>
+      <div className="truncate border-t border-[#241A14]/15 px-2 py-1 text-[10px] font-bold text-[#9E948C]">
+        {match.venue}
+      </div>
+    </Link>
+  );
+}
+
+function KnockoutRoundSection({
+  round,
+  locale,
+  matchSequence,
+}: {
+  round: KnockoutRound;
+  locale: string;
+  matchSequence: Map<string, number>;
+}) {
+  const finishedCount = round.matches.filter((match) => match.status === "finished").length;
+  return (
+    <section className="space-y-2">
+      <div className="-mx-4 border-y border-[#241A14] bg-[#EDE9E0] px-4 py-2">
+        <div className="flex items-end justify-between gap-3">
+          <h2 className="text-sm font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
+            {roundLabel(round.round, locale)}
+          </h2>
+          <span className="shrink-0 text-[10px] font-bold text-[#9E948C]">
+            {finishedCount}/{round.matches.length} {tr(locale, "已完赛", "finished")}
+          </span>
         </div>
-      ))}
+      </div>
+      <div className="grid gap-2 md:grid-cols-2">
+        {round.matches.map((match) => (
+          <KnockoutMatchCard
+            key={match.id}
+            match={match}
+            locale={locale}
+            matchNo={getMatchSequenceNumber(match, matchSequence)}
+          />
+        ))}
+      </div>
     </section>
+  );
+}
+
+function KnockoutBoard({
+  rounds,
+  locale,
+  matchSequence,
+}: {
+  rounds: KnockoutRound[];
+  locale: string;
+  matchSequence: Map<string, number>;
+}) {
+  const matches = rounds.flatMap((round) => round.matches);
+  const finishedCount = matches.filter((match) => match.status === "finished").length;
+  const liveCount = matches.filter((match) => match.status === "live").length;
+  const upcomingCount = matches.filter((match) => match.status === "upcoming").length;
+
+  if (!matches.length) {
+    return (
+      <div className="border border-[#241A14] bg-[#FAF7F0] p-4 text-sm text-[#5C524C]" style={{ boxShadow: "3px 3px 0 0 #241A14" }}>
+        <div className="font-black text-[#241A14]" style={{ fontFamily: "var(--font-heading)" }}>
+          {tr(locale, "暂无淘汰赛", "No knockout fixtures")}
+        </div>
+      </div>
+    );
+  }
+
+  const metrics = [
+    { label: tr(locale, "已完赛", "Finished"), value: finishedCount },
+    { label: tr(locale, "进行中", "Live"), value: liveCount },
+    { label: tr(locale, "待开赛", "Upcoming"), value: upcomingCount },
+  ];
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-3 gap-2">
+        {metrics.map((metric) => (
+          <div key={metric.label} className="border border-[#241A14] bg-[#FAF7F0] px-2 py-2 text-center" style={{ boxShadow: "2px 2px 0 0 #241A14" }}>
+            <div className="font-mono text-lg font-black text-[#D36E52]">{metric.value}</div>
+            <div className="mt-0.5 truncate text-[10px] font-bold text-[#9E948C]">{metric.label}</div>
+          </div>
+        ))}
+      </div>
+      {rounds.map((round) => (
+        <KnockoutRoundSection key={round.round} round={round} locale={locale} matchSequence={matchSequence} />
+      ))}
+    </div>
   );
 }
 
 export function TodayScheduleScreen({ initialMatches = [] }: { initialMatches?: Match[] }) {
   const [activeTab, rawSetActiveTab] = useState<PageTab>("schedule");
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const [scheduleTab, setScheduleTab] = useState<ScheduleSubTab>("current");
   const [liveMatches, setLiveMatches] = useState<Match[]>(initialMatches);
   const [sourceLabel, setSourceLabel] = useState("FIFA 官方赛程 · 本地/数据库数据源");
@@ -458,7 +572,7 @@ export function TodayScheduleScreen({ initialMatches = [] }: { initialMatches?: 
   const historyMatchCount = historyGroups.reduce((sum, day) => sum + day.matches.length, 0);
   const visibleScheduleGroups = scheduleTab === "history" ? historyGroups : currentGroups;
   const matchSequence = useMemo(() => createMatchSequenceLookup(displayMatches), [displayMatches]);
-  const standings = useMemo(() => getGroupStandings(displayMatches), [displayMatches]);
+  const knockoutRounds = useMemo(() => knockoutRoundsFromMatches(displayMatches), [displayMatches]);
   const totalMatches = displayGroups.reduce((sum, day) => sum + day.matches.length, 0);
 
   function setActiveTab(tab: PageTab) {
@@ -482,6 +596,14 @@ export function TodayScheduleScreen({ initialMatches = [] }: { initialMatches?: 
           startUtc: beijingScheduleUtcDayBounds(scheduleDates[dateKey].date)?.startUtc || "",
           endUtc: beijingScheduleUtcDayBounds(scheduleDates[dateKey].date)?.endUtc || "",
         })),
+        ...upcomingScheduleDates(now)
+          .filter((date) => !recentDates.has(date))
+          .map((date) => ({
+            dateKey: "today" as const,
+            date,
+            startUtc: beijingScheduleUtcDayBounds(date)?.startUtc || "",
+            endUtc: beijingScheduleUtcDayBounds(date)?.endUtc || "",
+          })),
         ...historicalScheduleDates(now)
           .filter((date) => !recentDates.has(date))
           .map((date) => ({
@@ -560,20 +682,14 @@ export function TodayScheduleScreen({ initialMatches = [] }: { initialMatches?: 
             </motion.div>
           ) : (
             <motion.div
-              key="standings"
+              key="knockout"
               initial={{ opacity: 0, x: 8 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -8 }}
               transition={{ duration: 0.2 }}
-              className="space-y-4"
+              className="space-y-5"
             >
-              {standings.map((group) => (
-                <StandingGroup key={group.group} group={group} locale={locale} />
-              ))}
-              <div className="border border-[#241A14] bg-[#EDE9E0] p-3 text-xs leading-relaxed text-[#5C524C]">
-                <strong className="text-[#241A14]">{tr(locale, "数据说明：", "Data note:")}</strong>
-                {tr(locale, "积分按已接入赛果计算；赛前全部为 0。", "Standings are calculated from connected results; all teams start at 0 before kickoff.")}
-              </div>
+              <KnockoutBoard rounds={knockoutRounds} locale={locale} matchSequence={matchSequence} />
             </motion.div>
           )}
         </AnimatePresence>

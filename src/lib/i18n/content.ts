@@ -81,8 +81,61 @@ export function tr(locale: LocaleCode | string, zh: string, en: string): string 
 }
 
 export function teamName(name: string, locale: LocaleCode | string): string {
+  const placeholder = tournamentSlotName(name, locale);
+  if (placeholder) return placeholder;
   if (isZh(locale)) return name;
   return teamNameEnByZh[name] || name;
+}
+
+function tournamentSlotName(name: string, locale: LocaleCode | string): string | undefined {
+  const value = String(name || "")
+    .trim()
+    .normalize("NFKD")
+    .replace(/\s+/g, " ");
+  if (!value) return undefined;
+
+  const zh = isZh(locale);
+  const upper = value.toUpperCase();
+  const groupSeed = upper.match(/^([1-3])\s*([A-L]{1,5})$/);
+  if (groupSeed) {
+    const [, place, groups] = groupSeed;
+    if (place === "3" && groups.length > 1) {
+      const groupText = groups.split("").join("/");
+      return zh ? `最佳第三（${groupText}组）` : `Best third-place (${groupText})`;
+    }
+    return zh ? `${groups}组第${place}` : `Group ${groups} ${place === "1" ? "winner" : place === "2" ? "runner-up" : "third place"}`;
+  }
+
+  const zhGroupSeed = value.match(/^([A-L])组第([1-3])$/);
+  if (zhGroupSeed) {
+    const [, group, place] = zhGroupSeed;
+    return zh ? value : `Group ${group} ${place === "1" ? "winner" : place === "2" ? "runner-up" : "third place"}`;
+  }
+
+  const bestThirdSeed = value.match(/^最佳第三[（(]([A-L/]+)组[）)]$/);
+  if (bestThirdSeed) {
+    return zh ? `最佳第三（${bestThirdSeed[1]}组）` : `Best third-place (${bestThirdSeed[1]})`;
+  }
+
+  const matchSeed = upper.match(/^([WL])\s*(\d{1,3})$/);
+  if (matchSeed) {
+    return zh
+      ? `第${matchSeed[2]}场${matchSeed[1] === "W" ? "胜" : "负"}者`
+      : `${matchSeed[1] === "W" ? "Winner" : "Loser"} of Match ${matchSeed[2]}`;
+  }
+
+  const zhMatchSeed = value.match(/^第(\d{1,3})场([胜负])者$/);
+  if (zhMatchSeed) {
+    return zh
+      ? value
+      : `${zhMatchSeed[2] === "胜" ? "Winner" : "Loser"} of Match ${zhMatchSeed[1]}`;
+  }
+
+  if (upper === "TBD" || upper === "TO BE DETERMINED" || value === "待定") {
+    return zh ? "待定" : "To be decided";
+  }
+
+  return undefined;
 }
 
 const teamNameZhByEn: Record<string, string> = Object.fromEntries(

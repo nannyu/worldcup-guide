@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
   ...(process.env.NEXT_OUTPUT_STANDALONE === "true"
     ? { output: "standalone" as const }
     : {}),
+  reactStrictMode: true,
+  poweredByHeader: false,
   compress: true,
   devIndicators: false,
   images: {

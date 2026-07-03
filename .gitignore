@@ -195,3 +195,12 @@ dist
 # Local admin runtime config. May contain API keys.
 /data/admin-config.json
 /data/runtime-cache.json
+
+# Scratch / debug files
+/scratch/
+
+# Local Codex/Claude workspace state
+/.claude/
+
+# Bun is the package manager — ignore npm lockfile
+package-lock.json

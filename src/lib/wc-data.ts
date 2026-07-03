@@ -251,12 +251,183 @@ export function isTournamentPlaceholderTeam(input: string | undefined): boolean 
     || /^[1-3]\s*[A-L]{1,5}$/.test(upper)
     || /^[WL]\s*\d{1,3}$/.test(upper)
     || /^(WINNER|LOSER)(\s+OF)?\s+MATCH\s+\d{1,3}$/.test(upper)
-    || /^(WINNER|RUNNER[- ]?UP|SECOND|THIRD|BEST THIRD)\b.*\bGROUP\b/.test(upper);
+    || /^(WINNER|RUNNER[- ]?UP|SECOND|THIRD|BEST THIRD)\b.*\bGROUP\b/.test(upper)
+    || /^[A-L]组第[1-3]$/.test(value)
+    || /^最佳第三[（(][A-L/]+组[）)]$/.test(value)
+    || /^第\d{1,3}场[胜负]者$/.test(value);
 }
 
-function matchSideDisplay(side: FifaScheduleRecord["home"]) {
+function tournamentPlaceholderSeed(input: string | undefined): string | undefined {
+  const value = String(input || "")
+    .trim()
+    .normalize("NFKD")
+    .replace(/\s+/g, " ");
+  return isTournamentPlaceholderTeam(value) ? value.toUpperCase() : undefined;
+}
+
+function tournamentPlaceholderName(seed: string): string {
+  const readableBestThird = seed.match(/^最佳第三[（(]([A-L/]+)组[）)]$/);
+  if (readableBestThird) return `最佳第三（${readableBestThird[1]}组）`;
+
+  if (/^[A-L]组第[1-3]$/.test(seed)
+    || /^第\d{1,3}场[胜负]者$/.test(seed)
+  ) {
+    return seed;
+  }
+
+  const groupSeed = seed.match(/^([1-3])\s*([A-L]{1,5})$/);
+  if (groupSeed) {
+    const [, place, groups] = groupSeed;
+    if (place === "3" && groups.length > 1) {
+      return `最佳第三（${groups.split("").join("/")}组）`;
+    }
+    return `${groups}组第${place}`;
+  }
+
+  const matchSeed = seed.match(/^([WL])\s*(\d{1,3})$/);
+  if (matchSeed) {
+    return `第${matchSeed[2]}场${matchSeed[1] === "W" ? "胜" : "负"}者`;
+  }
+
+  const englishMatchSeed = seed.match(/^(WINNER|LOSER)(?:\s+OF)?\s+MATCH\s+(\d{1,3})$/);
+  if (englishMatchSeed) {
+    return `第${englishMatchSeed[2]}场${englishMatchSeed[1] === "WINNER" ? "胜" : "负"}者`;
+  }
+
+  return "待定";
+}
+
+function matchSideDisplay(side: FifaScheduleRecord["home"]): { name: string; flag: string; seedCode?: string } {
   if (side.code && teamDisplay[side.code]) return teamDisplay[side.code];
+  const seedCode = tournamentPlaceholderSeed(side.name);
+  if (seedCode) return { name: tournamentPlaceholderName(seedCode), flag: "🏳️", seedCode };
   return { name: side.name, flag: "🏳️" };
+}
+
+export function normalizeMatchPlaceholderTeams(match: Match): Match {
+  const homeTeamSeed = tournamentPlaceholderSeed(match.homeTeam);
+  const awayTeamSeed = tournamentPlaceholderSeed(match.awayTeam);
+  const homeSeed = homeTeamSeed ? tournamentPlaceholderSeed(match.homeCode) || homeTeamSeed : undefined;
+  const awaySeed = awayTeamSeed ? tournamentPlaceholderSeed(match.awayCode) || awayTeamSeed : undefined;
+  if (!homeSeed && !awaySeed) return match;
+
+  return {
+    ...match,
+    homeTeam: homeSeed ? tournamentPlaceholderName(homeSeed) : match.homeTeam,
+    awayTeam: awaySeed ? tournamentPlaceholderName(awaySeed) : match.awayTeam,
+    homeCode: match.homeCode || homeSeed,
+    awayCode: match.awayCode || awaySeed,
+    homeFlag: homeSeed ? "🏳️" : match.homeFlag,
+    awayFlag: awaySeed ? "🏳️" : match.awayFlag,
+  };
+}
+
+type BracketReference = { outcome: "winner" | "loser"; matchNo: number };
+type ResolvedBracketSide = { team: string; flag: string; code?: string };
+
+function matchNoFromId(id: string | undefined): number | undefined {
+  const value = Number(String(id || "").match(/^fifa-(\d{1,3})$/)?.[1]);
+  return Number.isFinite(value) ? value : undefined;
+}
+
+function bracketReference(input: string | undefined): BracketReference | undefined {
+  const seed = tournamentPlaceholderSeed(input);
+  if (!seed) return undefined;
+
+  const compact = seed.match(/^([WL])\s*(\d{1,3})$/);
+  if (compact) {
+    return {
+      outcome: compact[1] === "W" ? "winner" : "loser",
+      matchNo: Number(compact[2]),
+    };
+  }
+
+  const english = seed.match(/^(WINNER|LOSER)(?:\s+OF)?\s+MATCH\s+(\d{1,3})$/);
+  if (english) {
+    return {
+      outcome: english[1] === "WINNER" ? "winner" : "loser",
+      matchNo: Number(english[2]),
+    };
+  }
+
+  const zh = seed.match(/^第(\d{1,3})场([胜负])者$/);
+  if (zh) {
+    return {
+      outcome: zh[2] === "胜" ? "winner" : "loser",
+      matchNo: Number(zh[1]),
+    };
+  }
+
+  return undefined;
+}
+
+function actualMatchSide(match: Match, side: "home" | "away"): ResolvedBracketSide | undefined {
+  const team = side === "home" ? match.homeTeam : match.awayTeam;
+  if (!team || isTournamentPlaceholderTeam(team)) return undefined;
+  const code = side === "home" ? match.homeCode : match.awayCode;
+  return {
+    team,
+    flag: side === "home" ? match.homeFlag : match.awayFlag,
+    code: code && !isTournamentPlaceholderTeam(code) ? code : undefined,
+  };
+}
+
+function resolvedSideForBracketReference(
+  reference: BracketReference,
+  source: Match | undefined,
+): ResolvedBracketSide | undefined {
+  if (!source || source.status !== "finished") return undefined;
+  if (source.homeScore === null || source.awayScore === null) return undefined;
+  if (source.homeScore === source.awayScore) return undefined;
+
+  const winnerSide = source.homeScore > source.awayScore ? "home" : "away";
+  const loserSide = winnerSide === "home" ? "away" : "home";
+  return actualMatchSide(source, reference.outcome === "winner" ? winnerSide : loserSide);
+}
+
+export function resolveKnownBracketPlaceholderTeams(matches: Match[], contextMatches: Match[]): Match[] {
+  let resolved = matches.map(normalizeMatchPlaceholderTeams);
+  const context = contextMatches.map(normalizeMatchPlaceholderTeams);
+
+  for (let pass = 0; pass < 4; pass += 1) {
+    const byMatchNo = new Map<number, Match>();
+    for (const match of [...context, ...resolved]) {
+      const matchNo = matchNoFromId(match.id);
+      if (matchNo) byMatchNo.set(matchNo, match);
+    }
+
+    let changed = false;
+    resolved = resolved.map((match) => {
+      const homeReference = isTournamentPlaceholderTeam(match.homeTeam)
+        ? bracketReference(match.homeCode) || bracketReference(match.homeTeam)
+        : undefined;
+      const awayReference = isTournamentPlaceholderTeam(match.awayTeam)
+        ? bracketReference(match.awayCode) || bracketReference(match.awayTeam)
+        : undefined;
+      const home = homeReference
+        ? resolvedSideForBracketReference(homeReference, byMatchNo.get(homeReference.matchNo))
+        : undefined;
+      const away = awayReference
+        ? resolvedSideForBracketReference(awayReference, byMatchNo.get(awayReference.matchNo))
+        : undefined;
+
+      if (!home && !away) return match;
+      changed = true;
+      return {
+        ...match,
+        homeTeam: home?.team || match.homeTeam,
+        awayTeam: away?.team || match.awayTeam,
+        homeFlag: home?.flag || match.homeFlag,
+        awayFlag: away?.flag || match.awayFlag,
+        homeCode: home ? home.code : match.homeCode,
+        awayCode: away ? away.code : match.awayCode,
+      };
+    });
+
+    if (!changed) break;
+  }
+
+  return resolved;
 }
 
 export function fifaRecordToMatch(record: FifaScheduleRecord): Match {
@@ -266,8 +437,8 @@ export function fifaRecordToMatch(record: FifaScheduleRecord): Match {
     id: `fifa-${record.matchNo}`,
     homeTeam: home.name,
     awayTeam: away.name,
-    homeCode: record.home.code,
-    awayCode: record.away.code,
+    homeCode: record.home.code || home.seedCode,
+    awayCode: record.away.code || away.seedCode,
     homeFlag: home.flag,
     awayFlag: away.flag,
     kickoffAt: record.kickoffBeijing,

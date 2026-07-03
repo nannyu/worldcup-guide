@@ -38,6 +38,8 @@ import {
   allMatches,
   fifaMatchesInUtcDayBounds,
   matchTeamPairKey,
+  normalizeMatchPlaceholderTeams,
+  resolveKnownBracketPlaceholderTeams,
   scheduleDateMeta,
   type Match,
   type MatchPrediction,
@@ -292,7 +294,35 @@ async function enrichMatchesWithLatestCanonicalOdds(
   matches: Match[],
   options: AggregationReadOptions = {},
 ): Promise<Match[]> {
-  return enrichOddsLatestCanonicalOdds(matches, options.liveScoresOnly);
+  const normalizedMatches = matches.map(normalizeMatchPlaceholderTeams);
+  const resolvedMatches = await resolveMatchesWithStoredBracketContext(normalizedMatches);
+  return enrichOddsLatestCanonicalOdds(resolvedMatches, options.liveScoresOnly);
+}
+
+function matchHasBracketReference(match: Match): boolean {
+  return [match.homeTeam, match.awayTeam, match.homeCode, match.awayCode].some((value) =>
+    /^[WL]\s*\d{1,3}$/i.test(String(value || "").trim())
+    || /^(WINNER|LOSER)(\s+OF)?\s+MATCH\s+\d{1,3}$/i.test(String(value || "").trim())
+    || /^第\d{1,3}场[胜负]者$/.test(String(value || "").trim())
+  );
+}
+
+function tournamentScheduleUtcBounds(): ScheduleUtcDayBounds | undefined {
+  const times = allMatches
+    .map((match) => Date.parse(match.kickoffAt || ""))
+    .filter((time) => Number.isFinite(time));
+  if (!times.length) return undefined;
+  return {
+    startUtc: new Date(Math.min(...times) - 60 * 60 * 1000).toISOString(),
+    endUtc: new Date(Math.max(...times) + 60 * 60 * 1000).toISOString(),
+  };
+}
+
+async function resolveMatchesWithStoredBracketContext(matches: Match[]): Promise<Match[]> {
+  if (!matches.some(matchHasBracketReference)) return matches;
+  const bounds = tournamentScheduleUtcBounds();
+  const context = bounds ? await getStoredCanonicalMatches(bounds) : [];
+  return resolveKnownBracketPlaceholderTeams(matches, context);
 }
 
 // ---------------------------------------------------------------------------

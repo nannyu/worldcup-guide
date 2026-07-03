@@ -23,3 +23,10 @@ export function historicalScheduleDates(now = new Date()): string[] {
     .filter((day) => day.date < today)
     .map((day) => day.date);
 }
+
+export function upcomingScheduleDates(now = new Date()): string[] {
+  const today = getScheduleDateMeta(now).today.date;
+  return allScheduleDayGroups
+    .filter((day) => day.date > today)
+    .map((day) => day.date);
+}

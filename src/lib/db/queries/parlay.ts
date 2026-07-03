@@ -150,6 +150,24 @@ export async function settleParlay(
   }
 }
 
+export async function getBatchParlayLegs(parlayIds: string[]): Promise<Map<string, Bet[]>> {
+  if (parlayIds.length === 0) return new Map();
+  const db = getDb();
+  const allLegs = await db
+    .select()
+    .from(bets)
+    .where(inArray(bets.parlayId, parlayIds))
+    .orderBy(asc(bets.createdAt));
+  const legsByParlay = new Map<string, Bet[]>();
+  for (const leg of allLegs) {
+    if (!leg.parlayId) continue;
+    const list = legsByParlay.get(leg.parlayId) || [];
+    list.push(leg);
+    legsByParlay.set(leg.parlayId, list);
+  }
+  return legsByParlay;
+}
+
 export async function getUserParlays(
   userId: string,
   options?: { status?: string; limit?: number; offset?: number },

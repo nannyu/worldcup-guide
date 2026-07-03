@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   let queries: BatchDateQuery[];
   try {
     const body = await request.json();
-    queries = Array.isArray(body.queries) ? body.queries.slice(0, 30) : [];
+    queries = Array.isArray(body.queries) ? body.queries.slice(0, 60) : [];
   } catch {
     return NextResponse.json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
   }

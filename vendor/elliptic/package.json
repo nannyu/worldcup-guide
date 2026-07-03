@@ -1,0 +1,13 @@
+{
+  "name": "elliptic",
+  "version": "7.0.0",
+  "description": "Project-local compatibility shim for the subset of elliptic used by @eazo/sdk.",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@noble/curves": "^2.2.0"
+  }
+}

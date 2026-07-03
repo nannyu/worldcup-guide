@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireAuth } from "@/lib/auth";
 import { rateLimit } from "@/lib/api/rate-limit";
 import { getOrCreateBalance } from "@/lib/db/queries/betting";
-import { placeParlay, getUserParlays, getParlayWithLegs } from "@/lib/db/queries/parlay";
+import { placeParlay, getUserParlays, getBatchParlayLegs } from "@/lib/db/queries/parlay";
 import { readLatestRadarMarketSnapshots } from "@/lib/db/queries/market-snapshots";
 import { resolveMatchIdFromMarket } from "@/lib/betting/settlement";
 
@@ -126,16 +126,14 @@ export async function GET(request: NextRequest) {
 
   const parlays = await getUserParlays(auth.user.id, { status, limit, offset });
 
-  // Fetch legs for each parlay
-  const parlaysWithLegs = await Promise.all(
-    parlays.map(async (parlay) => {
-      const data = await getParlayWithLegs(parlay.id);
-      return {
-        ...parlay,
-        legs: data?.legs || [],
-      };
-    }),
-  );
+  // Batch fetch all legs in a single query (avoids N+1)
+  const parlayIds = parlays.map((p) => p.id);
+  const legsByParlay = await getBatchParlayLegs(parlayIds);
+
+  const parlaysWithLegs = parlays.map((parlay) => ({
+    ...parlay,
+    legs: legsByParlay.get(parlay.id) || [],
+  }));
 
   return NextResponse.json({ ok: true, parlays: parlaysWithLegs });
 }
