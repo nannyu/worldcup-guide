@@ -838,7 +838,7 @@ export function ToolsScreen() {
   const [radarLoading, setRadarLoading] = useState(true);
   const selectedMatch = matches.find((match) => match.id === selectedMatchId);
 
-  // Load odds data — only show unfinished matches
+  // Load odds data — prioritize unfinished matches, fall back to all if none available
   useEffect(() => {
     let cancelled = false;
     async function loadOdds() {
@@ -846,15 +846,21 @@ export function ToolsScreen() {
       if (!response.ok) return;
       const data = (await response.json()) as { oddsMatches?: OddsMatch[] };
       if (cancelled) return;
+      const allWithOdds = (data.oddsMatches || [])
+        .filter((match) => match.homeOdds && match.drawOdds && match.awayOdds);
+      const upcoming = allWithOdds.filter((match) => match.status !== "finished");
+      // Use upcoming matches if available; otherwise show all (including finished) so the tool remains usable
+      const displayMatches = upcoming.length > 0 ? upcoming : allWithOdds;
       setMatches(
-        (data.oddsMatches || [])
-          .filter((match) => match.homeOdds && match.drawOdds && match.awayOdds)
-          .filter((match) => match.status !== "finished")
-          .sort((a, b) => {
-            // Sort by kickoff time (nearest first)
-            if (a.kickoffAt && b.kickoffAt) return a.kickoffAt.localeCompare(b.kickoffAt);
-            return a.kickoffBj.localeCompare(b.kickoffBj);
-          }),
+        displayMatches.sort((a, b) => {
+          // Upcoming/live first, then finished
+          const statusOrder = (s: string | undefined) => s === "live" ? 0 : s === "upcoming" ? 1 : 2;
+          const orderDiff = statusOrder(a.status) - statusOrder(b.status);
+          if (orderDiff !== 0) return orderDiff;
+          // Within same status, sort by kickoff time (nearest first)
+          if (a.kickoffAt && b.kickoffAt) return a.kickoffAt.localeCompare(b.kickoffAt);
+          return a.kickoffBj.localeCompare(b.kickoffBj);
+        }),
       );
     }
 
