@@ -2,9 +2,9 @@ import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAuth } from "@/lib/auth";
 import { rateLimit } from "@/lib/api/rate-limit";
-import { placeBet, getUserBets, getOrCreateBalance, getBetCountPerOutcome } from "@/lib/db/queries/betting";
+import { placeBet, getUserBets, getOrCreateBalance } from "@/lib/db/queries/betting";
 import { readLatestRadarMarketSnapshots } from "@/lib/db/queries/market-snapshots";
-import { resolveMatchIdFromMarket } from "@/lib/betting/settlement";
+import { resolveRadarBetSelection } from "@/lib/betting/market-resolution";
 
 const PlaceBetSchema = z.object({
   marketId: z.string().min(1).max(256),
@@ -49,33 +49,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "Market already settled" }, { status: 400 });
   }
 
-  // Resolve FIFA match ID from market_snapshots for settlement
-  const resolvedMatchId = await resolveMatchIdFromMarket(data.marketId);
-  if (!resolvedMatchId) {
-    return NextResponse.json({ ok: false, error: "Market not linked to a match" }, { status: 400 });
+  const resolved = await resolveRadarBetSelection(market, data);
+  if (!resolved.ok) {
+    return NextResponse.json({ ok: false, error: resolved.error }, { status: resolved.status });
   }
-
-  const probability = data.outcomeIndex === 0
-    ? market.homeMarketProb / 100
-    : market.awayMarketProb / 100;
-
-  if (probability <= 0) {
-    return NextResponse.json({ ok: false, error: "Invalid probability" }, { status: 400 });
-  }
-
-  const odds = 1 / probability;
 
   try {
+    const selection = resolved.selection;
     const bet = await placeBet({
       userId: auth.user.id,
       marketId: data.marketId,
-      matchId: resolvedMatchId,
-      category: data.category,
-      outcomeIndex: data.outcomeIndex,
-      outcomeLabel: data.outcomeLabel,
+      matchId: selection.matchId,
+      category: selection.category,
+      outcomeIndex: selection.outcomeIndex,
+      outcomeLabel: selection.outcomeLabel,
       amount: data.amount,
-      probabilityAtBet: probability,
-      oddsAtBet: odds,
+      probabilityAtBet: selection.probability,
+      oddsAtBet: selection.odds,
     });
 
     const updatedBalance = await getOrCreateBalance(auth.user.id);

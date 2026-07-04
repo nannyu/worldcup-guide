@@ -696,11 +696,13 @@ export interface MorningBrief {
 
 export interface RadarMatch {
   id: string;
+  matchId?: string;
   title?: string;
   eventTitle?: string;
   eventSlug?: string;
   category?: "moneyline" | "spread" | "total" | "halftime" | "corners" | "goals" | "assists" | "shots" | "prop";
   line?: string;
+  settlementOutcome?: "home" | "away" | "draw";
   homeTeam: string;
   awayTeam: string;
   homeFlag: string;

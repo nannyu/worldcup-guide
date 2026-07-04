@@ -1,5 +1,6 @@
 import { getDb, getSql, isDatabaseConfigured } from "../client";
 import { marketSnapshots, type MarketSnapshot } from "../schema/world-cup";
+import { resolveMatchForRadarMarket } from "@/lib/betting/market-resolution";
 import type { Match, OddsMatch, RadarMatch } from "@/lib/wc-data";
 
 type MarketSnapshotInput = {
@@ -182,6 +183,7 @@ export async function readPreKickoffOddsMarketSnapshots(matches: Match[]): Promi
 
 export function recordRadarMarketSnapshots(radarMatches: RadarMatch[], provider: string): Promise<number> {
   return recordMarketSnapshots(radarMatches.map((match) => ({
+    matchId: match.matchId || resolveMatchForRadarMarket(match)?.id || null,
     provider,
     externalMarketId: match.id,
     capturedAt: parseCapturedAt(match.updatedAt),

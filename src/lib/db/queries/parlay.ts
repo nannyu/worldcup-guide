@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
-import { getDb, getSql } from "../client";
-import { bets, type Bet } from "../schema/betting";
+import { getDb } from "../client";
+import { bets, userBalances, type Bet } from "../schema/betting";
 import { parlays, type Parlay } from "../schema/parlay";
 
 // ─── Place Parlay ───
@@ -28,22 +28,27 @@ export async function placeParlay(input: PlaceParlayInput): Promise<Parlay> {
   const parlayId = randomUUID();
   const legCount = input.legs.length;
 
-  // Atomic balance deduction
-  const deductionResult = await getSql().unsafe(`
-    UPDATE user_balances
-    SET balance = COALESCE(balance, 0) - $1,
-        total_wagered = COALESCE(total_wagered, 0) + $1,
-        bet_count = COALESCE(bet_count, 0) + 1,
-        updated_at = now()
-    WHERE user_id = $2
-      AND COALESCE(balance, 0) >= $1
-  `, [input.amount, input.userId]);
-
-  if (deductionResult.count === 0) {
-    throw new Error("INSUFFICIENT_BALANCE");
-  }
-
   return db.transaction(async (tx) => {
+    await tx.insert(userBalances).values({ userId: input.userId }).onConflictDoNothing();
+
+    const [deducted] = await tx
+      .update(userBalances)
+      .set({
+        balance: sql`COALESCE(${userBalances.balance}, 0) - ${input.amount}`,
+        totalWagered: sql`COALESCE(${userBalances.totalWagered}, 0) + ${input.amount}`,
+        betCount: sql`COALESCE(${userBalances.betCount}, 0) + 1`,
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(userBalances.userId, input.userId),
+        sql`COALESCE(${userBalances.balance}, 0) >= ${input.amount}`,
+      ))
+      .returning({ userId: userBalances.userId });
+
+    if (!deducted) {
+      throw new Error("INSUFFICIENT_BALANCE");
+    }
+
     const [parlay] = await tx
       .insert(parlays)
       .values({
@@ -94,7 +99,6 @@ export async function getPendingParlayIdsForMatch(matchId: string): Promise<stri
     .where(
       and(
         eq(bets.matchId, matchId),
-        eq(bets.status, "pending"),
         sql`${bets.parlayId} IS NOT NULL`,
       ),
     );
@@ -114,40 +118,33 @@ export async function settleParlay(
   result: { status: string; payout: number },
 ): Promise<void> {
   const db = getDb();
-  await db
-    .update(parlays)
-    .set({
-      status: result.status,
-      payout: String(result.payout),
-      settledAt: new Date(),
-    })
-    .where(eq(parlays.id, parlayId));
+  await db.transaction(async (tx) => {
+    const [settled] = await tx
+      .update(parlays)
+      .set({
+        status: result.status,
+        payout: String(result.payout),
+        settledAt: new Date(),
+      })
+      .where(and(eq(parlays.id, parlayId), eq(parlays.status, "pending")))
+      .returning({ userId: parlays.userId });
 
-  if (result.status === "won" && result.payout > 0) {
-    // Credit payout
-    const [parlay] = await db.select({ userId: parlays.userId }).from(parlays).where(eq(parlays.id, parlayId)).limit(1);
-    if (parlay) {
-      await getSql().unsafe(`
-        UPDATE user_balances
-        SET balance = COALESCE(balance, 0) + $1,
-            total_won = COALESCE(total_won, 0) + $1,
-            win_count = COALESCE(win_count, 0) + 1,
-            updated_at = now()
-        WHERE user_id = $2
-      `, [result.payout, parlay.userId]);
+    if (!settled || result.payout <= 0) return;
+
+    if (result.status === "won") {
+      await tx.update(userBalances).set({
+        balance: sql`COALESCE(${userBalances.balance}, 0) + ${result.payout}`,
+        totalWon: sql`COALESCE(${userBalances.totalWon}, 0) + ${result.payout}`,
+        winCount: sql`COALESCE(${userBalances.winCount}, 0) + 1`,
+        updatedAt: new Date(),
+      }).where(eq(userBalances.userId, settled.userId));
+    } else if (result.status === "partial_refund") {
+      await tx.update(userBalances).set({
+        balance: sql`COALESCE(${userBalances.balance}, 0) + ${result.payout}`,
+        updatedAt: new Date(),
+      }).where(eq(userBalances.userId, settled.userId));
     }
-  } else if (result.status === "partial_refund" && result.payout > 0) {
-    // Refund on void parlay
-    const [parlay] = await db.select({ userId: parlays.userId }).from(parlays).where(eq(parlays.id, parlayId)).limit(1);
-    if (parlay) {
-      await getSql().unsafe(`
-        UPDATE user_balances
-        SET balance = COALESCE(balance, 0) + $1,
-            updated_at = now()
-        WHERE user_id = $2
-      `, [result.payout, parlay.userId]);
-    }
-  }
+  });
 }
 
 export async function getBatchParlayLegs(parlayIds: string[]): Promise<Map<string, Bet[]>> {

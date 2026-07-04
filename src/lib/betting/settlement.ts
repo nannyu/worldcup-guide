@@ -1,7 +1,7 @@
 import { getDb } from "@/lib/db/client";
-import { matches, marketSnapshots } from "@/lib/db/schema/world-cup";
+import { matches } from "@/lib/db/schema/world-cup";
 import { type Bet } from "@/lib/db/schema/betting";
-import { eq, desc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import {
   getPendingBetsForMatch,
   settleBets,
@@ -19,20 +19,6 @@ export type SettlementResult = {
   settled: number;
   skipped?: string;
 };
-
-/**
- * Resolve a RadarMatch market ID (e.g. "polymarket-0x...") to a FIFA match ID
- * by querying market_snapshots.
- */
-export async function resolveMatchIdFromMarket(marketId: string): Promise<string | null> {
-  const [row] = await getDb()
-    .select({ matchId: marketSnapshots.matchId })
-    .from(marketSnapshots)
-    .where(eq(marketSnapshots.externalMarketId, marketId))
-    .orderBy(desc(marketSnapshots.capturedAt))
-    .limit(1);
-  return row?.matchId ?? null;
-}
 
 type BetOutcome = "win" | "lose" | "push";
 
@@ -60,8 +46,6 @@ export async function settleMatchBets(matchId: string): Promise<SettlementResult
   };
 
   const pendingBets = await getPendingBetsForMatch(matchId);
-  if (pendingBets.length === 0) return { settled: 0 };
-
   const results: BetSettlementResult[] = pendingBets.map((bet) => {
     const outcome = evaluateBetOutcome(bet, match);
     const amount = Number(bet.amount);
@@ -78,20 +62,20 @@ export async function settleMatchBets(matchId: string): Promise<SettlementResult
     }
     // "lose" → payout = 0
 
-    return { betId: bet.id, userId: bet.userId, won, payout };
+    return {
+      betId: bet.id,
+      userId: bet.userId,
+      won,
+      payout,
+      creditPayout: !bet.parlayId,
+    };
   });
 
   const settled = await settleBets(matchId, results);
+  const { settleParlaysForMatch } = await import("./parlay-settlement");
+  const settledParlays = await settleParlaysForMatch(matchId);
 
-  // Also settle any parlays that have legs in this match
-  try {
-    const { settleParlaysForMatch } = await import("./parlay-settlement");
-    await settleParlaysForMatch(matchId);
-  } catch {
-    // parlay settlement is best-effort; don't block single bet settlement
-  }
-
-  return { settled };
+  return { settled: settled + settledParlays };
 }
 
 export function evaluateBetOutcome(bet: Bet, match: MatchRecord): BetOutcome {

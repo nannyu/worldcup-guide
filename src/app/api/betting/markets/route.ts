@@ -54,6 +54,8 @@ export async function GET(request: NextRequest) {
   const enrichedMarkets = selectedMarkets.map((m) => ({
     id: m.id,
     title: m.title,
+    category: m.category,
+    settlementOutcome: m.settlementOutcome,
     homeTeam: m.homeTeam,
     awayTeam: m.awayTeam,
     homeFlag: m.homeFlag,

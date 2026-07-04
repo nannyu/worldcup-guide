@@ -5,7 +5,7 @@ import { rateLimit } from "@/lib/api/rate-limit";
 import { getOrCreateBalance } from "@/lib/db/queries/betting";
 import { placeParlay, getUserParlays, getBatchParlayLegs } from "@/lib/db/queries/parlay";
 import { readLatestRadarMarketSnapshots } from "@/lib/db/queries/market-snapshots";
-import { resolveMatchIdFromMarket } from "@/lib/betting/settlement";
+import { resolveRadarBetSelection } from "@/lib/betting/market-resolution";
 
 const ParlayLegSchema = z.object({
   marketId: z.string().min(1).max(256),
@@ -59,30 +59,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: `Market already settled: ${leg.marketId}` }, { status: 400 });
     }
 
-    const resolvedMatchId = await resolveMatchIdFromMarket(leg.marketId);
-    if (!resolvedMatchId) {
-      return NextResponse.json({ ok: false, error: `Market not linked to a match: ${leg.marketId}` }, { status: 400 });
+    const resolved = await resolveRadarBetSelection(market, leg);
+    if (!resolved.ok) {
+      return NextResponse.json({ ok: false, error: `${resolved.error}: ${leg.marketId}` }, { status: resolved.status });
     }
 
-    const probability = leg.outcomeIndex === 0
-      ? market.homeMarketProb / 100
-      : market.awayMarketProb / 100;
-
-    if (probability <= 0) {
-      return NextResponse.json({ ok: false, error: `Invalid probability for market: ${leg.marketId}` }, { status: 400 });
-    }
-
-    const odds = 1 / probability;
-    combinedOdds *= odds;
+    const selection = resolved.selection;
+    combinedOdds *= selection.odds;
 
     resolvedLegs.push({
       marketId: leg.marketId,
-      matchId: resolvedMatchId,
-      category: leg.category,
-      outcomeIndex: leg.outcomeIndex,
-      outcomeLabel: leg.outcomeLabel,
-      probabilityAtBet: probability,
-      oddsAtBet: odds,
+      matchId: selection.matchId,
+      category: selection.category,
+      outcomeIndex: selection.outcomeIndex,
+      outcomeLabel: selection.outcomeLabel,
+      probabilityAtBet: selection.probability,
+      oddsAtBet: selection.odds,
     });
   }
 

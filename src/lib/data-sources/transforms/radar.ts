@@ -121,6 +121,18 @@ export function apiFootballFixtureIdFromMatchId(id: string): number | undefined 
 
 import { canonicalTeamName } from "./matches";
 
+function inferMoneylineSettlementOutcome(
+  eventTeams: [string, string] | undefined,
+  label: string,
+): RadarMatch["settlementOutcome"] {
+  const normalized = canonicalTeamName(label);
+  if (!normalized) return undefined;
+  if (normalized.includes("draw")) return "draw";
+  if (eventTeams?.[0] && normalized === canonicalTeamName(eventTeams[0])) return "home";
+  if (eventTeams?.[1] && normalized === canonicalTeamName(eventTeams[1])) return "away";
+  return undefined;
+}
+
 export function normalizePredictionPercent(
   input: ApiFootballPredictionResponse["response"],
 ): Map<number, MatchPrediction> {
@@ -185,6 +197,9 @@ export function transformPolymarketEvents(
       }));
       const primaryLabel = normalizedOutcomes[0]?.label || outcomes[0] || "Yes";
       const secondaryLabel = normalizedOutcomes[1]?.label || outcomes[1] || "No";
+      const settlementOutcome = category === "moneyline"
+        ? inferMoneylineSettlementOutcome(eventTeams, primaryLabel)
+        : undefined;
       return [{
         id: `polymarket-${market.id || event.id || `${eventIndex}-${marketIndex}`}`,
         title,
@@ -192,6 +207,7 @@ export function transformPolymarketEvents(
         eventSlug: event.slug,
         category,
         line: extractMarketLine(title, market.groupItemTitle),
+        settlementOutcome,
         marketLabel: normalizedOutcomes.map((outcome) => outcome.label).join(" / "),
         homeTeam: eventTeams?.[0] || primaryLabel,
         awayTeam: eventTeams?.[1] || secondaryLabel,
@@ -236,6 +252,7 @@ export function transformApiFootballPredictionsToRadar(
     const diff = Math.abs(homeProb - awayProb);
     return [{
       id: `api-football-prediction-${fixtureId || match.id}`,
+      matchId: match.id,
       title: `${match.homeTeam} vs ${match.awayTeam}`,
       eventTitle: `${match.homeTeam} vs ${match.awayTeam}`,
       category: "moneyline" as const,

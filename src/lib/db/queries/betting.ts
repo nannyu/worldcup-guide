@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { and, asc, desc, eq, count as drizzleCount, sql } from "drizzle-orm";
-import { getDb, getSql } from "../client";
+import { and, desc, eq, count as drizzleCount, isNull, sql } from "drizzle-orm";
+import { getDb } from "../client";
 import { bets, chipMints, userBalances, type Bet, type ChipMint, type UserBalance } from "../schema/betting";
 import { users } from "../schema/users";
 
@@ -104,22 +104,27 @@ export async function placeBet(input: PlaceBetInput): Promise<Bet> {
   const db = getDb();
   const betId = randomUUID();
 
-  // Atomic balance check-and-deduct via raw SQL (avoids TOCTOU race)
-  const deductionResult = await getSql().unsafe(`
-    UPDATE user_balances
-    SET balance = COALESCE(balance, 0) - $1,
-        total_wagered = COALESCE(total_wagered, 0) + $1,
-        bet_count = COALESCE(bet_count, 0) + 1,
-        updated_at = now()
-    WHERE user_id = $2
-      AND COALESCE(balance, 0) >= $1
-  `, [input.amount, input.userId]);
-
-  if (deductionResult.count === 0) {
-    throw new Error("INSUFFICIENT_BALANCE");
-  }
-
   return db.transaction(async (tx) => {
+    await tx.insert(userBalances).values({ userId: input.userId }).onConflictDoNothing();
+
+    const [deducted] = await tx
+      .update(userBalances)
+      .set({
+        balance: sql`COALESCE(${userBalances.balance}, 0) - ${input.amount}`,
+        totalWagered: sql`COALESCE(${userBalances.totalWagered}, 0) + ${input.amount}`,
+        betCount: sql`COALESCE(${userBalances.betCount}, 0) + 1`,
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(userBalances.userId, input.userId),
+        sql`COALESCE(${userBalances.balance}, 0) >= ${input.amount}`,
+      ))
+      .returning({ userId: userBalances.userId });
+
+    if (!deducted) {
+      throw new Error("INSUFFICIENT_BALANCE");
+    }
+
     const [bet] = await tx
       .insert(bets)
       .values({
@@ -144,7 +149,7 @@ export async function getUserBets(
   userId: string,
   options?: { status?: string; limit?: number; offset?: number },
 ): Promise<Bet[]> {
-  const conditions = [eq(bets.userId, userId)];
+  const conditions = [eq(bets.userId, userId), isNull(bets.parlayId)];
   if (options?.status) conditions.push(eq(bets.status, options.status));
 
   return getDb()
@@ -176,6 +181,7 @@ export type BetSettlementResult = {
   userId: string;
   won: boolean;
   payout: number;
+  creditPayout?: boolean;
 };
 
 export async function settleBets(matchId: string, results: BetSettlementResult[]): Promise<number> {
@@ -188,16 +194,19 @@ export async function settleBets(matchId: string, results: BetSettlementResult[]
     for (const r of results) {
       const status = r.won ? "won" : r.payout > 0 ? "push" : "lost";
 
-      await tx
+      const [updated] = await tx
         .update(bets)
         .set({
           status,
           payout: String(r.payout),
           settledAt: new Date(),
         })
-        .where(eq(bets.id, r.betId));
+        .where(and(eq(bets.id, r.betId), eq(bets.status, "pending")))
+        .returning({ id: bets.id });
 
-      if (r.payout > 0) {
+      if (!updated) continue;
+
+      if (r.creditPayout !== false && r.payout > 0) {
         if (r.won) {
           // Win: credit profit
           await tx.update(userBalances).set({

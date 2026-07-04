@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Coins, Loader2, Plus, X, Check } from "lucide-react";
+import { Coins, Loader2, X, Check } from "lucide-react";
 import { request } from "@/lib/api/request";
 import { auth } from "@eazo/sdk";
 import { useEazo } from "@eazo/sdk/react";
@@ -38,6 +38,8 @@ type Bet = {
 type Market = {
   id: string;
   title: string;
+  category?: string;
+  settlementOutcome?: "home" | "away" | "draw";
   homeTeam: string;
   awayTeam: string;
   homeFlag: string;
@@ -172,6 +174,10 @@ const t = {
   },
 } as const;
 
+function isUnsupportedNoOutcome(label: string): boolean {
+  return label.trim().toLowerCase() === "no";
+}
+
 export function BetTab({ locale }: { locale: Locale }) {
   const user = useEazo((s) => s.auth.user);
   const [balance, setBalance] = useState<BalanceData | null>(null);
@@ -264,12 +270,13 @@ export function BetTab({ locale }: { locale: Locale }) {
   // Toggle a leg in/out of the slip
   const toggleLeg = (market: Market, outcomeIndex: number) => {
     if (market.status === "finished") return;
-    const prob = outcomeIndex === 0 ? market.homeMarketProb / 100 : market.awayMarketProb / 100;
+    const marketOutcome = market.outcomes?.[outcomeIndex];
+    const prob = (marketOutcome?.probability ?? (outcomeIndex === 0 ? market.homeMarketProb : market.awayMarketProb)) / 100;
     if (prob <= 0) return;
     const odds = 1 / prob;
-    const label = outcomeIndex === 0
+    const label = marketOutcome?.label || (outcomeIndex === 0
       ? `${market.homeFlag} ${localizeTeamName(market.homeTeam, locale)}`
-      : `${market.awayFlag} ${localizeTeamName(market.awayTeam, locale)}`;
+      : `${market.awayFlag} ${localizeTeamName(market.awayTeam, locale)}`);
 
     setSlipLegs((prev) => {
       // Check if this exact selection already exists
@@ -455,10 +462,15 @@ export function BetTab({ locale }: { locale: Locale }) {
             <div className="text-center py-10 text-neutral-500 text-sm">{texts.noMarkets}</div>
           )}
           {markets.map((market) => {
-            const homeSelected = isLegSelected(market.id, 0);
-            const awaySelected = isLegSelected(market.id, 1);
-            const homeBetCount = market.betCounts?.find((b) => b.outcomeIndex === 0)?.count;
-            const awayBetCount = market.betCounts?.find((b) => b.outcomeIndex === 1)?.count;
+            const rawOutcomes = market.outcomes?.length
+              ? market.outcomes
+              : [
+                { label: market.homeTeam, probability: market.homeMarketProb },
+                { label: market.awayTeam, probability: market.awayMarketProb },
+              ];
+            const selectableOutcomes = rawOutcomes
+              .map((outcome, outcomeIndex) => ({ ...outcome, outcomeIndex }))
+              .filter((outcome) => !isUnsupportedNoOutcome(outcome.label));
             return (
               <div key={market.id} className="rounded-xl bg-neutral-900 border border-neutral-800 p-3">
                 <div className="flex items-center justify-between text-xs text-neutral-500 mb-2">
@@ -479,47 +491,37 @@ export function BetTab({ locale }: { locale: Locale }) {
                     <span className="text-lg">{market.awayFlag}</span>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => toggleLeg(market, 0)}
-                    disabled={market.status === "finished" || market.homeMarketProb <= 0}
-                    className={`flex flex-col items-center p-2.5 rounded-lg border transition-colors disabled:opacity-50 ${
-                      homeSelected
-                        ? "bg-amber-500/20 border-amber-500/50"
-                        : "bg-neutral-800 hover:bg-amber-500/10 border-neutral-700 hover:border-amber-500/30"
-                    }`}
-                  >
-                    <span className="text-[11px] text-neutral-400">{localizeTeamName(market.homeTeam, locale)}</span>
-                    <span className="text-xl font-bold text-amber-300">{market.homeMarketProb}%</span>
-                    <div className="w-full h-1 rounded-full bg-neutral-700 mt-1">
-                      <div className="h-1 rounded-full bg-amber-500" style={{ width: `${market.homeMarketProb}%` }} />
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <span className="text-[10px] text-neutral-500">{(1 / (market.homeMarketProb / 100)).toFixed(2)}x</span>
-                      {homeBetCount ? <span className="text-[10px] text-neutral-600">({homeBetCount})</span> : null}
-                    </div>
-                    {homeSelected && <Check size={14} className="text-amber-400 mt-1" />}
-                  </button>
-                  <button
-                    onClick={() => toggleLeg(market, 1)}
-                    disabled={market.status === "finished" || market.awayMarketProb <= 0}
-                    className={`flex flex-col items-center p-2.5 rounded-lg border transition-colors disabled:opacity-50 ${
-                      awaySelected
-                        ? "bg-amber-500/20 border-amber-500/50"
-                        : "bg-neutral-800 hover:bg-amber-500/10 border-neutral-700 hover:border-amber-500/30"
-                    }`}
-                  >
-                    <span className="text-[11px] text-neutral-400">{localizeTeamName(market.awayTeam, locale)}</span>
-                    <span className="text-xl font-bold text-amber-300">{market.awayMarketProb}%</span>
-                    <div className="w-full h-1 rounded-full bg-neutral-700 mt-1">
-                      <div className="h-1 rounded-full bg-amber-500" style={{ width: `${market.awayMarketProb}%` }} />
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <span className="text-[10px] text-neutral-500">{(1 / (market.awayMarketProb / 100)).toFixed(2)}x</span>
-                      {awayBetCount ? <span className="text-[10px] text-neutral-600">({awayBetCount})</span> : null}
-                    </div>
-                    {awaySelected && <Check size={14} className="text-amber-400 mt-1" />}
-                  </button>
+                <div className={`grid gap-2 ${selectableOutcomes.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+                  {selectableOutcomes.map((outcome) => {
+                    const selected = isLegSelected(market.id, outcome.outcomeIndex);
+                    const betCount = market.betCounts?.find((b) => b.outcomeIndex === outcome.outcomeIndex)?.count;
+                    const probability = Math.max(0, Math.min(100, outcome.probability));
+                    return (
+                      <button
+                        key={`${market.id}-${outcome.outcomeIndex}`}
+                        onClick={() => toggleLeg(market, outcome.outcomeIndex)}
+                        disabled={market.status === "finished" || probability <= 0}
+                        className={`flex flex-col items-center p-2.5 rounded-lg border transition-colors disabled:opacity-50 ${
+                          selected
+                            ? "bg-amber-500/20 border-amber-500/50"
+                            : "bg-neutral-800 hover:bg-amber-500/10 border-neutral-700 hover:border-amber-500/30"
+                        }`}
+                      >
+                        <span className="text-[11px] text-neutral-400">{localizeTeamName(outcome.label, locale)}</span>
+                        <span className="text-xl font-bold text-amber-300">{probability}%</span>
+                        <div className="w-full h-1 rounded-full bg-neutral-700 mt-1">
+                          <div className="h-1 rounded-full bg-amber-500" style={{ width: `${probability}%` }} />
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span className="text-[10px] text-neutral-500">
+                            {probability > 0 ? `${(1 / (probability / 100)).toFixed(2)}x` : "-"}
+                          </span>
+                          {betCount ? <span className="text-[10px] text-neutral-600">({betCount})</span> : null}
+                        </div>
+                        {selected && <Check size={14} className="text-amber-400 mt-1" />}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -683,7 +685,7 @@ export function BetTab({ locale }: { locale: Locale }) {
 
             {/* Legs list */}
             <div className="space-y-2">
-              {slipLegs.map((leg, i) => (
+              {slipLegs.map((leg) => (
                 <div key={`${leg.market.id}-${leg.outcomeIndex}`} className="rounded-lg bg-neutral-800 p-3">
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">

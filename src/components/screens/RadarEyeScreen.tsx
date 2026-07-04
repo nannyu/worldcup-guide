@@ -739,7 +739,7 @@ export function RadarEyeScreen() {
   const combinedOdds = slipLegs.reduce((acc, l) => acc * l.odds, 1);
 
   const toggleLeg = useCallback((market: SlipMarket, outcomeIndex: number, label: string) => {
-    const prob = market.homeMarketProb / 100;
+    const prob = (outcomeIndex === 0 ? market.homeMarketProb : market.awayMarketProb) / 100;
     if (prob <= 0) return;
     const odds = 1 / prob;
 
