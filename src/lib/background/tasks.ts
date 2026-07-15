@@ -252,7 +252,7 @@ export function enqueueMatchesRefresh(
       startUtc: options.dateRange?.startUtc,
       endUtc: options.dateRange?.endUtc,
     },
-    priority: 40,
+    priority: 10,
   });
 }
 
@@ -274,7 +274,7 @@ export function enqueueMorningRefresh(
       startUtc: options.dateRange?.startUtc,
       endUtc: options.dateRange?.endUtc,
     },
-    priority: 30,
+    priority: 55,
   });
 }
 
@@ -294,7 +294,7 @@ export function enqueueNewsRefresh(options: {
     ]),
     type: "news.refresh",
     payload: normalized,
-    priority: 30,
+    priority: 55,
   });
 }
 
