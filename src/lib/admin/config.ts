@@ -892,15 +892,7 @@ const apiFootballAuthoritySourceIds = new Set([
   "api-football-worldcup-predictions",
 ]);
 
-const supersededFreeSourceIds = new Set([
-  "football-data-org",
-  "football-data-org-teams",
-  "the-odds-api-worldcup",
-  "thesportsdb-worldcup",
-  "thesportsdb-worldcup-teams",
-]);
-
-function applyApiFootballAuthorityPolicy(sources: DataSourceConfig[]): DataSourceConfig[] {
+function applyDataSourceRuntimePolicy(sources: DataSourceConfig[]): DataSourceConfig[] {
   return sources.map((source) => {
     const defaults = defaultDataSourceFor(source.id);
     if (apiFootballAuthoritySourceIds.has(source.id) && defaults) {
@@ -914,20 +906,6 @@ function applyApiFootballAuthorityPolicy(sources: DataSourceConfig[]): DataSourc
         apiKeyPlacement: defaults.apiKeyPlacement,
         apiKeyParamName: defaults.apiKeyParamName,
         apiKeyHeaderName: defaults.apiKeyHeaderName,
-        enabled: true,
-        priority: defaults.priority,
-        refreshSeconds: defaults.refreshSeconds,
-        cacheTtlSeconds: defaults.cacheTtlSeconds,
-        timeoutMs: defaults.timeoutMs,
-        notes: defaults.notes,
-      };
-    }
-    if (supersededFreeSourceIds.has(source.id)) {
-      return {
-        ...source,
-        enabled: false,
-        priority: Math.max(source.priority, 80),
-        notes: `${source.notes} 已被 API-Football Pro 权威源替代，仅保留为手动恢复时的备援配置。`,
       };
     }
     if (source.id === "polymarket-gamma") {
@@ -942,7 +920,7 @@ function applyApiFootballAuthorityPolicy(sources: DataSourceConfig[]): DataSourc
       return {
         ...source,
         priority: Math.max(source.priority, 90),
-        notes: "免费、无 key，仅作为 API-Football 和官方赛程库不可用时的低优先级兜底。",
+        notes: "免费、无 key，仅作为已配置比分源和官方赛程库不可用时的低优先级兜底。",
       };
     }
     return source;
@@ -988,7 +966,7 @@ function normalizeConfig(input: Partial<AdminConfig>, options: { resolveSecrets:
     primaryAiProviderId: String(
       input.primaryAiProviderId || defaultAdminConfig.primaryAiProviderId,
     ),
-    dataSources: applyApiFootballAuthorityPolicy(
+    dataSources: applyDataSourceRuntimePolicy(
       mergeMissingDefaultSources(dataSources, options.resolveSecrets),
     ),
     aiProviders: mergeMissingDefaultProviders(aiProviders, options.resolveSecrets),

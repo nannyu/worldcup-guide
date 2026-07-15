@@ -54,7 +54,7 @@ export function enqueueArticleTranslation(article: NewsArticle) {
     id: stableJobId("news.translate", [backgroundArticle.id]),
     type: "news.translate",
     payload: { article: backgroundArticle as unknown as Record<string, unknown> },
-    priority: 20,
+    priority: 70,
   });
 }
 
